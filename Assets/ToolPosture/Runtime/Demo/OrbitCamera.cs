@@ -1,0 +1,139 @@
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using ToolPosture.Gizmo;
+
+namespace ToolPosture.Demo
+{
+    /// <summary>
+    /// デモ用の視点操作。
+    ///
+    /// マウス: 左ドラッグはギズモ操作に使うので、視点回転は右ドラッグ、パンは中ドラッグ。
+    /// タッチ: 1 本指で視点回転 (ギズモを掴んでいる間と UI の上では無効)、2 本指でピンチズーム + パン。
+    /// </summary>
+    [AddComponentMenu("Tool Posture/Orbit Camera")]
+    public class OrbitCamera : MonoBehaviour
+    {
+        public Transform target;
+        public float distance = 4.5f;
+        public float minDistance = 0.5f;
+        public float maxDistance = 40f;
+        public float yaw = 40f;
+        public float pitch = 26f;
+
+        [Tooltip("ハンドルをドラッグしている間は視点操作を止める")]
+        public ToolPostureGizmo gizmo;
+
+        [Header("感度")]
+        public float orbitSpeed = 0.22f;
+        public float touchOrbitSpeed = 0.16f;
+        public float panSpeed = 0.0022f;
+        public float zoomStep = 0.12f;
+        public float pinchZoomSpeed = 0.004f;
+
+        Vector3 _panOffset;
+        float _pinchPrevDistance = -1f;
+
+        Vector3 Pivot => (target != null ? target.position : Vector3.zero) + _panOffset;
+
+        void OnEnable()
+        {
+            _panOffset = Vector3.zero;
+            if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
+            Apply();
+        }
+
+        void LateUpdate()
+        {
+            if (!HandleTouch()) HandleMouse();
+            Apply();
+        }
+
+        // ------------------------------------------------------------------ タッチ
+
+        /// <summary>タッチで操作したなら true。マウス処理はスキップする。</summary>
+        bool HandleTouch()
+        {
+            int count = GizmoPointer.ActiveTouchCount();
+            if (count == 0)
+            {
+                _pinchPrevDistance = -1f;
+                return false;
+            }
+
+            if (count >= 2)
+            {
+                HandlePinch();
+                return true;
+            }
+
+            _pinchPrevDistance = -1f;
+
+            // ギズモを掴んでいる間、および UI の上では視点を動かさない
+            if (gizmo != null && gizmo.IsDragging) return true;
+            if (!GizmoPointer.TryGetActiveTouch(0, out _, out Vector2 delta, out int touchId)) return true;
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touchId)) return true;
+
+            yaw += delta.x * touchOrbitSpeed;
+            pitch = Mathf.Clamp(pitch - delta.y * touchOrbitSpeed, -85f, 85f);
+            return true;
+        }
+
+        void HandlePinch()
+        {
+            if (!GizmoPointer.TryGetActiveTouch(0, out Vector2 p0, out Vector2 d0, out _)) return;
+            if (!GizmoPointer.TryGetActiveTouch(1, out Vector2 p1, out Vector2 d1, out _)) return;
+
+            float spread = Vector2.Distance(p0, p1);
+
+            if (_pinchPrevDistance > 0f)
+            {
+                float change = _pinchPrevDistance - spread;
+                distance = Mathf.Clamp(distance * (1f + change * pinchZoomSpeed), minDistance, maxDistance);
+
+                Vector2 average = (d0 + d1) * 0.5f;
+                _panOffset += (transform.right * -average.x + transform.up * -average.y) * (panSpeed * distance);
+            }
+
+            _pinchPrevDistance = spread;
+        }
+
+        // ------------------------------------------------------------------ マウス
+
+        void HandleMouse()
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse == null) return;
+
+            Vector2 delta = mouse.delta.ReadValue();
+
+            if (mouse.rightButton.isPressed)
+            {
+                yaw += delta.x * orbitSpeed;
+                pitch = Mathf.Clamp(pitch - delta.y * orbitSpeed, -85f, 85f);
+            }
+
+            if (mouse.middleButton.isPressed)
+                _panOffset += (transform.right * -delta.x + transform.up * -delta.y) * (panSpeed * distance);
+
+            float scroll = mouse.scroll.ReadValue().y;
+            if (Mathf.Abs(scroll) > 0.01f)
+                distance = Mathf.Clamp(distance * (1f - Mathf.Sign(scroll) * zoomStep), minDistance, maxDistance);
+        }
+
+        // ------------------------------------------------------------------
+
+        void Apply()
+        {
+            Quaternion rot = Quaternion.Euler(pitch, yaw, 0f);
+            transform.SetPositionAndRotation(Pivot - rot * Vector3.forward * distance, rot);
+        }
+
+        [ContextMenu("ターゲットに合わせる")]
+        public void FrameTarget()
+        {
+            _panOffset = Vector3.zero;
+            Apply();
+        }
+    }
+}
