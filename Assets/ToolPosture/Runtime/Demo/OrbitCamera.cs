@@ -24,9 +24,6 @@ namespace ToolPosture.Demo
         public float yaw = 40f;
         public float pitch = 26f;
 
-        [Tooltip("ハンドルをドラッグしている間は視点操作を止める")]
-        public ToolPostureGizmo gizmo;
-
         [Header("感度")]
         public float orbitSpeed = 0.22f;
         public float touchOrbitSpeed = 0.16f;
@@ -36,20 +33,41 @@ namespace ToolPosture.Demo
 
         private Vector3 _panOffset;
         private float _pinchPrevDistance = -1f;
+        private Vector3 _frozenPivot;
+        private bool _pivotFrozen;
 
-        private Vector3 Pivot => (target != null ? target.position : Vector3.zero) + _panOffset;
+        private Vector3 RawPivot => (target != null ? target.position : Vector3.zero) + _panOffset;
+
+        /// <summary>
+        /// 注視点。ドラッグ中は掴んだ瞬間の位置で固定する。
+        ///
+        /// 注視対象が「掴んでいる物」に追従していると、動かす -> カメラが追う ->
+        /// レイの原点がずれて最近接点が進む -> さらに動く、という正のフィードバックになり、
+        /// 指を止めていても走り続ける (実測: 1 フレームあたり 0.0105 で発散)。
+        /// </summary>
+        private Vector3 Pivot => _pivotFrozen ? _frozenPivot : RawPivot;
 
         private void OnEnable()
         {
             _panOffset = Vector3.zero;
-            if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
+            _pivotFrozen = false;
             Apply();
         }
 
         private void LateUpdate()
         {
+            UpdatePivotFreeze();
             if (!HandleTouch()) HandleMouse();
             Apply();
+        }
+
+        private void UpdatePivotFreeze()
+        {
+            bool dragging = RuntimeGizmo.AnyDragging;
+            if (dragging == _pivotFrozen) return;
+
+            if (dragging) _frozenPivot = RawPivot;
+            _pivotFrozen = dragging;
         }
 
         #endregion
@@ -77,7 +95,7 @@ namespace ToolPosture.Demo
             _pinchPrevDistance = -1f;
 
             // ギズモを掴んでいる間、および UI の上では視点を動かさない
-            if (gizmo != null && gizmo.IsDragging) return true;
+            if (RuntimeGizmo.AnyDragging) return true;
             if (!GizmoPointer.TryGetActiveTouch(0, out _, out Vector2 delta, out int touchId)) return true;
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touchId)) return true;
 

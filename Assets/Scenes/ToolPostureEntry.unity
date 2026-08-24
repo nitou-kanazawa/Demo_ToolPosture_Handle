@@ -156,7 +156,7 @@ MonoBehaviour:
   inputMode: 0
   useKeyboardShortcuts: 1
   gizmoShader: {fileID: 0}
-  position: {x: -1.4, y: 0.35, z: 0.9}
+  position: {x: 0.5, y: 0.22500001, z: 0.425}
   target: {fileID: 1226767785}
   axisSpace: 0
   showAxisX: 1
@@ -261,13 +261,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0f952ea1830a584897c37ed97c38d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.OrbitCamera
-  target: {fileID: 205593997}
+  target: {fileID: 768859424}
   distance: 3
   minDistance: 0.5
   maxDistance: 40
   yaw: 52
   pitch: 25
-  gizmo: {fileID: 389373110}
   orbitSpeed: 0.22
   touchOrbitSpeed: 0.16
   panSpeed: 0.0022
@@ -417,7 +416,7 @@ Transform:
   m_GameObject: {fileID: 205593996}
   serializedVersion: 2
   m_LocalRotation: {x: 0.20845203, y: 0.9760816, z: 0.012895551, w: 0.060383722}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.5, y: 0.22500001, z: 0.425}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -837,6 +836,37 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &768859423
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 768859424}
+  m_Layer: 0
+  m_Name: CameraPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &768859424
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 768859423}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.5, y: 0.22500001, z: 0.425}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1403,3 +1433,4 @@ SceneRoots:
   - {fileID: 4578949}
   - {fileID: 1911305944}
   - {fileID: 1226767785}
+  - {fileID: 768859424}
