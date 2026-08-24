@@ -5,7 +5,7 @@
 エディタ専用の `UnityEditor.Handles` に頼らず、描画・当たり判定・ドラッグ処理をすべて自前で持つため、
 ビルドしたアプリの中でそのまま姿勢を編集できます。
 
-![gizmo](Assets/Screenshots/toolposture_hint.png)
+![gizmo](Assets/Screenshots/toolposture_zyx.png)
 
 - Unity 6000.4 / URP 17.4 / Input System 1.19（Input System 専用設定）
 
@@ -126,6 +126,33 @@ gizmo.ToolAxisWorld;   // 主たる出力
 gizmo.ToolRotation;    // spin まで含めた完全な姿勢
 ```
 
+### ZYX オイラー（ロボット姿勢）との相互変換
+
+ロボット制御側がツール姿勢を ZYX オイラー角で持っている場合、双方向に変換できます。
+
+```csharp
+// 姿勢 -> 回転 -> ZYX
+var euler = ZyxEulerAngles.FromRotation(
+    angles.GetToolRotation(frame, shaftAxis, referenceAxis, spinReference));
+
+// ZYX -> 回転 -> 姿勢
+angles.SetToolRotation(frame, euler.ToRotation(), shaftAxis, referenceAxis, spinReference);
+```
+
+`ZyxEulerAngles` は `R = Rz * Ry * Rx`（内因的 Z→Y'→X''）です。
+**Unity の `Quaternion.eulerAngles` は ZXY 順**なので、混同しないよう専用の型にしてあります。
+`RollDeg` / `PitchDeg` / `YawDeg` は `zDeg` / `yDeg` / `xDeg` の別名です
+（ロボット側で Z 軸回転を Roll と呼ぶ慣習に合わせたもの）。
+
+スピン 0 度の基準は `SpinReference` で選べます。
+
+| モード | 0 度の基準 | 用途 |
+|---|---|---|
+| `FeedProjected`（既定） | 進行方向 M を工具軸直交面へ投影 | 溶接線に対する相対角 |
+| `WorldAxisCross` | `cross(ワールド軸, 工具軸)` | ロボット側がワールド基準で回転角を定義している場合 |
+
+経路が曲がると両者は乖離するので、ロボットと値を突き合わせる場合は必ず合わせてください。
+
 ---
 
 ## デモシーン
@@ -140,6 +167,7 @@ gizmo.ToolRotation;    // spin まで含めた完全な姿勢
 | ハンドル表示切替 | `1`〜`5` または画面のボタン |
 | 区間 / 区間内位置 | `←→` / `↑↓` |
 | 3D / 2D 操作の切替 | `T` |
+| ロボット姿勢 (ZYX) の編集 | 右上パネルの Roll / Pitch / Yaw ボタン |
 
 `T` で切り替わる 2D 重畳ビューは、外部パラから配置した想定の重畳カメラを RenderTexture に描き、
 レンズ歪み（Brown-Conrady の k1）を掛けて UI 上に表示します。
@@ -152,6 +180,7 @@ gizmo.ToolRotation;    // spin まで含めた完全な姿勢
 ```
 Assets/ToolPosture/
   Runtime/Core/     PathFrame / ToolPostureAngles / AngleConvention / IPathFrameSource
+                    ZyxEulerAngles / SpinReference
   Runtime/Path/     WeldPath                    経路（点列 + 生の法線）
   Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・外部ドライブ API
                     GizmoHandles                各ハンドル
@@ -159,9 +188,10 @@ Assets/ToolPosture/
                     IGizmoViewport              画面 ⇔ ワールドの抽象
                     GizmoMeshBuilder / GizmoPicker / GizmoPointer
   Runtime/UI/       PostureReadoutUI            数値表示・表示切替
-  Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / OrbitCamera / WeldPathSurface
+  Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / RobotPostureBridge
+                    OrbitCamera / WeldPathSurface
   Editor/           ToolPostureGizmoEditor      シーンビュー版（Handles 使用）
-  Tests/EditMode/   54 件
+  Tests/EditMode/   73 件
 ```
 
 EditMode テストは Test Runner、または `unity test --mode EditMode --output result.xml --timeout 300` で実行できます。
