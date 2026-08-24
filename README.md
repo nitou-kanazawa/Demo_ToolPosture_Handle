@@ -213,6 +213,22 @@ gizmo.PreparingFrame += g => g.Frame = myPath.GetFrame(segment, u);
 
 デモでは `WeldPath` が両方を担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
 
+### Quaternion はギズモから出さない
+
+ギズモの出力は**工具軸ベクトル X と角度まで**です。そこから回転を組むには
+「向けたい対象のどのローカル軸を工具軸に合わせるか」という**対象側の都合**が要り、
+その値はロボットのフランジと工具モデルで別物になります。
+なのでギズモが 1 組だけ抱える形にはせず、対象を持っている側が Core の関数を呼びます。
+
+```csharp
+Quaternion r = gizmo.Angles.GetToolRotation(
+    gizmo.Frame, shaftAxis, referenceAxis, gizmo.Profile.spinReference);
+```
+
+工具モデルを追従させるだけなら `ToolPostureFollower` を付けます
+（`shaftAxis` / `referenceAxis` はモデルのローカル軸なので、このコンポーネントが持ちます）。
+ロボット側から姿勢が降ってくる場合は `ApplyRotation(Quaternion)` で逆算して書き戻せます。
+
 ### 描画はカメラの描画コールバックから投入される
 
 `Graphics.RenderMesh` は 1 フレーム限りの投入なので、`LateUpdate` から呼ぶと
@@ -244,7 +260,7 @@ gizmo.SetAngleDisplay(id, displayDeg);       // 規約を通した表示値で�
 gizmo.SetToolAxisWorld(direction);           // 工具軸を直接与える
 
 gizmo.ToolAxisWorld;   // 主たる出力
-gizmo.ToolRotation;    // spin まで含めた完全な姿勢
+gizmo.Angles;          // theta / phi / spin
 gizmo.PostureChanged;  // 姿勢が変わったときのイベント
 ```
 
@@ -313,6 +329,7 @@ Assets/ToolPosture/
                     ZyxEulerAngles / SpinReference      ← 依存ゼロの別アセンブリ
                     ToolPostureProfile          角度規約と可動範囲 (SO)
   Runtime/Path/     WeldPath                    経路。フレームを計算してギズモへ渡す
+  Runtime/Tool/     ToolPostureFollower         工具モデルを姿勢に追従させる
   Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・レイでの操作 API
                     GizmoTheme                  見た目と当たりの太さ (SO)
                     GizmoHandles                各ハンドル（値の読み書きと形状）

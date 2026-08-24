@@ -41,7 +41,7 @@ namespace ToolPosture.EditorTools
 
         private static readonly string[] ToolProps =
         {
-            "gizmoShader", "toolVisual", "toolShaftAxis", "toolReferenceAxis",
+            "gizmoShader",
         };
 
         private Editor _themeEditor;
@@ -67,7 +67,7 @@ namespace ToolPosture.EditorTools
             DrawGroup("ハンドル表示", HandleProps);
             DrawGroup("表示", ViewProps);
             DrawGroup("入力", InputProps, defaultOpen: false);
-            DrawGroup("シェーダ / 工具モデル", ToolProps, defaultOpen: false);
+            DrawGroup("シェーダ", ToolProps, defaultOpen: false);
             DrawRemaining();
 
             serializedObject.ApplyModifiedProperties();

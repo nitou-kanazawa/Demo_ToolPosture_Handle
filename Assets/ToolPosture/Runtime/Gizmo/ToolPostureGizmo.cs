@@ -107,20 +107,11 @@ namespace ToolPosture.Gizmo
 
         #endregion
 
-        #region シェーダ / 工具モデル
+        #region シェーダ
 
-        [Header("シェーダ / 工具モデル")]
+        [Header("シェーダ")]
         [Tooltip("未設定なら ToolPosture/GizmoVertexColor を探す")]
         public Shader gizmoShader;
-
-        [Tooltip("姿勢に追従させる工具モデル")]
-        public Transform toolVisual;
-
-        [Tooltip("工具モデルのどの軸が工具軸か")]
-        public Vector3 toolShaftAxis = Vector3.up;
-
-        [Tooltip("工具モデルのどの軸を回転基準にするか")]
-        public Vector3 toolReferenceAxis = Vector3.forward;
 
         #endregion
 
@@ -338,27 +329,7 @@ namespace ToolPosture.Gizmo
 
         #endregion
 
-        #region 工具の回転 (ZYX オイラー等) での入出力
-
-        /// <summary>
-        /// 工具の回転から姿勢を復元する。
-        /// </summary>
-        public void SetToolRotation(Quaternion rotation)
-        {
-            var a = angles;
-            a.SetToolRotation(_frame, rotation, toolShaftAxis, toolReferenceAxis, Profile.spinReference);
-            Angles = a;
-        }
-
-        /// <summary>
-        /// 現在の姿勢を ZYX オイラー角で取り出す。
-        /// </summary>
-        public ZyxEulerAngles ToolRotationZyx => ZyxEulerAngles.FromRotation(ToolRotation);
-
-        /// <summary>
-        /// ZYX オイラー角で姿勢を与える。
-        /// </summary>
-        public void SetToolRotationZyx(ZyxEulerAngles euler) => SetToolRotation(euler.ToRotation());
+        #region 工具軸の出力
 
         /// <summary>
         /// 工具軸 X のワールド方向。このギズモの主たる出力。
@@ -370,11 +341,15 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public Vector3 ToolAxisLmn => angles.GetAxisLmn();
 
-        /// <summary>
-        /// トーチ回転角まで含めた完全な工具姿勢。
-        /// </summary>
-        public Quaternion ToolRotation
-            => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis, Profile.spinReference);
+        // Quaternion での出力はここには置かない。工具軸から回転を組むには
+        // 「向けたい対象のどのローカル軸を工具軸に合わせるか」という対象側の都合が要り、
+        // その値はロボットのフランジと工具モデルで別物になる。
+        // 対象を持っている側が Core の関数を直接呼ぶこと:
+        //
+        //   gizmo.Angles.GetToolRotation(gizmo.Frame, shaftAxis, referenceAxis,
+        //                                gizmo.Profile.spinReference)
+        //
+        // 工具モデルを追従させるだけなら ToolPostureFollower が使える。
 
         #endregion
 
@@ -419,8 +394,6 @@ namespace ToolPosture.Gizmo
 
             if (useKeyboardShortcuts) HandleKeyboard();
             if (inputMode == GizmoInputMode.BuiltIn) HandlePointer();
-
-            ApplyToolVisual();
         }
 
         private void LateUpdate()
@@ -534,12 +507,6 @@ namespace ToolPosture.Gizmo
             if (kb.digit3Key.wasPressedThisFrame) showAxisTip = !showAxisTip;
             if (kb.digit4Key.wasPressedThisFrame) showSpinRing = !showSpinRing;
             if (kb.digit0Key.wasPressedThisFrame) SetSpherical(angles.azimuthDeg, 90f);
-        }
-
-        private void ApplyToolVisual()
-        {
-            if (toolVisual == null) return;
-            toolVisual.SetPositionAndRotation(_frame.Origin, ToolRotation);
         }
 
         #endregion

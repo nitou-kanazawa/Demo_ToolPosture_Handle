@@ -341,6 +341,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 205593997}
+  - component: {fileID: 205593998}
   m_Layer: 0
   m_Name: Torch
   m_TagString: Untagged
@@ -366,6 +367,23 @@ Transform:
   - {fileID: 1764687363}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &205593998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 205593996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 861be65ea65018946ac56d8a455bde27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Tool.ToolPostureFollower
+  gizmo: {fileID: 389373110}
+  target: {fileID: 205593997}
+  shaftAxis: {x: 0, y: 1, z: 0}
+  referenceAxis: {x: 0, y: 0, z: 1}
+  followPosition: 1
 --- !u!1 &235882966
 GameObject:
   m_ObjectHideFlags: 0
@@ -679,49 +697,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891b86ee7ebc379488ebdc34c7b71ce7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPostureGizmo
+  theme: {fileID: 0}
+  profile: {fileID: 0}
   angles:
     azimuthDeg: -35.27
     elevationDeg: 73.02
     spinAngleDeg: 25
-  azimuthConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -180
-    maxDeg: 180
-    snapDeg: 5
-  tiltConvention:
-    zeroOffsetDeg: 90
-    invertDirection: 1
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  spinConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -180
-    maxDeg: 180
-    snapDeg: 5
-  workConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  travelConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  spinReference:
-    mode: 0
-    worldAxis: {x: 0, y: 0, z: 0}
-    degenerateFallback: {x: 0, y: 0, z: 0}
   showTiltArc: 1
   showAzimuthRing: 1
   showAxisTip: 1
@@ -729,37 +710,11 @@ MonoBehaviour:
   showFrameAxes: 1
   hideOthersWhileDragging: 1
   targetCamera: {fileID: 158694776}
-  gizmoPixelSize: 215
-  arcPixelWidth: 9
-  thinPixelWidth: 1.2
-  knobPixelRadius: 8
-  tipPixelRadius: 9
-  fallbackArcHalfWidthDeg: 75
-  hitPixelWidth: 20
-  touchHitPixelWidth: 40
-  tipHitPixelRadius: 14
-  touchTipHitScale: 1.9
+  restrictToTargetCamera: 0
   colliderGizmo: 0
-  colliderGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
-  colliderGizmoDisabledColor: {r: 0.45, g: 0.5, b: 0.55, a: 0.35}
   inputMode: 0
   useKeyboardShortcuts: 1
-  frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}
-  frameColorM: {r: 0.42, g: 0.9, b: 0.48, a: 0.95}
-  frameColorN: {r: 0.36, g: 0.64, b: 1, a: 0.95}
-  tiltColor: {r: 1, g: 0.45, b: 0.74, a: 0.95}
-  axisColor: {r: 1, g: 0.83, b: 0.26, a: 0.95}
-  spinColor: {r: 0.74, g: 0.62, b: 1, a: 0.95}
-  azimuthColor: {r: 0.55, g: 0.95, b: 0.6, a: 0.95}
-  highlightColor: {r: 1, g: 1, b: 0.72, a: 1}
-  zeroTickColor: {r: 1, g: 1, b: 1, a: 0.9}
-  limitColor: {r: 1, g: 0.38, b: 0.32, a: 0.95}
-  occludedAlpha: 0.22
-  restrictToTargetCamera: 0
   gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
-  toolVisual: {fileID: 205593997}
-  toolShaftAxis: {x: 0, y: 1, z: 0}
-  toolReferenceAxis: {x: 0, y: 0, z: 1}
 --- !u!4 &389373111
 Transform:
   m_ObjectHideFlags: 0
