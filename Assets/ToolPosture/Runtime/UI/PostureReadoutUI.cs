@@ -84,8 +84,8 @@ namespace ToolPosture.Demo
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("<color=#9aa4b0>投影角 (θ と φ からの導出値。ハンドルは持たない)</color>");
-            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.Profile.workConvention, "");
-            AppendAngle("進行角      t   ", a.TravelAngleDeg, gizmo.Profile.travelConvention, "");
+            AppendRaw("狙い角      w   ", a.WorkAngleDeg);
+            AppendRaw("進行角      t   ", a.TravelAngleDeg);
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("工具軸 X (LMN)");
@@ -106,6 +106,12 @@ namespace ToolPosture.Demo
             _sb.Append("<color=#6b7480>←→ 区間  ↑↓ 区間内位置  0 垂直姿勢へ</color>");
             return _sb.ToString();
         }
+
+        /// <summary>
+        /// 規約を持たない導出値をそのまま出す。
+        /// </summary>
+        private void AppendRaw(string label, float deg)
+            => _sb.AppendFormat("{0} {1,9:+0.0;-0.0}°      \n", label, deg);
 
         private void AppendAngle(string label, float internalDeg, AngleConvention conv, string key)
         {

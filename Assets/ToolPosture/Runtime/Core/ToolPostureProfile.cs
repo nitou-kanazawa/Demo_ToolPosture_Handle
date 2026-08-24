@@ -52,16 +52,12 @@ namespace ToolPosture.Core
 
         #endregion
 
-        #region 投影角の可動範囲
-
-        [Header("投影角の可動範囲 (溶接規格側の制限)")]
-        [Tooltip("狙い角 w の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
-        public AngleConvention workConvention = AngleConvention.Ranged(-60f, 60f);
-
-        [Tooltip("進行角 t の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
-        public AngleConvention travelConvention = AngleConvention.Ranged(-60f, 60f);
-
-        #endregion
+        // 投影角 (狙い角 w / 進行角 t) の可動範囲はここには置かない。
+        //
+        // 以前は w / t にも範囲を持たせ、そこから方位ごとの傾斜上限を逆算していたが、
+        // 傾斜を縛っているのが別の欄で、しかも方位で変わるため、
+        // 「傾斜の範囲を広げても動かない」という追いにくい状態になっていた。
+        // 保持している角 (theta / phi / spin) だけを縛る形に単純化してある。
 
         #region 基準
 
@@ -82,8 +78,6 @@ namespace ToolPosture.Core
             azimuthConvention?.Validate();
             tiltConvention?.Validate();
             spinConvention?.Validate();
-            workConvention?.Validate();
-            travelConvention?.Validate();
         }
 
         #endregion

@@ -20,33 +20,6 @@ namespace ToolPosture.Gizmo
     }
 
     /// <summary>
-    /// 投影角の可動範囲から、傾き量の上限を求めるための共通処理。
-    /// </summary>
-    public static class TiltLimits
-    {
-        /// <summary>
-        /// この方位で w / t の可動範囲に収まる最大の傾き量 (tan)。
-        /// </summary>
-        public static float MaxTanTilt(ToolPostureGizmo g, float azimuthDeg)
-        {
-            float a = azimuthDeg * Mathf.Deg2Rad;
-            float c = Mathf.Cos(a), s = Mathf.Sin(a);
-            float max = Mathf.Tan(ToolPostureAngles.MaxProjectedAngleDeg * Mathf.Deg2Rad);
-
-            max = Mathf.Min(max, LimitFor(c, g.Profile.workConvention));
-            max = Mathf.Min(max, LimitFor(s, g.Profile.travelConvention));
-            return Mathf.Max(0f, max);
-        }
-
-        private static float LimitFor(float component, AngleConvention conv)
-        {
-            if (!conv.useLimits || Mathf.Abs(component) < 1e-4f) return float.MaxValue;
-            float limitDeg = component > 0f ? conv.MaxInternal : conv.MinInternal;
-            return Mathf.Tan(limitDeg * Mathf.Deg2Rad) / component;
-        }
-    }
-
-    /// <summary>
     /// ランタイムハンドルの共通インターフェース。
     ///
     /// 当たり判定はハンドル自身では行わない。<see cref="GetShape"/> が返す形状を
@@ -180,27 +153,19 @@ namespace ToolPosture.Gizmo
             set
             {
                 var a = G.Angles;
-                a.TiltFromNormalDeg = ClampAlpha(value, a.azimuthDeg);
+                a.TiltFromNormalDeg = G.Profile.tiltConvention.ClampInternal(value);
                 G.Angles = a;
             }
         }
 
         /// <summary>
-        /// 傾き角の可動範囲。tiltConvention の制限と、w / t 側の可動範囲から
-        /// この方位で許される上限の両方を満たす範囲を返す。
+        /// 傾き角の可動範囲 (内部値)。tiltConvention の範囲そのもの。
         /// </summary>
-        public void GetAlphaRange(float azimuthDeg, out float lo, out float hi)
-            => G.GetTiltRange(azimuthDeg, out lo, out hi);
-
-        private float ClampAlpha(float value, float azimuthDeg)
-        {
-            GetAlphaRange(azimuthDeg, out float lo, out float hi);
-            return Mathf.Clamp(value, lo, hi);
-        }
+        public void GetAlphaRange(out float lo, out float hi) => G.GetTiltRange(out lo, out hi);
 
         public override GizmoHandleShape GetShape()
         {
-            GetAlphaRange(PlaneAzimuthDeg, out float lo, out float hi);
+            GetAlphaRange(out float lo, out float hi);
             return GizmoHandleShape.Arc(G.Frame.Origin, U, V, Radius, lo, hi);
         }
 
@@ -233,8 +198,7 @@ namespace ToolPosture.Gizmo
             float halfWidth = G.PixelToWorld(th.arcPixelWidth) * 0.5f;
             float thin = G.PixelToWorld(th.thinPixelWidth);
 
-            float azimuth = PlaneAzimuthDeg;
-            GetAlphaRange(azimuth, out float lo, out float hi);
+            GetAlphaRange(out float lo, out float hi);
             float value = Value;
             bool atLimit = Mathf.Abs(value - lo) < 0.05f || Mathf.Abs(value - hi) < 0.05f;
 
@@ -272,7 +236,7 @@ namespace ToolPosture.Gizmo
     #region 軸先端ハンドル
 
     /// <summary>
-    /// 工具軸 X の先端をドラッグして狙い角と進行角を同時に編集する球面ハンドル。
+    /// 工具軸 X の先端をドラッグして旋回角と傾斜角を同時に編集する球面ハンドル。
     /// 掴んだ点をそのまま軸方向にする直接操作。
     /// </summary>
     public class AxisTipHandle : GizmoHandleBase
@@ -301,16 +265,18 @@ namespace ToolPosture.Gizmo
             // 母材の裏側 (N 成分が負) には行かせない
             if (lmn.z < 0.03f) lmn.z = 0.03f;
 
-            ToolPostureAngles.AnglesFromAxisLmn(lmn, out float w, out float t);
+            // 保持している角 (theta / alpha) の側で丸めて縛る。
+            // 投影角を経由すると、掴んだ向きと結果がずれる。
+            var a = G.Angles;
+            a.SetAxisLmn(lmn);
+
             if (snap)
             {
-                w = G.Profile.workConvention.SnapInternal(w);
-                t = G.Profile.travelConvention.SnapInternal(t);
+                a.azimuthDeg = G.Profile.azimuthConvention.SnapInternal(a.azimuthDeg);
+                a.TiltFromNormalDeg = G.Profile.tiltConvention.SnapInternal(a.TiltFromNormalDeg);
             }
+            a.TiltFromNormalDeg = G.Profile.tiltConvention.ClampInternal(a.TiltFromNormalDeg);
 
-            var a = G.Angles;
-            a.WorkAngleDeg = G.ClampProjected(G.Profile.workConvention.ClampInternal(w));
-            a.TravelAngleDeg = G.ClampProjected(G.Profile.travelConvention.ClampInternal(t));
             G.Angles = a;
         }
 
@@ -507,15 +473,11 @@ namespace ToolPosture.Gizmo
             if (!_drag.TryGetValue(ray, out float azimuth)) return;
             if (snap) azimuth = G.Profile.azimuthConvention.SnapInternal(azimuth);
 
-            var angles = G.Angles;
-            angles.azimuthDeg = azimuth;
-
-            // 傾きは保つが、w / t の可動範囲を破らない範囲まで縮める。
+            // 方位だけを変え、傾きはそのまま残す。
             // 傾き 0 のときは姿勢に効かないが、旋回角は保持されるので
             // 「次にどちら向きへ倒すか」を先に決められる。
-            float maxTilt = Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuth)) * Mathf.Rad2Deg;
-            angles.TiltFromNormalDeg = Mathf.Clamp(angles.TiltFromNormalDeg, -maxTilt, maxTilt);
-
+            var angles = G.Angles;
+            angles.azimuthDeg = azimuth;
             G.Angles = angles;
         }
 

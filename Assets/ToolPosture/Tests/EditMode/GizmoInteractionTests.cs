@@ -301,9 +301,6 @@ namespace ToolPosture.Tests
             _gizmo = _go.AddComponent<ToolPostureGizmo>();
 
             _profile = ScriptableObject.CreateInstance<ToolPostureProfile>();
-            _profile.workConvention = AngleConvention.Ranged(-25f, 25f);
-            _profile.travelConvention = AngleConvention.Ranged(-20f, 20f);
-            _profile.tiltConvention = AngleConvention.Unlimited();
             _gizmo.Profile = _profile;
         }
 
@@ -315,52 +312,56 @@ namespace ToolPosture.Tests
         }
 
         [Test]
-        public void 投影角の可動範囲が傾斜の限界を決める()
-        {
-            // L 方向 (theta = 0) へ倒すときは狙い角 w の制限がそのまま効く
-            _gizmo.GetProjectedTiltLimit(0f, out float lo0, out float hi0);
-            Assert.AreEqual(25f, hi0, Tol);
-            Assert.AreEqual(-25f, lo0, Tol);
-
-            // M 方向 (theta = 90) へ倒すときは進行角 t の制限
-            _gizmo.GetProjectedTiltLimit(90f, out float lo90, out float hi90);
-            Assert.AreEqual(20f, hi90, Tol);
-            Assert.AreEqual(-20f, lo90, Tol);
-        }
-
-        [Test]
-        public void 斜め方向では両方の投影角が同時に効く()
-        {
-            // w と t は工具軸を L / M へ投影した角なので、斜めだと両方が増える。
-            // tan(alpha) * cos(45) <= tan(25) かつ tan(alpha) * sin(45) <= tan(20)
-            _gizmo.GetProjectedTiltLimit(45f, out _, out float hi);
-
-            float byWork = Mathf.Atan(Mathf.Tan(25f * Mathf.Deg2Rad) / Mathf.Cos(45f * Mathf.Deg2Rad));
-            float byTravel = Mathf.Atan(Mathf.Tan(20f * Mathf.Deg2Rad) / Mathf.Sin(45f * Mathf.Deg2Rad));
-
-            Assert.AreEqual(Mathf.Min(byWork, byTravel) * Mathf.Rad2Deg, hi, Tol);
-        }
-
-        [Test]
-        public void 規約の方が狭ければそちらが効く()
+        public void 可動範囲は傾斜の規約そのもの()
         {
             _profile.tiltConvention = AngleConvention.Elevation(-10f, 10f);
 
-            _gizmo.GetTiltRange(0f, out float lo, out float hi);
+            _gizmo.GetTiltRange(out float lo, out float hi);
 
-            Assert.AreEqual(10f, hi, Tol, "投影角は 25 度まで許すが規約が 10 度で止める");
             Assert.AreEqual(-10f, lo, Tol);
+            Assert.AreEqual(10f, hi, Tol);
         }
 
         [Test]
-        public void 規約を広げても投影角の限界は超えられない()
+        public void 方位によって可動範囲は変わらない()
         {
-            _profile.tiltConvention = AngleConvention.Elevation(-90f, 90f);
+            // 以前は投影角 w / t の範囲から方位ごとの上限を逆算していたので、
+            // 旋回角を動かすと傾斜の可動範囲まで動いていた。
+            _profile.tiltConvention = AngleConvention.Elevation(-40f, 40f);
 
-            _gizmo.GetTiltRange(90f, out float lo, out float hi);
+            _gizmo.SetSpherical(0f, 90f);
+            _gizmo.GetTiltRange(out float lo0, out float hi0);
 
-            Assert.AreEqual(20f, hi, Tol, "進行角 t の 20 度で頭打ちになる");
-            Assert.AreEqual(-20f, lo, Tol);
+            _gizmo.SetSpherical(45f, 90f);
+            _gizmo.GetTiltRange(out float lo45, out float hi45);
+
+            Assert.AreEqual(lo0, lo45, Tol);
+            Assert.AreEqual(hi0, hi45, Tol);
+            Assert.AreEqual(40f, hi0, Tol);
+        }
+
+        [Test]
+        public void 制限なしなら描画用の既定幅が返る()
+        {
+            _profile.tiltConvention = AngleConvention.Unlimited();
+
+            _gizmo.GetTiltRange(out float lo, out float hi);
+
+            Assert.AreEqual(-_gizmo.Theme.fallbackArcHalfWidthDeg, lo, Tol);
+            Assert.AreEqual(_gizmo.Theme.fallbackArcHalfWidthDeg, hi, Tol);
+        }
+
+        [Test]
+        public void 工具軸を直接与えても傾斜の範囲で縛られる()
+        {
+            _profile.tiltConvention = AngleConvention.Elevation(-15f, 15f);
+
+            // N から 60 度倒した向きを与える (範囲外)
+            PathFrame f = _gizmo.Frame;
+            float a = 60f * Mathf.Deg2Rad;
+            _gizmo.SetToolAxisWorld(f.CrossFeed * Mathf.Sin(a) + f.Normal * Mathf.Cos(a));
+
+            Assert.AreEqual(15f, _gizmo.Angles.TiltFromNormalDeg, Tol);
         }
     }
 

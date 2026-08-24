@@ -15,15 +15,15 @@ MonoBehaviour:
   azimuthConvention:
     zeroOffsetDeg: 0
     invertDirection: 0
-    useLimits: 1
-    minDeg: -147.85
+    useLimits: 0
+    minDeg: -180
     maxDeg: 180
     snapDeg: 5
   tiltConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -90
+    zeroOffsetDeg: 90
+    invertDirection: 1
+    useLimits: 1
+    minDeg: 65
     maxDeg: 90
     snapDeg: 1
   spinConvention:
@@ -32,20 +32,6 @@ MonoBehaviour:
     useLimits: 0
     minDeg: -180
     maxDeg: 180
-    snapDeg: 5
-  workConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -25
-    maxDeg: 25
-    snapDeg: 5
-  travelConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -20
-    maxDeg: 20
     snapDeg: 5
   spinReference:
     mode: 1

@@ -145,8 +145,8 @@ namespace ToolPosture.EditorTools
                 Row("工具軸 X (LMN)", Components(a.GetAxisLmn()));
                 Row("工具軸 X (world)", Components(g.ToolAxisWorld));
                 Row("投影角",
-                    $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg),7:+0.0;-0.0}°" +
-                    $"    t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg),7:+0.0;-0.0}°");
+                    $"w {a.WorkAngleDeg,7:+0.0;-0.0}°" +
+                    $"    t {a.TravelAngleDeg,7:+0.0;-0.0}°");
                 Row("トーチ回転 spin",
                     $"{g.Profile.spinConvention.ToDisplay(a.spinAngleDeg),7:+0.0;-0.0}°");
                 Row("N からの傾き α",
@@ -161,17 +161,12 @@ namespace ToolPosture.EditorTools
         }
 
         /// <summary>
-        /// 傾斜角が実際にどこまで動かせるか、何がそれを決めているかを出す。
-        ///
-        /// 可動範囲は「tiltConvention の範囲」と「投影角 w / t の範囲から決まる限界」の
-        /// 積集合で、後者は方位によって変わるうえ別の欄にあるので、
-        /// これを出さないと「設定を変えても動く範囲が変わらない」ように見える。
+        /// 傾斜角がどこまで動かせるかを、表示値と内部値の両方で出す。
+        /// tiltConvention の可動範囲そのもの。
         /// </summary>
         private static void DrawTiltRange(ToolPostureGizmo g)
         {
-            float azimuth = g.AzimuthDeg;
-            g.GetProjectedTiltLimit(azimuth, out float projectedLo, out float projectedHi);
-            g.GetTiltRange(azimuth, out float lo, out float hi);
+            g.GetTiltRange(out float lo, out float hi);
 
             AngleConvention conv = g.Profile.tiltConvention;
             float d0 = conv.ToDisplay(lo);
@@ -180,13 +175,6 @@ namespace ToolPosture.EditorTools
             Row("傾斜の可動範囲",
                 $"φ {Mathf.Min(d0, d1),6:0.0}° 〜 {Mathf.Max(d0, d1),6:0.0}°" +
                 $"   (α {lo,6:0.0} 〜 {hi,6:0.0})");
-
-            bool upperByProjected = !conv.useLimits || projectedHi <= conv.MaxInternal;
-            bool lowerByProjected = !conv.useLimits || projectedLo >= conv.MinInternal;
-
-            Row("  決めているもの",
-                $"下 {(lowerByProjected ? "投影角 w / t" : "傾斜の規約")}" +
-                $"    上 {(upperByProjected ? "投影角 w / t" : "傾斜の規約")}");
         }
 
         private static string Components(Vector3 v)
@@ -416,11 +404,7 @@ namespace ToolPosture.EditorTools
                                        alpha, g.Profile.tiltConvention, g.Theme.tiltColor, ref changed);
 
                 if (!Mathf.Approximately(edited, alpha))
-                {
-                    float limit = Mathf.Atan(TiltLimits.MaxTanTilt(g, azimuth)) * Mathf.Rad2Deg;
-                    angles.TiltFromNormalDeg =
-                        Mathf.Clamp(g.Profile.tiltConvention.ClampInternal(edited), -limit, limit);
-                }
+                    angles.TiltFromNormalDeg = g.Profile.tiltConvention.ClampInternal(edited);
             }
 
             if (g.showAzimuthRing)
@@ -526,15 +510,15 @@ namespace ToolPosture.EditorTools
                 richText = true,
             };
 
+            // w / t は導出値なので規約を通さずそのまま出す
             string text =
-                $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg):F1}°\n" +
-                $"t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg):F1}°\n" +
+                $"φ {g.Profile.tiltConvention.ToDisplay(a.TiltFromNormalDeg):F1}°\n" +
+                $"θ {g.Profile.azimuthConvention.ToDisplay(a.azimuthDeg):F1}°\n" +
                 $"spin {g.Profile.spinConvention.ToDisplay(a.spinAngleDeg):F1}°";
 
             Handles.Label(f.Origin + f.Normal * scale * 1.45f, text, style);
+        }
 
         #endregion
-
-        }
     }
 }
