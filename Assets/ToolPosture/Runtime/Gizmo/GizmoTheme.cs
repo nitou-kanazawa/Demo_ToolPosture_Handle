@@ -45,7 +45,6 @@ namespace ToolPosture.Gizmo
 
         #region 寸法
 
-        [Header("寸法 [px]")]
         [Tooltip("ギズモの画面上の大きさ。カメラ距離によらず一定に保たれる")]
         public float gizmoPixelSize = 130f;
 
@@ -64,7 +63,10 @@ namespace ToolPosture.Gizmo
         [Tooltip("可動範囲を使わない角度の円弧の描画半幅 [deg]")]
         public float fallbackArcHalfWidthDeg = 75f;
 
-        [Header("軸と矢印 [px]")]
+        #endregion
+
+        #region 軸と矢印 [px]
+
         [Tooltip("LMN フレームの矢印の太さ")]
         public float frameAxisPixelWidth = 3.2f;
 
@@ -83,7 +85,10 @@ namespace ToolPosture.Gizmo
         [Tooltip("原点の点の半径")]
         public float originDotPixelRadius = 3.5f;
 
-        [Header("目盛りと破線 [px]")]
+        #endregion
+
+        #region 目盛りと破線 [px]
+
         [Tooltip("0 度目盛りの長さ")]
         public float tickPixelLength = 16f;
 
@@ -98,9 +103,8 @@ namespace ToolPosture.Gizmo
 
         #endregion
 
-        #region 当たり判定
+        #region 配置 (全体の大きさに対する比率)
 
-        [Header("配置 (gizmoPixelSize に対する比率)")]
         [Tooltip("工具軸 X の矢印の長さ。軸先端ボールもこの位置に乗る")]
         public float toolAxisLengthRatio = 1.25f;
 
@@ -122,7 +126,10 @@ namespace ToolPosture.Gizmo
         [Tooltip("スピンリングの半径")]
         public float spinRingRadiusRatio = 0.50f;
 
-        [Header("当たり判定 [px]")]
+        #endregion
+
+        #region 当たり判定 [px]
+
         [Tooltip("円弧・リングに巻くチューブの直径。この幅は視線角度によらず一定")]
         public float hitPixelWidth = 20f;
 
@@ -139,12 +146,10 @@ namespace ToolPosture.Gizmo
 
         #region 色
 
-        [Header("フレーム")]
         public Color frameColorL = new Color(1.00f, 0.48f, 0.32f, 0.95f);
         public Color frameColorM = new Color(0.42f, 0.90f, 0.48f, 0.95f);
         public Color frameColorN = new Color(0.36f, 0.64f, 1.00f, 0.95f);
 
-        [Header("ハンドル")]
         [Tooltip("傾斜角の円弧")]
         public Color tiltColor = new Color(1.00f, 0.45f, 0.74f, 0.95f);
 
@@ -157,7 +162,6 @@ namespace ToolPosture.Gizmo
         [Tooltip("工具軸と軸先端ボール")]
         public Color axisColor = new Color(1.00f, 0.83f, 0.26f, 0.95f);
 
-        [Header("状態")]
         [Tooltip("ホバー・操作中")]
         public Color highlightColor = new Color(1.00f, 1.00f, 0.72f, 1.00f);
 
@@ -170,7 +174,6 @@ namespace ToolPosture.Gizmo
         [Tooltip("手前の物体に隠れている部分の濃さ")]
         [Range(0f, 1f)] public float occludedAlpha = 0.22f;
 
-        [Header("コライダーのデバッグ表示")]
         public Color colliderGizmoColor = new Color(0.20f, 0.90f, 1.00f, 0.85f);
 
         [Tooltip("今は掴めないハンドル (非表示 / ドラッグ中に隠れている) の色")]
