@@ -68,27 +68,24 @@ namespace ToolPosture.Demo
             float tiltDeg = a.TiltFromNormalDeg;
 
             _sb.Clear();
-            _sb.AppendLine("<b>工具姿勢  (内部表現 = 投影角)</b>");
+            _sb.AppendLine("<b>工具姿勢  (内部表現 = 球面 θ / φ / spin)</b>");
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendFormat("区間          {0} / {1}      u = {2:F2}\n",
                              segIndex + 1, Mathf.Max(segCount, 1), segU);
-            bool followsTool = gizmo.workArcPlane == WorkArcPlaneMode.FollowToolAxis;
-
             _sb.AppendLine("────────────────────────────────");
-            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.workConvention, followsTool ? "" : "1");
-            AppendAngle("前進後退角  t   ", a.TravelAngleDeg, gizmo.travelConvention, "2");
-            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.spinConvention, "4");
-            _sb.AppendLine("────────────────────────────────");
-            _sb.AppendLine(followsTool
-                ? "<color=#9aa4b0>極座標 (旋回リング + 追従円弧で編集)</color>"
-                : "<color=#9aa4b0>派生量 (LM 平面の旋回リングで編集)</color>");
+            AppendAngle("仰角        φ   ", tiltDeg, gizmo.tiltConvention, "1");
+            _sb.AppendFormat("<color=#6b7480>  (N からの傾き α {0:F1}°)</color>\n", tiltDeg);
 
-            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.azimuthConvention, "5");
+            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.azimuthConvention, "2");
             if (!gizmo.AzimuthAffectsToolAxis)
                 _sb.AppendFormat("<color=#ffb86b>  傾き {0:F2}° -> θ は保持値を使用中</color>\n", tiltDeg);
 
-            AppendAngle("仰角        φ   ", tiltDeg, gizmo.tiltConvention, followsTool ? "1" : "");
-            _sb.AppendFormat("<color=#6b7480>  (N からの傾き α {0:F1}°)</color>\n", tiltDeg);
+            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.spinConvention, "4");
+
+            _sb.AppendLine("────────────────────────────────");
+            _sb.AppendLine("<color=#9aa4b0>投影角 (θ と φ からの導出値。ハンドルは持たない)</color>");
+            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.workConvention, "");
+            AppendAngle("進行角      t   ", a.TravelAngleDeg, gizmo.travelConvention, "");
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("工具軸 X (LMN)");
@@ -200,7 +197,7 @@ namespace ToolPosture.Demo
             _body.verticalOverflow = VerticalWrapMode.Overflow;
             _body.lineSpacing = 1.05f;
 
-            string[] labels = { "1 狙い角弧", "2 前進後退弧", "3 軸先端", "4 トーチ回転", "5 旋回リング" };
+            string[] labels = { "1 傾斜角弧", "2 旋回リング", "3 軸先端", "4 トーチ回転" };
             _toggleButtons = new Button[labels.Length];
             _toggleLabels = new Text[labels.Length];
 
@@ -253,11 +250,11 @@ namespace ToolPosture.Demo
             if (gizmo == null) return;
             switch (index)
             {
-                case 0: gizmo.showWorkArc = !gizmo.showWorkArc; break;
-                case 1: gizmo.showTravelArc = !gizmo.showTravelArc; break;
+                case 0: gizmo.showTiltArc = !gizmo.showTiltArc; break;
+                case 1: gizmo.showAzimuthRing = !gizmo.showAzimuthRing; break;
                 case 2: gizmo.showAxisTip = !gizmo.showAxisTip; break;
                 case 3: gizmo.showSpinRing = !gizmo.showSpinRing; break;
-                case 4: gizmo.showAzimuthRing = !gizmo.showAzimuthRing; break;
+
             }
         }
 
@@ -266,8 +263,8 @@ namespace ToolPosture.Demo
             if (_toggleButtons == null || gizmo == null) return;
             bool[] states =
             {
-                gizmo.showWorkArc, gizmo.showTravelArc, gizmo.showAxisTip,
-                gizmo.showSpinRing, gizmo.showAzimuthRing
+                gizmo.showTiltArc, gizmo.showAzimuthRing, gizmo.showAxisTip, gizmo.showSpinRing
+
             };
             for (int i = 0; i < _toggleButtons.Length && i < states.Length; i++)
             {

@@ -6,32 +6,17 @@ namespace ToolPosture.Gizmo
 
     #region 共通定義
 
+    /// <summary>
+    /// ハンドルの種類。姿勢の保持が球面表現 (theta, phi, spin) なので、
+    /// ハンドルもそれに 1 対 1 で対応する。投影角 w / t は導出値であり、
+    /// 傾斜角と旋回角で一意に決まるため専用のハンドルは持たない。
+    /// </summary>
     public enum GizmoHandleId
     {
         AxisTip = 0,
         SpinRing = 1,
-        WorkArc = 2,
-        TravelArc = 3,
-        AzimuthRing = 4,
-        TiltArc = 5,
-    }
-
-    /// <summary>
-    /// 狙い角ハンドルの円弧をどの平面に置くか。
-    /// </summary>
-    public enum WorkArcPlaneMode
-    {
-        /// <summary>
-        /// LN 平面に固定。円弧上で読める角がそのまま AWS の狙い角 w になる。
-        /// </summary>
-        FixedCrossFeed = 0,
-
-        /// <summary>
-        /// N と現在の工具軸が張る平面 (= 旋回角に追従)。円弧は常に工具軸を含むので
-        /// ノブが軸の上に乗る。円弧上で読める角は N からの傾き α になり、
-        /// 旋回リング (θ) と組で極座標 (θ, α) を直接操作する形になる。
-        /// </summary>
-        FollowToolAxis = 1,
+        AzimuthRing = 2,
+        TiltArc = 3,
     }
 
     /// <summary>
@@ -143,132 +128,14 @@ namespace ToolPosture.Gizmo
 
     #endregion
 
-    #region 円弧ハンドル
-
-    /// <summary>
-    /// 固定平面上の円弧ハンドル。狙い角 (LN 平面) と前進後退角 (MN 平面) で共用する。
-    /// 投影角を内部表現にしているため、円弧の乗る平面はもう一方の角度に依存せず固定される。
-    /// </summary>
-    public class ArcAngleHandle : GizmoHandleBase
-    {
-        private readonly bool _isWork;
-        private RayTangentDrag _drag;
-
-        public ArcAngleHandle(ToolPostureGizmo owner, bool isWork)
-            : base(owner, isWork ? GizmoHandleId.WorkArc : GizmoHandleId.TravelArc)
-        {
-            _isWork = isWork;
-        }
-
-        public override bool Visible => _isWork
-            ? G.showWorkArc && G.workArcPlane == WorkArcPlaneMode.FixedCrossFeed
-            : G.showTravelArc;
-
-        private AngleConvention Conv => _isWork ? G.workConvention : G.travelConvention;
-
-        /// <summary>
-        /// 0 度方向 (常に面法線 N)。
-        /// </summary>
-        private Vector3 U => G.Frame.Normal;
-
-        /// <summary>
-        /// 正方向 (狙い角なら L、前進後退角なら M)。
-        /// </summary>
-        private Vector3 V => _isWork ? G.Frame.CrossFeed : G.Frame.Feed;
-
-        private float Radius => G.Scale * (_isWork ? 0.74f : 1.0f);
-
-        private float Value
-        {
-            get => _isWork ? G.Angles.WorkAngleDeg : G.Angles.TravelAngleDeg;
-            set
-            {
-                var a = G.Angles;
-                if (_isWork) a.WorkAngleDeg = value;
-                else a.TravelAngleDeg = value;
-                G.Angles = a;
-            }
-        }
-
-        public override GizmoHandleShape GetShape()
-        {
-            Conv.GetArcRange(G.fallbackArcHalfWidthDeg, out float lo, out float hi);
-            return GizmoHandleShape.Arc(G.Frame.Origin, U, V, Radius, lo, hi);
-        }
-
-        public override void BeginDrag(Ray ray, Vector3 grabPoint)
-        {
-            GizmoHandleShape shape = GetShape();
-            float value = Value;
-            _drag.Begin(shape, ResolveGrabAngle(shape, ray, grabPoint, value), value, ray);
-        }
-
-        public override void Drag(Ray ray, bool snap)
-        {
-            if (!_drag.TryGetValue(ray, out float v)) return;
-            if (snap) v = Conv.SnapInternal(v);
-            Value = G.ClampProjected(Conv.ClampInternal(v));
-        }
-
-        public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
-        {
-            Camera cam = G.Cam;
-            if (cam == null) return;
-
-            Vector3 o = G.Frame.Origin;
-            Vector3 eye = G.EyePosition;
-            Color c = _isWork ? G.workColor : G.travelColor;
-            Color line = (hover || active) ? G.highlightColor : c;
-            float r = Radius;
-            float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
-            float thin = G.PixelToWorld(G.thinPixelWidth);
-
-            Conv.GetArcRange(G.fallbackArcHalfWidthDeg, out float lo, out float hi);
-            float value = Value;
-            bool atLimit = Conv.useLimits &&
-                           (Mathf.Abs(value - Conv.minDeg) < 0.05f || Mathf.Abs(value - Conv.maxDeg) < 0.05f);
-
-            // 可動範囲を示す薄い帯
-            b.AddArcBand(o, U, V, r, halfWidth * 0.5f, lo, hi,
-                         GizmoMeshBuilder.Fade(atLimit ? G.limitColor : c, 0.30f));
-
-            // 0 度から現在値までの扇形
-            b.AddSector(o, U, V, r * 0.60f, 0f, value, GizmoMeshBuilder.Fade(c, 0.22f));
-
-            // 現在値までの太い円弧
-            b.AddArcBand(o, U, V, r, halfWidth, 0f, value, line);
-
-            // 平面の基準線 (0 度方向 = N)
-            b.AddScreenDashedLine(o, GizmoMeshBuilder.OnCircle(o, U, V, r * 1.14f, 0f),
-                                  eye, thin, G.PixelToWorld(9f), GizmoMeshBuilder.Fade(c, 0.55f));
-
-            // 0 度目盛りと可動範囲の端の目盛り
-            b.AddRadialTick(o, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
-            b.AddRadialTick(o, U, V, r, lo, G.PixelToWorld(10f), thin, eye,
-                            GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
-            b.AddRadialTick(o, U, V, r, hi, G.PixelToWorld(10f), thin, eye,
-                            GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
-
-            // 現在値のノブ
-            Vector3 knob = GizmoMeshBuilder.OnCircle(o, U, V, r, value);
-            b.AddBillboardDisc(knob, cam,
-                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
-        }
-    }
-
-    #endregion
-
     #region 傾きハンドル (追従平面)
 
     /// <summary>
-    /// N と現在の工具軸が張る平面に置く円弧ハンドル。狙い角ハンドルの
-    /// WorkArcPlaneMode.FollowToolAxis 版。
+    /// N と現在の工具軸が張る平面に置く円弧ハンドル。傾斜角 alpha を編集する。
     ///
     /// 平面は旋回角 theta に追従するので、円弧は常に工具軸を含む = ノブが軸の上に乗る。
-    /// 円弧上で読める角は N からの傾き alpha で、旋回リング (theta) と組で
-    /// 極座標を直接操作する形になる。内部表現は投影角のままで、
-    ///   tan w = tan(alpha) cos(theta),  tan t = tan(alpha) sin(theta)
-    /// として書き戻す。
+    /// 旋回リング (theta) と組で球面座標 (theta, alpha) を直接操作する形になり、
+    /// この 2 つで工具軸は一意に決まる。
     /// </summary>
     public class TiltArcHandle : GizmoHandleBase
     {
@@ -276,8 +143,7 @@ namespace ToolPosture.Gizmo
 
         public TiltArcHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.TiltArc) { }
 
-        public override bool Visible
-            => G.showWorkArc && G.workArcPlane == WorkArcPlaneMode.FollowToolAxis;
+        public override bool Visible => G.showTiltArc;
 
         /// <summary>
         /// 円弧が乗る平面の方位 = 姿勢が持つ旋回角そのもの。
@@ -367,7 +233,7 @@ namespace ToolPosture.Gizmo
             Vector3 o = G.Frame.Origin;
             Vector3 eye = G.EyePosition;
             Vector3 u = U, v = V;
-            Color c = G.workColor;
+            Color c = G.tiltColor;
             Color line = (hover || active) ? G.highlightColor : c;
             float r = Radius;
             float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
@@ -412,7 +278,7 @@ namespace ToolPosture.Gizmo
     #region 軸先端ハンドル
 
     /// <summary>
-    /// 工具軸 X の先端をドラッグして狙い角と前進後退角を同時に編集する球面ハンドル。
+    /// 工具軸 X の先端をドラッグして狙い角と進行角を同時に編集する球面ハンドル。
     /// 掴んだ点をそのまま軸方向にする直接操作。
     /// </summary>
     public class AxisTipHandle : GizmoHandleBase

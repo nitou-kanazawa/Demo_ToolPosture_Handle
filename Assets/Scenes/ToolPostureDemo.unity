@@ -683,27 +683,6 @@ MonoBehaviour:
     azimuthDeg: -35.27
     elevationDeg: 73.02
     spinAngleDeg: 25
-  workConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  travelConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  spinConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -180
-    maxDeg: 180
-    snapDeg: 5
   azimuthConvention:
     zeroOffsetDeg: 0
     invertDirection: 0
@@ -718,16 +697,35 @@ MonoBehaviour:
     minDeg: -60
     maxDeg: 60
     snapDeg: 5
-  workArcPlane: 1
+  spinConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 0
+    minDeg: -180
+    maxDeg: 180
+    snapDeg: 5
+  workConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 1
+    minDeg: -60
+    maxDeg: 60
+    snapDeg: 5
+  travelConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 1
+    minDeg: -60
+    maxDeg: 60
+    snapDeg: 5
   spinReference:
     mode: 0
     worldAxis: {x: 0, y: 0, z: 0}
     degenerateFallback: {x: 0, y: 0, z: 0}
-  showWorkArc: 1
-  showTravelArc: 1
+  showTiltArc: 1
+  showAzimuthRing: 1
   showAxisTip: 1
   showSpinRing: 1
-  showAzimuthRing: 1
   showFrameAxes: 1
   hideOthersWhileDragging: 1
   targetCamera: {fileID: 158694776}
@@ -749,8 +747,7 @@ MonoBehaviour:
   frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}
   frameColorM: {r: 0.42, g: 0.9, b: 0.48, a: 0.95}
   frameColorN: {r: 0.36, g: 0.64, b: 1, a: 0.95}
-  workColor: {r: 1, g: 0.45, b: 0.74, a: 0.95}
-  travelColor: {r: 0.32, g: 0.86, b: 0.92, a: 0.95}
+  tiltColor: {r: 1, g: 0.45, b: 0.74, a: 0.95}
   axisColor: {r: 1, g: 0.83, b: 0.26, a: 0.95}
   spinColor: {r: 0.74, g: 0.62, b: 1, a: 0.95}
   azimuthColor: {r: 0.55, g: 0.95, b: 0.6, a: 0.95}

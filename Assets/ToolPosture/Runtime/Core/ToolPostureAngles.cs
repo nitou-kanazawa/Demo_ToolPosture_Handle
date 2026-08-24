@@ -14,7 +14,7 @@ namespace ToolPosture.Core
     /// 工具軸 X は「TCP から工具本体へ向かう向き」= 母材から離れる向き。
     ///   X = (cos(phi) cos(theta),  cos(phi) sin(theta),  sin(phi))   … LMN 成分
     ///
-    /// AWS の狙い角 w / 前進後退角 t は工具軸からの導出値で、WorkAngleDeg /
+    /// AWS の狙い角 w / 進行角 t は工具軸からの導出値で、WorkAngleDeg /
     /// TravelAngleDeg プロパティとして読み書きできる。保持はしない。
     ///
     /// ■ 極 (phi = 90 度) の扱い
@@ -69,7 +69,7 @@ namespace ToolPosture.Core
             => new ToolPostureAngles(azimuthDeg, elevationDeg, spinDeg);
 
         /// <summary>
-        /// 投影角 (狙い角 / 前進後退角) から構築する。
+        /// 投影角 (狙い角 / 進行角) から構築する。
         /// </summary>
         public static ToolPostureAngles FromProjected(float workDeg, float travelDeg, float spinDeg)
         {
@@ -128,7 +128,7 @@ namespace ToolPosture.Core
 
         /// <summary>
         /// 狙い角 w [deg]。LN 平面上で N から L 方向へ測った角 (AWS work angle)。
-        /// 設定すると前進後退角 t を保ったまま工具軸が変わる。
+        /// 設定すると進行角 t を保ったまま工具軸が変わる。
         /// </summary>
         public float WorkAngleDeg
         {
@@ -141,7 +141,7 @@ namespace ToolPosture.Core
         }
 
         /// <summary>
-        /// 前進後退角 t [deg]。MN 平面上で N から M 方向へ測った角 (AWS travel angle)。
+        /// 進行角 t [deg]。MN 平面上で N から M 方向へ測った角 (AWS travel angle)。
         /// 設定すると狙い角 w を保ったまま工具軸が変わる。
         /// </summary>
         public float TravelAngleDeg

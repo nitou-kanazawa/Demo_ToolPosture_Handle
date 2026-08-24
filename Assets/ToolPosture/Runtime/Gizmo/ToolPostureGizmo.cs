@@ -50,19 +50,20 @@ namespace ToolPosture.Gizmo
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
 
         [Header("角度規約 (0 度位置 / 回転方向 / 可動範囲)")]
-        public AngleConvention workConvention = AngleConvention.Ranged(-60f, 60f);
-        public AngleConvention travelConvention = AngleConvention.Ranged(-60f, 60f);
-        public AngleConvention spinConvention = AngleConvention.Unlimited();
-
         [Tooltip("旋回角 theta。母材面内の方位なので既定は無制限")]
         public AngleConvention azimuthConvention = AngleConvention.Unlimited();
 
-        [Tooltip("傾き角 alpha = 90 - phi。N からの倒し量")]
+        [Tooltip("傾斜角 alpha = 90 - phi。N からの倒し量")]
         public AngleConvention tiltConvention = AngleConvention.Elevation();
 
-        [Header("狙い角ハンドルの平面")]
-        [Tooltip("FollowToolAxis なら旋回角に追従する平面に置き、極座標 (theta, alpha) を直接操作する")]
-        public WorkArcPlaneMode workArcPlane = WorkArcPlaneMode.FollowToolAxis;
+        public AngleConvention spinConvention = AngleConvention.Unlimited();
+
+        [Header("投影角の可動範囲 (溶接規格側の制限)")]
+        [Tooltip("狙い角 w の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
+        public AngleConvention workConvention = AngleConvention.Ranged(-60f, 60f);
+
+        [Tooltip("進行角 t の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
+        public AngleConvention travelConvention = AngleConvention.Ranged(-60f, 60f);
 
         [Tooltip("トーチ回転角 0 度の基準")]
         public SpinReference spinReference = SpinReference.FeedProjected;
@@ -71,12 +72,15 @@ namespace ToolPosture.Gizmo
 
         #region ハンドル表示
 
-        [Header("ハンドル表示 (実行中は 1 - 5 キーで切替)")]
-        public bool showWorkArc = true;
-        public bool showTravelArc = true;
+        [Header("ハンドル表示 (実行中は 1 - 4 キーで切替)")]
+        [Tooltip("傾斜角 alpha の円弧。N と工具軸が張る平面に乗る")]
+        public bool showTiltArc = true;
+
+        [Tooltip("旋回角 theta のリング。LM 平面 (母材面) に乗る")]
+        public bool showAzimuthRing = true;
+
         public bool showAxisTip = true;
         public bool showSpinRing = true;
-        public bool showAzimuthRing = true;
 
         [Tooltip("LMN フレームの矢印を描く")]
         public bool showFrameAxes = true;
@@ -144,7 +148,7 @@ namespace ToolPosture.Gizmo
         [Tooltip("BuiltIn なら自前でポインタを読む。External ならレイを外から渡す")]
         public GizmoInputMode inputMode = GizmoInputMode.BuiltIn;
 
-        [Tooltip("実行中に 1 - 5 / 0 キーでハンドル表示を切り替える")]
+        [Tooltip("実行中に 1 - 4 / 0 キーでハンドル表示を切り替える")]
         public bool useKeyboardShortcuts = true;
 
         #endregion
@@ -155,8 +159,7 @@ namespace ToolPosture.Gizmo
         public Color frameColorL = new Color(1.00f, 0.48f, 0.32f, 0.95f);
         public Color frameColorM = new Color(0.42f, 0.90f, 0.48f, 0.95f);
         public Color frameColorN = new Color(0.36f, 0.64f, 1.00f, 0.95f);
-        public Color workColor = new Color(1.00f, 0.45f, 0.74f, 0.95f);
-        public Color travelColor = new Color(0.32f, 0.86f, 0.92f, 0.95f);
+        public Color tiltColor = new Color(1.00f, 0.45f, 0.74f, 0.95f);
         public Color axisColor = new Color(1.00f, 0.83f, 0.26f, 0.95f);
         public Color spinColor = new Color(0.74f, 0.62f, 1.00f, 0.95f);
         public Color azimuthColor = new Color(0.55f, 0.95f, 0.60f, 0.95f);
@@ -450,10 +453,8 @@ namespace ToolPosture.Gizmo
             _handles.Clear();
             _handles.Add(new AxisTipHandle(this));
             _handles.Add(new SpinRingHandle(this));
-            _handles.Add(new ArcAngleHandle(this, isWork: true));   // LN 平面固定版
-            _handles.Add(new TiltArcHandle(this));                  // 工具軸追従版
-            _handles.Add(new ArcAngleHandle(this, isWork: false));
-            _handles.Add(new AzimuthRingHandle(this));
+            _handles.Add(new TiltArcHandle(this));      // 傾斜角 alpha
+            _handles.Add(new AzimuthRingHandle(this));  // 旋回角 theta
         }
 
         private void Update()
@@ -573,11 +574,10 @@ namespace ToolPosture.Gizmo
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
 
-            if (kb.digit1Key.wasPressedThisFrame) showWorkArc = !showWorkArc;
-            if (kb.digit2Key.wasPressedThisFrame) showTravelArc = !showTravelArc;
+            if (kb.digit1Key.wasPressedThisFrame) showTiltArc = !showTiltArc;
+            if (kb.digit2Key.wasPressedThisFrame) showAzimuthRing = !showAzimuthRing;
             if (kb.digit3Key.wasPressedThisFrame) showAxisTip = !showAxisTip;
             if (kb.digit4Key.wasPressedThisFrame) showSpinRing = !showSpinRing;
-            if (kb.digit5Key.wasPressedThisFrame) showAzimuthRing = !showAzimuthRing;
             if (kb.digit0Key.wasPressedThisFrame) SetSpherical(angles.azimuthDeg, 90f);
         }
 
@@ -702,12 +702,6 @@ namespace ToolPosture.Gizmo
             var a = angles;
             switch (id)
             {
-                case GizmoHandleId.WorkArc:
-                    a.WorkAngleDeg = workConvention.ClampInternal(workConvention.ToInternal(displayDeg));
-                    break;
-                case GizmoHandleId.TravelArc:
-                    a.TravelAngleDeg = travelConvention.ClampInternal(travelConvention.ToInternal(displayDeg));
-                    break;
                 case GizmoHandleId.SpinRing:
                     a.spinAngleDeg = spinConvention.ClampInternal(spinConvention.ToInternal(displayDeg));
                     break;

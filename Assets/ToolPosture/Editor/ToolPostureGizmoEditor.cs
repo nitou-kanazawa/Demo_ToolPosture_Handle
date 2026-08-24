@@ -92,14 +92,7 @@ namespace ToolPosture.EditorTools
 
             bool changed = false;
 
-            if (g.showWorkArc && g.workArcPlane == WorkArcPlaneMode.FixedCrossFeed)
-            {
-                float w = EditArc(g, f.Origin, f.Normal, f.CrossFeed, scale * WorkArcRadiusScale,
-                                  angles.WorkAngleDeg, g.workConvention, g.workColor, ref changed);
-                angles.WorkAngleDeg = g.workConvention.ClampInternal(w);
-            }
-
-            if (g.showWorkArc && g.workArcPlane == WorkArcPlaneMode.FollowToolAxis)
+            if (g.showTiltArc)
             {
                 // N と現在の工具軸が張る平面 (旋回角に追従) で N からの傾きを編集する
                 float azimuth = angles.azimuthDeg;
@@ -108,7 +101,7 @@ namespace ToolPosture.EditorTools
 
                 float alpha = angles.TiltFromNormalDeg;
                 float edited = EditArc(g, f.Origin, f.Normal, tiltDir, scale * WorkArcRadiusScale,
-                                       alpha, g.tiltConvention, g.workColor, ref changed);
+                                       alpha, g.tiltConvention, g.tiltColor, ref changed);
 
                 if (!Mathf.Approximately(edited, alpha))
                 {
@@ -116,13 +109,6 @@ namespace ToolPosture.EditorTools
                     angles.TiltFromNormalDeg =
                         Mathf.Clamp(g.tiltConvention.ClampInternal(edited), -limit, limit);
                 }
-            }
-
-            if (g.showTravelArc)
-            {
-                float t = EditArc(g, f.Origin, f.Normal, f.Feed, scale * TravelArcRadiusScale,
-                                  angles.TravelAngleDeg, g.travelConvention, g.travelColor, ref changed);
-                angles.TravelAngleDeg = g.travelConvention.ClampInternal(t);
             }
 
             if (g.showAzimuthRing)

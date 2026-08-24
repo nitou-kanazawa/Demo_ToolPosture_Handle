@@ -159,8 +159,7 @@ namespace ToolPosture.Tests
             // 旋回リングだけを残す
             _gizmo.showAxisTip = false;
             _gizmo.showSpinRing = false;
-            _gizmo.showWorkArc = false;
-            _gizmo.showTravelArc = false;
+            _gizmo.showTiltArc = false;
             _gizmo.SyncColliders();
         }
 
