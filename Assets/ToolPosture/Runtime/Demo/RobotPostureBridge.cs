@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// ロボット制御側の ZYX オイラー姿勢と、LMN フレーム上の姿勢

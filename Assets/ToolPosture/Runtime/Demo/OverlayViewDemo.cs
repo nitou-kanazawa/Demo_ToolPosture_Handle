@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// 2D 重畳ビューからギズモを操作するデモ。

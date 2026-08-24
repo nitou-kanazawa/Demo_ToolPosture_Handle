@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// 円弧ハンドルの回転ドラッグ。

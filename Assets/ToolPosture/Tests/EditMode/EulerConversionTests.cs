@@ -1,9 +1,9 @@
 using NUnit.Framework;
 using UnityEngine;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Tests
+namespace ToolRuntimeGizmos.Tests
 {
     /// <summary>
     /// ZYX オイラー角と回転の相互変換。

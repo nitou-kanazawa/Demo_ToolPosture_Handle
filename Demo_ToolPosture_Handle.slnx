@@ -1,6 +1,6 @@
 ﻿<Solution>
-  <Project Path="ToolPosture.Runtime.csproj" />
-  <Project Path="ToolPosture.Core.csproj" />
-  <Project Path="ToolPosture.Tests.csproj" />
-  <Project Path="ToolPosture.Editor.csproj" />
+  <Project Path="ToolRuntimeGizmos.Runtime.csproj" />
+  <Project Path="ToolRuntimeGizmos.Core.csproj" />
+  <Project Path="ToolRuntimeGizmos.Tests.csproj" />
+  <Project Path="ToolRuntimeGizmos.Editor.csproj" />
 </Solution>

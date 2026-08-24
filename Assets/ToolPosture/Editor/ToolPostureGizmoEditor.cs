@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.EditorTools
+namespace ToolRuntimeGizmos.EditorTools
 {
     /// <summary>
     /// シーンビュー用のギズモ。ランタイム版と同じ数学 (投影角) を使うが、

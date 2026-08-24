@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// L (直交方向) を進行方向のどちら側に取るか。

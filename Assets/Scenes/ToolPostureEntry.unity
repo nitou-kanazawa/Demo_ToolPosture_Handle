@@ -147,7 +147,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: caeab61cdd200bd4094f62ca6fcf7d15, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPositionGizmo
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.ToolPositionGizmo
   theme: {fileID: 0}
   targetCamera: {fileID: 158694776}
   restrictToTargetCamera: 0
@@ -260,7 +260,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0f952ea1830a584897c37ed97c38d11, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.OrbitCamera
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.OrbitCamera
   target: {fileID: 768859424}
   distance: 3
   minDistance: 0.5
@@ -367,7 +367,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66a3d90fe215e2a4b8c9d8864e6de714, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.RobotPostureBridge
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.RobotPostureBridge
   gizmo: {fileID: 389373110}
   robotShaftAxis: {x: 0, y: 0, z: 1}
   robotReferenceAxis: {x: 0, y: 1, z: 0}
@@ -436,7 +436,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 861be65ea65018946ac56d8a455bde27, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Tool.ToolPostureFollower
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Tool.ToolPostureFollower
   gizmo: {fileID: 389373110}
   target: {fileID: 205593997}
   shaftAxis: {x: 0, y: 1, z: 0}
@@ -470,7 +470,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a57e7ae16f56495449e542964d7d2e8c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.WeldPath
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.WeldPath
   points:
   - {x: -2, y: 0, z: 0}
   - {x: -1, y: 0, z: 0.35}
@@ -754,7 +754,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 891b86ee7ebc379488ebdc34c7b71ce7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPostureGizmo
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.ToolPostureGizmo
   theme: {fileID: 11400000, guid: f4fa88d428c4bb347b09eb66bb037af9, type: 2}
   targetCamera: {fileID: 158694776}
   restrictToTargetCamera: 0
@@ -817,7 +817,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b0f8a60e5c495148be50014bc180ed4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.OverlayViewDemo
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.OverlayViewDemo
   gizmo: {fileID: 389373110}
   overlayCamera: {fileID: 1414937763}
   imageSize: {x: 640, y: 480}
@@ -1149,7 +1149,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 554c9f6b76345c2448ef4f3ce1202961, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.PostureReadoutUI
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.PostureReadoutUI
   gizmo: {fileID: 389373110}
   path: {fileID: 235882967}
   panelSize: {x: 392, y: 408}
@@ -1289,7 +1289,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d3a9467f80429de499346b36e4fa0ebb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.WeldPathSurface
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.WeldPathSurface
   path: {fileID: 235882967}
   halfWidth: 0.46
   subdivisions: 12
@@ -1394,7 +1394,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c45fc643051cd2344bc267477005e1e5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.DemoEntry
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.DemoEntry
   positionGizmo: {fileID: 4578948}
   postureGizmo: {fileID: 389373110}
   mode: 1

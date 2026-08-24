@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// WeldPath のフレームを使って母材面を生成する。

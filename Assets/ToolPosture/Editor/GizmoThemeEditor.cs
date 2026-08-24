@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.EditorTools
+namespace ToolRuntimeGizmos.EditorTools
 {
     /// <summary>
     /// GizmoTheme の描画。

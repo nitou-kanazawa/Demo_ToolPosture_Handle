@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ハンドルの形状の種別。

@@ -1,10 +1,10 @@
 using NUnit.Framework;
 using UnityEngine;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
-using ToolPosture.Demo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
+using ToolRuntimeGizmos.Demo;
 
-namespace ToolPosture.Tests
+namespace ToolRuntimeGizmos.Tests
 {
     /// <summary>
     /// 円弧ハンドルの回転ドラッグ。掴んだ点の接線へレイを投影する方式。

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// フレーム (L, M, N) に対する工具姿勢。

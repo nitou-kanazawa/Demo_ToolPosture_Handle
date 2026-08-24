@@ -1,7 +1,7 @@
 using UnityEngine;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
 
     #region 共通定義

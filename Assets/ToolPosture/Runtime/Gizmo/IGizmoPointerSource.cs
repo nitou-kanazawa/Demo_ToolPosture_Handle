@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ギズモへポインタ入力を供給する側のインターフェース。

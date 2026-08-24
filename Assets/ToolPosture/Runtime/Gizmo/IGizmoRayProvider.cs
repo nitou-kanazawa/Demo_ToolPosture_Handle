@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// 画面座標をワールドのレイに変換する側。

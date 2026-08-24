@@ -1,4 +1,4 @@
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// 工具姿勢ギズモへフレーム (L, M, N) を供給する側のインターフェース。

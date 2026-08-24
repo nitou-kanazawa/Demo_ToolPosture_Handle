@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ランタイム用ギズモ形状を、ワールド座標の頂点カラー付きメッシュ 1 枚に積む。

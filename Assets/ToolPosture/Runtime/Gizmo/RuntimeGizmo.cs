@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ポインタ入力を誰が読むか。

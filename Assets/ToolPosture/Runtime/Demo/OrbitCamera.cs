@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// デモ用の視点操作。

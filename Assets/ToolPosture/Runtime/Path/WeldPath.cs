@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// デモ用のダミー溶接経路。点列と各点の生の法線を保持し、
