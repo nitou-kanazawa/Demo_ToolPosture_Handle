@@ -96,13 +96,27 @@ namespace ToolPosture.EditorTools
         };
 
         /// <summary>
-        /// 2 列に詰めて出す色。
+        /// 色は意味のまとまりごとに 2 列で並べる。
+        /// 見出しは横並びの外に置くこと (中に混ぜると行の高さが揃わず崩れる)。
         /// </summary>
-        private static readonly string[] ColorProps =
+        private static readonly string[] FrameColorProps =
         {
             "frameColorL", "frameColorM", "frameColorN", "axisColor",
-            "tiltColor", "azimuthColor", "spinColor", "highlightColor",
-            "zeroTickColor", "limitColor",
+        };
+
+        private static readonly string[] HandleColorProps =
+        {
+            "tiltColor", "azimuthColor", "spinColor",
+        };
+
+        private static readonly string[] StateColorProps =
+        {
+            "highlightColor", "zeroTickColor", "limitColor",
+        };
+
+        private static readonly string[] DebugColorProps =
+        {
+            "colliderGizmoColor", "colliderGizmoDisabledColor",
         };
 
         private readonly HashSet<string> _drawn = new HashSet<string>();
@@ -114,22 +128,28 @@ namespace ToolPosture.EditorTools
             serializedObject.Update();
             _drawn.Clear();
 
+            MarkDrawn(FrameColorProps);
+            MarkDrawn(HandleColorProps);
+            MarkDrawn(StateColorProps);
+            MarkDrawn(DebugColorProps);
+            MarkDrawn(new[] { "occludedAlpha" });
+
             if (Section("色", true))
             {
                 using (ShurikenGUI.Body())
                 {
-                    DrawColorGrid();
+                    DrawColorGroup("フレームと軸", FrameColorProps);
+                    DrawColorGroup("ハンドル", HandleColorProps);
+                    DrawColorGroup("状態", StateColorProps);
+
                     EditorGUILayout.Space(2f);
                     DrawRows(new[] { "occludedAlpha" });
+
+                    // ラベルが長いので 2 列にすると切れる。ここだけ 1 列で出す。
                     EditorGUILayout.Space(4f);
                     EditorGUILayout.LabelField("コライダーのデバッグ表示", EditorStyles.miniBoldLabel);
-                    DrawRows(new[] { "colliderGizmoColor", "colliderGizmoDisabledColor" });
+                    DrawRows(DebugColorProps);
                 }
-            }
-            else
-            {
-                MarkDrawn(ColorProps);
-                MarkDrawn(new[] { "occludedAlpha", "colliderGizmoColor", "colliderGizmoDisabledColor" });
             }
 
             DrawGroup("太さ [px]", SizeProps);
@@ -182,23 +202,31 @@ namespace ToolPosture.EditorTools
         }
 
         /// <summary>
-        /// 色を 2 列に詰める。縦に 10 行並べると読みにくい。
+        /// 見出しを 1 行出してから、色を 2 列に詰める。
+        /// 縦に 10 行並べると読みにくいので詰めるが、見出しは横並びの外に置く。
         /// </summary>
-        private void DrawColorGrid()
+        private void DrawColorGroup(string title, string[] props)
         {
+            EditorGUILayout.LabelField(title, EditorStyles.miniBoldLabel);
+
             float saved = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.22f, 80f, 130f);
 
-            for (int i = 0; i < ColorProps.Length; i += 2)
+            using (new EditorGUI.IndentLevelScope())
             {
-                using (new EditorGUILayout.HorizontalScope())
+                for (int i = 0; i < props.Length; i += 2)
                 {
-                    DrawColorCell(ColorProps[i]);
-                    if (i + 1 < ColorProps.Length) DrawColorCell(ColorProps[i + 1]);
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        DrawColorCell(props[i]);
+                        if (i + 1 < props.Length) DrawColorCell(props[i + 1]);
+                        else GUILayout.FlexibleSpace();
+                    }
                 }
             }
 
             EditorGUIUtility.labelWidth = saved;
+            EditorGUILayout.Space(2f);
         }
 
         private void DrawColorCell(string name)
