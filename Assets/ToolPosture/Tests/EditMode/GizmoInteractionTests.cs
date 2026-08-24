@@ -182,7 +182,7 @@ namespace ToolPosture.Tests
                                        float step, out float hitDistanceFromArc)
         {
             PathFrame f = _gizmo.Frame;
-            float radius = _gizmo.Scale * 1.42f;
+            float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 perp = Vector3.Cross(viewDir, tangent).normalized;
 
             float half = -1f;
@@ -210,7 +210,7 @@ namespace ToolPosture.Tests
             PathFrame f = _gizmo.Frame;
             Vector3 L = f.CrossFeed, N = f.Normal;
 
-            float radius = _gizmo.Scale * 1.42f;
+            float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             float tube = _gizmo.PixelToWorld(_gizmo.HitPixelWidth) * 0.5f;
             float step = tube / 40f;
 
@@ -241,7 +241,7 @@ namespace ToolPosture.Tests
         public void 非表示のハンドルは掴めない()
         {
             PathFrame f = _gizmo.Frame;
-            float radius = _gizmo.Scale * 1.42f;
+            float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 point = f.Origin + f.CrossFeed * radius;
             var ray = new Ray(point + f.Normal * 20f, -f.Normal);
 
@@ -258,7 +258,7 @@ namespace ToolPosture.Tests
         public void 掴んだ点はリング上に乗っている()
         {
             PathFrame f = _gizmo.Frame;
-            float radius = _gizmo.Scale * 1.42f;
+            float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 point = f.Origin + f.CrossFeed * radius;
             var ray = new Ray(point + f.Normal * 20f, -f.Normal);
 

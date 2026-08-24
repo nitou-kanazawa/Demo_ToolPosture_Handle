@@ -14,15 +14,6 @@ namespace ToolPosture.EditorTools
     [CustomEditor(typeof(ToolPostureGizmo))]
     public class ToolPostureGizmoEditor : Editor
     {
-        #region 定数
-
-        private const float WorkArcRadiusScale = 0.74f;
-        private const float TravelArcRadiusScale = 1.0f;
-        private const float SpinRingRadiusScale = 0.50f;
-        private const float AzimuthRingRadiusScale = 1.42f;
-
-        #endregion
-
         #region インスペクタ
 
         private static readonly string[] PostureProps = { "angles" };
@@ -400,7 +391,7 @@ namespace ToolPosture.EditorTools
                 Vector3 tiltDir = (f.CrossFeed * Mathf.Cos(ar) + f.Feed * Mathf.Sin(ar)).normalized;
 
                 float alpha = angles.TiltFromNormalDeg;
-                float edited = EditArc(g, f.Origin, f.Normal, tiltDir, scale * WorkArcRadiusScale,
+                float edited = EditArc(g, f.Origin, f.Normal, tiltDir, scale * g.Theme.tiltArcRadiusRatio,
                                        alpha, g.Profile.tiltConvention, g.Theme.tiltColor, ref changed);
 
                 if (!Mathf.Approximately(edited, alpha))
@@ -412,7 +403,7 @@ namespace ToolPosture.EditorTools
                 bool affects = angles.TiltIsSignificant();
                 Vector3 u = f.CrossFeed;   // 0 度 = L
                 Vector3 v = f.Feed;        // +90 度 = M
-                float r = scale * AzimuthRingRadiusScale;
+                float r = scale * g.Theme.azimuthRingRadiusRatio;
 
                 Handles.color = new Color(g.Theme.azimuthColor.r, g.Theme.azimuthColor.g, g.Theme.azimuthColor.b,
                                           affects ? 0.55f : 0.20f);
@@ -430,9 +421,9 @@ namespace ToolPosture.EditorTools
                 Vector3 spinAxis = angles.GetAxisWorld(f);
                 Vector3 u = g.Profile.spinReference.Resolve(f, spinAxis);
                 Vector3 v = Vector3.Cross(spinAxis, u);
-                Vector3 center = f.Origin + spinAxis * (scale * 0.86f);
+                Vector3 center = f.Origin + spinAxis * (scale * g.Theme.spinRingOffsetRatio);
 
-                float s = EditArc(g, center, u, v, scale * SpinRingRadiusScale,
+                float s = EditArc(g, center, u, v, scale * g.Theme.spinRingRadiusRatio,
                                   angles.spinAngleDeg, g.Profile.spinConvention, g.Theme.spinColor, ref changed);
                 angles.spinAngleDeg = g.Profile.spinConvention.ClampInternal(s);
             }

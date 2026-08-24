@@ -142,7 +142,7 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        private float Radius => G.Scale * 0.74f;
+        private float Radius => G.Scale * G.Theme.tiltArcRadiusRatio;
 
         /// <summary>
         /// この平面内で N から工具軸まで測った符号付き傾き角。
@@ -248,7 +248,7 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// 工具軸の先端が乗る球の半径。ドラッグはこの球面上で行う。
         /// </summary>
-        private float SphereRadius => G.Scale * 1.25f;
+        private float SphereRadius => G.Scale * G.Theme.toolAxisLengthRatio;
 
         private Vector3 Tip => G.Frame.Origin + G.Angles.GetAxisWorld(G.Frame) * SphereRadius;
 
@@ -354,9 +354,9 @@ namespace ToolPosture.Gizmo
         /// </summary>
         private Vector3 V => Vector3.Cross(Axis, U);
 
-        private Vector3 Center => G.Frame.Origin + Axis * (G.Scale * 0.86f);
+        private Vector3 Center => G.Frame.Origin + Axis * (G.Scale * G.Theme.spinRingOffsetRatio);
 
-        private float Radius => G.Scale * 0.50f;
+        private float Radius => G.Scale * G.Theme.spinRingRadiusRatio;
 
         private float Value
         {
@@ -450,7 +450,7 @@ namespace ToolPosture.Gizmo
         /// </summary>
         private Vector3 V => G.Frame.Feed;
 
-        private float Radius => G.Scale * 1.42f;
+        private float Radius => G.Scale * G.Theme.azimuthRingRadiusRatio;
 
         /// <summary>
         /// 旋回角が姿勢そのものから決まるか。false なら保持値を表示・編集している。

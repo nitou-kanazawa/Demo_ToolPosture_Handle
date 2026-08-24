@@ -28,6 +28,13 @@ MonoBehaviour:
   limitTickPixelLength: 10
   tickPixelWidth: 2.2
   dashPixelLength: 9
+  toolAxisLengthRatio: 1.25
+  frameAxisLengthRatio: 1.25
+  crossFeedAxisLengthRatio: 0.95
+  tiltArcRadiusRatio: 0.74
+  azimuthRingRadiusRatio: 1.42
+  spinRingOffsetRatio: 0.86
+  spinRingRadiusRatio: 0.5
   hitPixelWidth: 34
   touchHitPixelWidth: 52
   tipHitPixelRadius: 22

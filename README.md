@@ -167,18 +167,29 @@ AWS work angle = **狙い角**（作業角）です。
 
 | アセット | 中身 | 切り替えたい単位 |
 |---|---|---|
-| `GizmoTheme` | 色 10 + 寸法 15 + 当たり判定 4 + デバッグ色 2 | 見た目・入力デバイス |
+| `GizmoTheme` | 色 10 + 太さ 15 + 配置 7 + 当たり判定 4 + デバッグ色 2 | 見た目・入力デバイス |
 | `ToolPostureProfile` | 角度規約 3（θ / φ / spin） + spin 基準 | 工程・開先形状・材料 |
 
-寸法は**描画に出てくる px を全部**出してあります（ハードコードは残っていません）。
+寸法と配置は**描画に出てくる値を全部**出してあります（ハードコードは残っていません）。
+
+**太さ [px]** — `gizmoPixelSize` を基準に画面上の大きさで指定します。
 
 | | 項目 |
 |---|---|
-| 大きさ | `gizmoPixelSize` |
+| 全体の大きさ | `gizmoPixelSize` |
 | 円弧 | `arcPixelWidth` / `fallbackArcHalfWidthDeg` |
 | 軸と矢印 | `frameAxisPixelWidth` / `toolAxisPixelWidth` / `arrowHeadPixelRadius` / `toolArrowHeadPixelRadius` / `arrowHeadPixelLength` / `originDotPixelRadius` |
 | 目盛りと破線 | `tickPixelLength` / `limitTickPixelLength` / `tickPixelWidth` / `dashPixelLength` / `thinPixelWidth` |
 | ノブと先端 | `knobPixelRadius` / `tipPixelRadius` |
+
+**配置** — `gizmoPixelSize` に対する比率で指定します。
+
+| | 項目 |
+|---|---|
+| 工具軸 | `toolAxisLengthRatio`（軸先端ボールもこの位置に乗る） |
+| フレーム軸 | `frameAxisLengthRatio`（M / N）・`crossFeedAxisLengthRatio`（L） |
+| 円弧・リング | `tiltArcRadiusRatio` / `azimuthRingRadiusRatio` / `spinRingRadiusRatio` |
+| スピンリングの位置 | `spinRingOffsetRatio`（工具軸に沿ってどこに置くか） |
 
 当たり判定の太さを `GizmoTheme` に入れてあるのは、タッチ向けに「太いチューブ + 大きいノブ」を
 まとめて切り替えたいことが多く、別アセットに分けると 2 枚を必ず対で差し替える運用になるためです。

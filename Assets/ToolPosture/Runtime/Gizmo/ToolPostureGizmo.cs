@@ -779,14 +779,14 @@ namespace ToolPosture.Gizmo
 
             if (showFrameAxes)
             {
-                b.AddArrow(o, _frame.CrossFeed, s * 0.95f, camPos, lineHalf, headR, headL, Theme.frameColorL);
-                b.AddArrow(o, _frame.Feed, s * 1.25f, camPos, lineHalf, headR, headL, Theme.frameColorM);
-                b.AddArrow(o, _frame.Normal, s * 1.25f, camPos, lineHalf, headR, headL, Theme.frameColorN);
+                b.AddArrow(o, _frame.CrossFeed, s * Theme.crossFeedAxisLengthRatio, camPos, lineHalf, headR, headL, Theme.frameColorL);
+                b.AddArrow(o, _frame.Feed, s * Theme.frameAxisLengthRatio, camPos, lineHalf, headR, headL, Theme.frameColorM);
+                b.AddArrow(o, _frame.Normal, s * Theme.frameAxisLengthRatio, camPos, lineHalf, headR, headL, Theme.frameColorN);
             }
 
             // 工具軸 X は常に描く (軸先端ハンドルの表示に依存しない)
             Vector3 axis = angles.GetAxisWorld(_frame);
-            b.AddArrow(o, axis, s * 1.25f, camPos, PixelToWorld(Theme.toolAxisPixelWidth) * 0.5f,
+            b.AddArrow(o, axis, s * Theme.toolAxisLengthRatio, camPos, PixelToWorld(Theme.toolAxisPixelWidth) * 0.5f,
                        PixelToWorld(Theme.toolArrowHeadPixelRadius), headL, Theme.axisColor);
             b.AddBillboardDisc(o, cam, PixelToWorld(Theme.originDotPixelRadius), Theme.zeroTickColor);
 

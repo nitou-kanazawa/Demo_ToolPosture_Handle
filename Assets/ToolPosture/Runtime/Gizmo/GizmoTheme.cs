@@ -100,6 +100,28 @@ namespace ToolPosture.Gizmo
 
         #region 当たり判定
 
+        [Header("配置 (gizmoPixelSize に対する比率)")]
+        [Tooltip("工具軸 X の矢印の長さ。軸先端ボールもこの位置に乗る")]
+        public float toolAxisLengthRatio = 1.25f;
+
+        [Tooltip("面法線 N と進行方向 M の矢印の長さ")]
+        public float frameAxisLengthRatio = 1.25f;
+
+        [Tooltip("直交方向 L の矢印の長さ。旋回リングと重なりにくいよう既定では短い")]
+        public float crossFeedAxisLengthRatio = 0.95f;
+
+        [Tooltip("傾斜角の円弧の半径")]
+        public float tiltArcRadiusRatio = 0.74f;
+
+        [Tooltip("旋回リングの半径")]
+        public float azimuthRingRadiusRatio = 1.42f;
+
+        [Tooltip("スピンリングを工具軸に沿ってどこに置くか")]
+        public float spinRingOffsetRatio = 0.86f;
+
+        [Tooltip("スピンリングの半径")]
+        public float spinRingRadiusRatio = 0.50f;
+
         [Header("当たり判定 [px]")]
         [Tooltip("円弧・リングに巻くチューブの直径。この幅は視線角度によらず一定")]
         public float hitPixelWidth = 20f;

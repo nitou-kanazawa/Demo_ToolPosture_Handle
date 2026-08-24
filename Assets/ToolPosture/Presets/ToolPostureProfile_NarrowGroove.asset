@@ -23,8 +23,8 @@ MonoBehaviour:
     zeroOffsetDeg: 90
     invertDirection: 1
     useLimits: 1
-    minDeg: 65
-    maxDeg: 90
+    minDeg: 0
+    maxDeg: 180
     snapDeg: 1
   spinConvention:
     zeroOffsetDeg: 0
