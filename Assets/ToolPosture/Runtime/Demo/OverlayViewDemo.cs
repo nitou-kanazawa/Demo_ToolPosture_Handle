@@ -18,7 +18,7 @@ namespace ToolPosture.Demo
     /// 投影がどうであっても掴める。ギズモ側に投影を教える必要は無い。
     /// </summary>
     [AddComponentMenu("Tool Posture/Overlay View Demo")]
-    public class OverlayViewDemo : MonoBehaviour
+    public class OverlayViewDemo : MonoBehaviour, IGizmoRayProvider
     {
 
         #region 設定とライフサイクル
@@ -42,6 +42,10 @@ namespace ToolPosture.Demo
         [Tooltip("true のとき 2D 画面からギズモを操作する (3D ビュー側の操作は止まる)")]
         public bool controlFrom2D;
 
+        [Tooltip("false にすると 2D -> レイの変換だけを提供し、ギズモには触らない。" +
+                 "DemoEntry のような入口が駆動する場合はこちら")]
+        public bool driveGizmo = true;
+
         private RenderTexture _renderTexture;
         private RawImage _image;
         private RectTransform _imageRect;
@@ -53,9 +57,9 @@ namespace ToolPosture.Demo
 
         private void Awake()
         {
-            if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
+            if (gizmo == null && driveGizmo) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             BuildOverlay();
-            ApplyMode(controlFrom2D, force: true);
+            if (driveGizmo) ApplyMode(controlFrom2D, force: true);
         }
 
         private void OnDestroy()
@@ -66,10 +70,18 @@ namespace ToolPosture.Demo
 
         private void Update()
         {
-            if (gizmo == null || _viewport == null) return;
+            if (_viewport == null) return;
 
             _viewport.K1 = distortionK1;
             if (_material != null) _material.SetFloat("_K1", distortionK1);
+
+            // 駆動しない設定のときは重畳画像と座標変換だけを提供する。
+            // 入力を誰が読むかは呼び出し側 (DemoEntry など) が決める。
+            if (!driveGizmo || gizmo == null)
+            {
+                UpdateLabel();
+                return;
+            }
 
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb != null && kb.tKey.wasPressedThisFrame) controlFrom2D = !controlFrom2D;
@@ -132,6 +144,22 @@ namespace ToolPosture.Demo
             }
 
             if (!p.isTouch) gizmo.UpdateHover(ray);
+        }
+
+        /// <summary>
+        /// 2D 画面座標 -> ワールドのレイ。画像の外なら false。
+        ///
+        /// アプリ側が持つ「2D のタッチ位置 -> 3D のレイ」に相当する部分をまとめたもの。
+        /// これだけ渡せば、誰がギズモを駆動しても同じように掴める。
+        /// </summary>
+        public bool TryScreenToRay(Vector2 screenPosition, out Ray ray)
+        {
+            ray = default;
+            if (_viewport == null) return false;
+            if (!TryScreenToImagePixel(screenPosition, out Vector2 imagePixel)) return false;
+
+            ray = _viewport.ScreenPointToRay(imagePixel);
+            return true;
         }
 
         /// <summary>

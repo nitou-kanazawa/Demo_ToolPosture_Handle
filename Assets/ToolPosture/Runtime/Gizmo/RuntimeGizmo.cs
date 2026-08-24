@@ -89,6 +89,7 @@ namespace ToolPosture.Gizmo
 
         private GizmoHandleBase _hovered;
         private GizmoHandleBase _active;
+        private static int _draggingGizmos;
         private bool _pointerIsTouch;
         private IGizmoPointerSource _pointerSource;
 
@@ -168,6 +169,32 @@ namespace ToolPosture.Gizmo
         public GizmoHandleId? HoveredHandle => _hovered?.Id;
         public GizmoHandleId? ActiveHandle => _active?.Id;
         public bool IsDragging => _active != null;
+
+        /// <summary>
+        /// どれか 1 つでもドラッグ中か。
+        ///
+        /// カメラを止めるのに使う。掴んでいる物を注視点にしているカメラが
+        /// ドラッグ中に動くと、レイの原点がずれて掴んだ物がさらに動く、という
+        /// 正のフィードバックになり、指を止めていても走り続ける。
+        /// </summary>
+        public static bool AnyDragging => _draggingGizmos > 0;
+
+        /// <summary>
+        /// ドラッグ中のハンドル。代入は必ずここを通すこと (AnyDragging の数え漏れを防ぐ)。
+        /// </summary>
+        private GizmoHandleBase Active
+        {
+            get => _active;
+            set
+            {
+                if (_active == value) return;
+
+                if (_active == null) _draggingGizmos++;
+                else if (value == null) _draggingGizmos = Mathf.Max(0, _draggingGizmos - 1);
+
+                _active = value;
+            }
+        }
 
         /// <summary>
         /// 直近のポインタがタッチだったか。当たり判定の広さを切り替えるのに使う。
@@ -253,7 +280,7 @@ namespace ToolPosture.Gizmo
             RenderPipelineManager.beginCameraRendering -= SubmitForSrp;
 
             _hovered = null;
-            _active = null;
+            Active = null;
             _colliders.Dispose();
             ReleaseResources();
         }
@@ -329,33 +356,59 @@ namespace ToolPosture.Gizmo
             Camera cam = Cam;
             if (cam == null) return;
 
+            Keyboard kb = Keyboard.current;
+            bool snap = kb != null && kb.ctrlKey.isPressed;
+
             if (!PointerSource.TryRead(out PointerSample p))
+            {
+                DrivePointer(default, null, snap);
+                return;
+            }
+
+            DrivePointer(p, cam.ScreenPointToRay(p.position), snap);
+        }
+
+        /// <summary>
+        /// 外から読んだポインタでホバーとドラッグを進める。
+        /// GizmoInputMode.External のときの入口。
+        ///
+        /// ray はポインタ位置からアプリが作ったワールドのレイ。画像の外などで
+        /// レイを作れないときは null を渡すと、新しく掴むのは止まるが、
+        /// 進行中のドラッグは指を離すまで続く。
+        /// </summary>
+        public void DrivePointer(PointerSample pointer, Ray? ray, bool snap = false)
+        {
+            if (!pointer.valid)
             {
                 _hovered = null;
                 EndDrag();
                 return;
             }
 
-            _pointerIsTouch = p.isTouch;
-
-            Keyboard kb = Keyboard.current;
-            bool snap = kb != null && kb.ctrlKey.isPressed;
-            Ray ray = cam.ScreenPointToRay(p.position);
+            _pointerIsTouch = pointer.isTouch;
 
             if (_active != null)
             {
-                if (p.isDown && !p.releasedThisFrame) UpdateDrag(ray, snap);
-                else EndDrag();
+                bool held = pointer.isDown && !pointer.releasedThisFrame;
+                if (!held) EndDrag();
+                else if (ray.HasValue) UpdateDrag(ray.Value, snap);
+                return;
+            }
+
+            if (!ray.HasValue)
+            {
+                _hovered = null;
                 return;
             }
 
             bool overUI = EventSystem.current != null &&
-                          EventSystem.current.IsPointerOverGameObject(p.pointerId);
+                          EventSystem.current.IsPointerOverGameObject(pointer.pointerId);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
-            if (p.pressedThisFrame && !overUI)
+            if (pointer.pressedThisFrame && !overUI)
             {
-                if (TryPick(ray, out GizmoHandleId id, out Vector3 point) && BeginDrag(id, ray, point))
+                if (TryPick(ray.Value, out GizmoHandleId id, out Vector3 point) &&
+                    BeginDrag(id, ray.Value, point))
                 {
                     _hovered = _active;
                     return;
@@ -363,7 +416,7 @@ namespace ToolPosture.Gizmo
             }
 
             // ホバー表示はマウス / ペンのときだけ
-            _hovered = (p.isTouch || overUI) ? null : PickHandle(ray);
+            _hovered = (pointer.isTouch || overUI) ? null : PickHandle(ray.Value);
         }
 
         #endregion
@@ -425,7 +478,7 @@ namespace ToolPosture.Gizmo
         {
             if (!h.Visible) return false;
 
-            _active = h;
+            Active = h;
             OnDragBegan(h);
             h.BeginDrag(ray, grabPoint);
             return true;
@@ -447,7 +500,7 @@ namespace ToolPosture.Gizmo
         {
             if (_active == null) return;
             _active.EndDrag();
-            _active = null;
+            Active = null;
         }
 
         /// <summary>
@@ -459,7 +512,7 @@ namespace ToolPosture.Gizmo
 
             GizmoHandleBase h = _active;
             h.EndDrag();
-            _active = null;
+            Active = null;
             OnDragCancelled(h);
         }
 

@@ -30,6 +30,10 @@ namespace ToolPosture.Gizmo
 
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
 
+        [Tooltip("設定すると、フレームの向きはそのままに原点だけこの Transform に合わせる。" +
+                 "姿勢の基準は経路から、位置は工具側から、と供給元が分かれている場合に使う")]
+        public Transform originSource;
+
         #endregion
 
         #region ハンドル表示
@@ -195,6 +199,10 @@ namespace ToolPosture.Gizmo
         protected override void EnsureState()
         {
             if (!_frame.IsValid) _frame = PathFrame.Fallback(transform.position);
+
+            // Preparing で供給元がフレームを代入したあとに呼ばれるので、
+            // 原点の差し替えはここでやれば誰が先に書いても勝てる。
+            if (originSource != null) _frame = _frame.WithOrigin(originSource.position);
         }
 
         protected override void HandleKeyboard()
