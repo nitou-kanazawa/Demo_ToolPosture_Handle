@@ -1,13 +1,8 @@
 {
-    "name": "ToolPosture.Editor",
-    "rootNamespace": "ToolPosture.EditorTools",
-    "references": [
-        "ToolPosture.Core",
-        "ToolPosture.Runtime"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "name": "ToolPosture.Core",
+    "rootNamespace": "ToolPosture.Core",
+    "references": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

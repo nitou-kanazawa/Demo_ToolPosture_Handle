@@ -12,7 +12,8 @@ Shader "ToolPosture/GizmoVertexColor"
 
         Pass
         {
-            Tags { "LightMode" = "SRPDefaultUnlit" }
+            // LightMode タグを付けない: URP は既定で SRPDefaultUnlit として扱い、
+            // Built-in RP でも描画対象になる (タグを付けると Built-in で描かれない)
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off

@@ -181,6 +181,7 @@ namespace ToolPosture.Gizmo
         private CameraViewport _defaultViewport;
         private ToolPostureAngles _anglesAtDragStart;
         private SingleFrameSource _singleFrameSource;
+        private IGizmoPointerSource _pointerSource;
 
         private Mesh _mesh;
         private Material _matFront;
@@ -320,6 +321,17 @@ namespace ToolPosture.Gizmo
 
         public float PixelToWorld(float pixels) => pixels * Viewport.WorldPerPixel(_frame.Origin);
 
+        /// <summary>
+        /// ポインタ入力の供給元。既定はデバイスを直接読む DevicePointerSource。
+        /// アプリの InputActionAsset を使う場合は InputActionPointerSource などを差し込む。
+        /// null を代入すると既定へ戻る。
+        /// </summary>
+        public IGizmoPointerSource PointerSource
+        {
+            get => _pointerSource ?? DevicePointerSource.Default;
+            set => _pointerSource = value;
+        }
+
         public GizmoHandleId? HoveredHandle => _hovered?.Id;
         public GizmoHandleId? ActiveHandle => _active?.Id;
         public bool IsDragging => _active != null;
@@ -429,7 +441,7 @@ namespace ToolPosture.Gizmo
         {
             if (Cam == null) return;
 
-            if (!GizmoPointer.TryRead(out PointerSample p))
+            if (!PointerSource.TryRead(out PointerSample p))
             {
                 _hovered = null;
                 EndDrag();

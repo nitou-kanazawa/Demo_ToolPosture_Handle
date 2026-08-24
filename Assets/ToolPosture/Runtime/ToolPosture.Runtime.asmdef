@@ -2,6 +2,7 @@
     "name": "ToolPosture.Runtime",
     "rootNamespace": "ToolPosture",
     "references": [
+        "ToolPosture.Core",
         "Unity.InputSystem",
         "UnityEngine.UI"
     ],
