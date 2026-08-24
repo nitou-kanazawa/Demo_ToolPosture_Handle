@@ -116,6 +116,13 @@ namespace ToolPosture.Core
         }
 
         /// <summary>
+        /// 向きはそのままに原点だけ差し替える。
+        /// 姿勢の基準は経路から、位置は工具側から、と供給元が分かれている場合に使う。
+        /// </summary>
+        public PathFrame WithOrigin(Vector3 origin)
+            => IsValid ? new PathFrame(origin, CrossFeed, Feed, Normal) : Fallback(origin);
+
+        /// <summary>
         /// LMN 成分 (x = L, y = M, z = N) をワールド方向に変換する。
         /// </summary>
         public Vector3 LmnToWorldDirection(Vector3 lmn)

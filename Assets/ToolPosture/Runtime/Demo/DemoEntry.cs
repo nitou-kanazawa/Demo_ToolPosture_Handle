@@ -21,6 +21,11 @@ namespace ToolPosture.Demo
     /// 操作結果は各ギズモの PositionChanged / PostureChanged を直接購読すること。
     /// ここでは中継しない。
     ///
+    /// 2 つのギズモを同じ場所に出すには、共通の Transform を 1 つ用意して
+    /// ToolPositionGizmo.target と ToolPostureGizmo.originSource の両方へ差す。
+    /// 位置ギズモがそれを動かし、姿勢ギズモがそこを原点にするので、
+    /// 切り替えても場所がずれない。経路など別の供給元は向き (LMN) だけを与える形になる。
+    ///
     /// <code>
     /// entry.ScreenToRay = pos => camera.TryScreenToRay(pos, out Ray r) ? r : (Ray?)null;
     /// entry.Mode = DemoEntry.HandleMode.Posture;
