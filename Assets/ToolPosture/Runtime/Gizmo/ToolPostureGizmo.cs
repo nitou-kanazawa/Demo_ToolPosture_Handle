@@ -127,6 +127,15 @@ namespace ToolPosture.Gizmo
         [Tooltip("タッチでの軸先端の当たり判定の倍率")]
         public float touchTipHitScale = 1.9f;
 
+        [Header("当たり判定のデバッグ表示")]
+        [Tooltip("コライダーの形を Gizmos で描く。Game View で見るには Gizmos の表示を有効にすること")]
+        public ColliderGizmoMode colliderGizmo = ColliderGizmoMode.Off;
+
+        public Color colliderGizmoColor = new Color(0.20f, 0.90f, 1.00f, 0.85f);
+
+        [Tooltip("今は掴めないハンドル (非表示 / ドラッグ中に隠れている) の色")]
+        public Color colliderGizmoDisabledColor = new Color(0.45f, 0.50f, 0.55f, 0.35f);
+
         #endregion
 
         #region 入力
@@ -179,7 +188,6 @@ namespace ToolPosture.Gizmo
         #region 状態
 
         private PathFrame _frame;
-        private bool _frameAssigned;
         private readonly List<GizmoHandleBase> _handles = new List<GizmoHandleBase>();
         private readonly GizmoHandleColliders _colliders = new GizmoHandleColliders();
         private GizmoHandleBase _hovered;
@@ -206,12 +214,24 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public PathFrame Frame
         {
-            get => _frame;
-            set
+            get
             {
-                _frame = value;
-                _frameAssigned = true;
+                EnsureFrame();
+                return _frame;
             }
+            set => _frame = value;
+        }
+
+        /// <summary>
+        /// フレームが未設定 (または無効) なら transform の位置に置いたフォールバックを使う。
+        ///
+        /// PathFrame は readonly フィールドを持つ構造体でシリアライズされないので、
+        /// ドメインリロードや再コンパイルの直後は既定値 = 無効に戻る。
+        /// 有効性で判定しておけば、フラグを別に持つより取りこぼしが無い。
+        /// </summary>
+        private void EnsureFrame()
+        {
+            if (!_frame.IsValid) _frame = PathFrame.Fallback(transform.position);
         }
 
         /// <summary>
@@ -233,6 +253,15 @@ namespace ToolPosture.Gizmo
         /// 姿勢が変わったときに呼ばれる。
         /// </summary>
         public event Action<ToolPostureGizmo> PostureChanged;
+
+        /// <summary>
+        /// 描画の直前に呼ばれる。フレームの供給元が最新の値を <see cref="Frame"/> へ
+        /// 渡すためのフック。
+        ///
+        /// 編集中はエディタが Update を回さないことがあるが、このフックは
+        /// 再描画のたびに必ず呼ばれるので、経路上の正しい位置に出せる。
+        /// </summary>
+        public event Action<ToolPostureGizmo> PreparingFrame;
 
         /// <summary>
         /// ギズモのメッシュを組み立てるときに呼ばれる。経路の可視化など、
@@ -396,11 +425,20 @@ namespace ToolPosture.Gizmo
         private void OnEnable()
         {
             BuildHandles();
-            if (!_frameAssigned) _frame = PathFrame.Fallback(transform.position);
+            EnsureFrame();
+
+            // Graphics.RenderMesh は 1 フレーム限りの投入なので、LateUpdate から呼ぶと
+            // 「エディタがティックしていないが再描画はされる」状況 (編集中の Game View や
+            // Scene View) で何も出なくなる。カメラの描画直前に投入すれば必ず出る。
+            Camera.onPreCull += SubmitFor;                          // Built-in RP
+            RenderPipelineManager.beginCameraRendering += SubmitForSrp;   // URP / HDRP
         }
 
         private void OnDisable()
         {
+            Camera.onPreCull -= SubmitFor;
+            RenderPipelineManager.beginCameraRendering -= SubmitForSrp;
+
             _hovered = null;
             _active = null;
             _colliders.Dispose();
@@ -420,6 +458,7 @@ namespace ToolPosture.Gizmo
 
         private void Update()
         {
+            EnsureFrame();
             if (!Application.isPlaying) return;
 
             if (useKeyboardShortcuts) HandleKeyboard();
@@ -430,12 +469,45 @@ namespace ToolPosture.Gizmo
 
         private void LateUpdate()
         {
-            Render();
-            if (!Application.isPlaying) return;
+            EnsureFrame();
 
-            // 見えているものと掴めるものを一致させるため、描いた直後の形状で
+            // 見えているものと掴めるものを一致させるため、1 フレームの終わりの形状で
             // コライダーを更新する。次のフレームの入力はこれに対して判定される。
-            SyncColliders();
+            // 編集中はコライダーの実体を作らない (シーンの選択操作の邪魔になる)。
+            if (Application.isPlaying) SyncColliders();
+        }
+
+        /// <summary>
+        /// 当たり判定のコライダーを Gizmos で描く。
+        ///
+        /// ギズモ本体は Graphics.RenderMesh による通常の描画なので Gizmos とは無関係だが、
+        /// コライダーは見えないものなのでここで可視化する。
+        /// </summary>
+        private void OnDrawGizmos()
+        {
+            if (colliderGizmo == ColliderGizmoMode.Off || _handles.Count == 0) return;
+
+            PreparingFrame?.Invoke(this);
+            EnsureFrame();
+
+            if (colliderGizmo == ColliderGizmoMode.Wireframe)
+            {
+                // 編集中は LateUpdate が回らないので、ここで実体を作り直す
+                if (!Application.isPlaying) SyncColliders();
+
+                _colliders.DrawWireframe(colliderGizmoColor, colliderGizmoDisabledColor);
+                return;
+            }
+
+            float tube = PixelToWorld(HitPixelWidth) * 0.5f;
+            foreach (var h in _handles)
+            {
+                bool grabbable = h.Visible &&
+                                 (_active == null || !hideOthersWhileDragging || h == _active);
+
+                Gizmos.color = grabbable ? colliderGizmoColor : colliderGizmoDisabledColor;
+                GizmoHandleColliders.DrawShapeOutline(h.GetShape(), tube);
+            }
         }
 
         /// <summary>
@@ -722,10 +794,31 @@ namespace ToolPosture.Gizmo
             else DestroyImmediate(o);
         }
 
-        private void Render()
+        private void SubmitForSrp(ScriptableRenderContext context, Camera renderingCamera)
+            => SubmitFor(renderingCamera);
+
+        /// <summary>
+        /// 指定カメラの描画直前にギズモのメッシュを投入する。
+        ///
+        /// カメラごとに呼ばれるので、エディタが Update を回していなくても
+        /// 再描画のたびに必ず出る。形状は targetCamera を基準に組み立てる
+        /// (ビルボードと画面基準の線幅がそこを向く)。
+        /// </summary>
+        private void SubmitFor(Camera renderingCamera)
         {
+            if (renderingCamera == null || !isActiveAndEnabled) return;
+
+            // マテリアルプレビュー等には出さない
+            if (renderingCamera.cameraType != CameraType.Game &&
+                renderingCamera.cameraType != CameraType.SceneView) return;
+
             Camera cam = Cam;
             if (cam == null || !EnsureResources()) return;
+            if (restrictToTargetCamera && renderingCamera != cam) return;
+
+            PreparingFrame?.Invoke(this);
+
+            EnsureFrame();
 
             _builder.Clear();
             BuildGeometry(_builder);
@@ -741,7 +834,7 @@ namespace ToolPosture.Gizmo
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 layer = gameObject.layer,
-                camera = restrictToTargetCamera ? cam : null,
+                camera = renderingCamera,
             };
             Graphics.RenderMesh(behind, _mesh, 0, Matrix4x4.identity);
 
@@ -751,7 +844,7 @@ namespace ToolPosture.Gizmo
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 layer = gameObject.layer,
-                camera = restrictToTargetCamera ? cam : null,
+                camera = renderingCamera,
             };
             Graphics.RenderMesh(front, _mesh, 0, Matrix4x4.identity);
         }

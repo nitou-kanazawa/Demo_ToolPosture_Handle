@@ -121,6 +121,22 @@ t = atan2(X·M, X·N)     前進後退角  AWS travel angle / CAM lead angle
 `Collider.Raycast` を各コライダーへ直接撃ちます。シーンクエリに一切参加しないので、
 アプリ側が干渉チェック等で回している raycast を汚しません。
 
+### コライダーのデバッグ表示
+
+当たり判定は目に見えないので、`colliderGizmo` で Gizmos に出せます
+（Game View で見るには Gizmos の表示を有効にしてください）。
+
+| モード | 内容 |
+|---|---|
+| `Off`（既定） | 描かない |
+| `Outline` | チューブの稜線 4 本と断面円。軽くて形が読みやすく、再生していなくても出る |
+| `Wireframe` | 実際のコライダーメッシュそのもの。面取りまで見える |
+
+今は掴めないハンドル（非表示、ドラッグ中に隠れているもの）は別の色で描かれます。
+
+> ギズモ本体は Gizmos ではなく `Graphics.RenderMesh` による通常の描画なので、
+> Gizmos トグルとは無関係に常に出ます。トグルが効くのはこのコライダー表示だけです。
+
 ### 回転ドラッグはレイの接線投影
 
 掴んだ時点で「掴んだ点」と「その点の接線」を固定し、以降はレイと接線直線の
@@ -142,7 +158,23 @@ t = atan2(X·M, X·N)     前進後退角  AWS travel angle / CAM lead angle
 gizmo.Frame = myPath.GetFrame(segment, u);   // 誰が計算してもよい
 ```
 
-デモでは `WeldPath` がこれを担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
+描画の直前に呼ばれる `PreparingFrame` フックからも渡せます。編集中はエディタが
+`Update` を回さないことがあり、そこだけに頼るとギズモがフォールバック位置に出てしまうので、
+供給元はこちらにも繋いでおくのが確実です。
+
+```csharp
+gizmo.PreparingFrame += g => g.Frame = myPath.GetFrame(segment, u);
+```
+
+デモでは `WeldPath` が両方を担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
+
+### 描画はカメラの描画コールバックから投入される
+
+`Graphics.RenderMesh` は 1 フレーム限りの投入なので、`LateUpdate` から呼ぶと
+「エディタがティックしていないが再描画はされる」状況（編集中の Game View / Scene View）で
+何も出なくなります。`Camera.onPreCull`（Built-in RP）と
+`RenderPipelineManager.beginCameraRendering`（URP / HDRP）の両方に繋いであるので、
+再生していなくても必ず描画されます。
 
 ## スクリプトからの操作
 

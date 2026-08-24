@@ -741,6 +741,9 @@ MonoBehaviour:
   touchHitPixelWidth: 40
   tipHitPixelRadius: 14
   touchTipHitScale: 1.9
+  colliderGizmo: 0
+  colliderGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  colliderGizmoDisabledColor: {r: 0.45, g: 0.5, b: 0.55, a: 0.35}
   inputMode: 0
   useKeyboardShortcuts: 1
   frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}

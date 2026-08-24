@@ -4,6 +4,30 @@ using UnityEngine;
 namespace ToolPosture.Gizmo
 {
     /// <summary>
+    /// 当たり判定のコライダーを Gizmos で可視化する方法。
+    /// </summary>
+    public enum ColliderGizmoMode
+    {
+        /// <summary>
+        /// 描かない。
+        /// </summary>
+        Off = 0,
+
+        /// <summary>
+        /// チューブの稜線と断面だけを描く。軽くて形が読みやすく、
+        /// コライダーの実体が無い (再生していない) ときでも描ける。
+        /// </summary>
+        Outline = 1,
+
+        /// <summary>
+        /// 実際のコライダーメッシュをそのまま描く。面取りまで見えるので、
+        /// 見えているものと掴めるものがずれていないかを厳密に確認できる。
+        /// 再生中のみ (エディタでは colliderGizmo をこれにすると実体を作る)。
+        /// </summary>
+        Wireframe = 2,
+    }
+
+    /// <summary>
     /// ハンドルの当たり判定用コライダーの生成と追従。
     ///
     /// 円弧ハンドルには円弧に沿ったチューブ (トーラス) を割り当てる。断面が円なので
@@ -80,26 +104,23 @@ namespace ToolPosture.Gizmo
                 GizmoHandleShape shape = e.Handle.GetShape();
                 e.Shape = shape;
 
-                bool on = e.Handle.Visible &&
-                          (active == null || !gizmo.hideOthersWhileDragging || e.Handle == active);
-                if (!on)
-                {
-                    if (e.Collider != null) e.Collider.enabled = false;
-                    continue;
-                }
+                if (e.Collider == null) continue;
 
                 if (shape.Radius < 1e-6f)
                 {
-                    if (e.Collider != null) e.Collider.enabled = false;
+                    e.Collider.enabled = false;
                     continue;
                 }
 
+                // 掴めないハンドルも位置だけは合わせておく。そうしないと一度も
+                // 配置されないまま原点に残り、デバッグ表示に巨大な形が出てしまう。
                 if (shape.Kind == GizmoShapeKind.Arc)
                     SyncArc(e, shape, tube, parentScale);
                 else
                     SyncSphere(e, shape, parentScale);
 
-                e.Collider.enabled = true;
+                e.Collider.enabled = e.Handle.Visible &&
+                                     (active == null || !gizmo.hideOthersWhileDragging || e.Handle == active);
             }
         }
 
@@ -254,6 +275,95 @@ namespace ToolPosture.Gizmo
             if (o == null) return;
             if (Application.isPlaying) Object.Destroy(o);
             else Object.DestroyImmediate(o);
+        }
+
+        #endregion
+
+        #region デバッグ表示
+
+        /// <summary>
+        /// 形状の輪郭を Gizmos で描く。コライダーの実体が無くても描けるので、
+        /// 再生していないときでも当たり判定の太さと位置を確認できる。
+        /// </summary>
+        /// <param name="shape">描く形状。</param>
+        /// <param name="tube">チューブの半径 [world]。</param>
+        public static void DrawShapeOutline(GizmoHandleShape shape, float tube)
+        {
+            if (shape.Kind == GizmoShapeKind.Sphere)
+            {
+                Gizmos.DrawWireSphere(shape.Center, shape.Radius);
+                return;
+            }
+
+            float from = Mathf.Min(shape.FromDeg, shape.ToDeg);
+            float to = Mathf.Max(shape.FromDeg, shape.ToDeg);
+
+            // チューブの 4 本の稜線 (平面内で内外、法線方向に上下)
+            DrawArcLine(shape, shape.Radius + tube, 0f, from, to);
+            DrawArcLine(shape, shape.Radius - tube, 0f, from, to);
+            DrawArcLine(shape, shape.Radius, tube, from, to);
+            DrawArcLine(shape, shape.Radius, -tube, from, to);
+
+            // 断面の円
+            Vector3 n = shape.Normal;
+            int sections = Mathf.Clamp(Mathf.RoundToInt((to - from) / 30f), 2, 12);
+            for (int i = 0; i <= sections; i++)
+            {
+                float a = Mathf.Lerp(from, to, i / (float)sections) * Mathf.Deg2Rad;
+                Vector3 radial = shape.U * Mathf.Cos(a) + shape.V * Mathf.Sin(a);
+                DrawCircle(shape.Center + radial * shape.Radius, radial, n, tube, 12);
+            }
+        }
+
+        private static void DrawArcLine(GizmoHandleShape shape, float radius, float normalOffset,
+                                        float fromDeg, float toDeg)
+        {
+            Vector3 offset = shape.Normal * normalOffset;
+            int seg = Mathf.Clamp(Mathf.RoundToInt((toDeg - fromDeg) / 6f), 8, 96);
+
+            Vector3 prev = Vector3.zero;
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = Mathf.Lerp(fromDeg, toDeg, i / (float)seg) * Mathf.Deg2Rad;
+                Vector3 p = shape.Center
+                          + (shape.U * Mathf.Cos(a) + shape.V * Mathf.Sin(a)) * radius
+                          + offset;
+                if (i > 0) Gizmos.DrawLine(prev, p);
+                prev = p;
+            }
+        }
+
+        private static void DrawCircle(Vector3 center, Vector3 a, Vector3 b, float radius, int segments)
+        {
+            Vector3 prev = center + a * radius;
+            for (int i = 1; i <= segments; i++)
+            {
+                float t = i / (float)segments * Mathf.PI * 2f;
+                Vector3 p = center + (a * Mathf.Cos(t) + b * Mathf.Sin(t)) * radius;
+                Gizmos.DrawLine(prev, p);
+                prev = p;
+            }
+        }
+
+        /// <summary>
+        /// 実際のコライダーメッシュをそのまま描く。無効になっているコライダーは
+        /// 別の色で描くので、ドラッグ中にどれが生きているかも分かる。
+        /// </summary>
+        public void DrawWireframe(Color enabledColor, Color disabledColor)
+        {
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                Entry e = _entries[i];
+                if (e.Collider == null || e.Transform == null) continue;
+
+                Gizmos.color = e.Collider.enabled ? enabledColor : disabledColor;
+
+                if (e.Mesh != null)
+                    Gizmos.DrawWireMesh(e.Mesh, e.Transform.position, e.Transform.rotation,
+                                        e.Transform.lossyScale);
+                else
+                    Gizmos.DrawWireSphere(e.Transform.position, Mathf.Abs(e.Transform.lossyScale.x));
+            }
         }
 
         #endregion

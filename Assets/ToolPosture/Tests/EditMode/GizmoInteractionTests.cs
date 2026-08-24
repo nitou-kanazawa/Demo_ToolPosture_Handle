@@ -134,15 +134,29 @@ namespace ToolPosture.Tests
     public class ColliderPickTests
     {
         private GameObject _go;
+        private GameObject _camGo;
+        private Camera _cam;
+        private RenderTexture _rt;
         private ToolPostureGizmo _gizmo;
 
         [SetUp]
         public void SetUp()
         {
+            // Scale は targetCamera の WorldPerPixel から決まる。Camera.main に任せると
+            // 開いているシーン次第で値が変わるので、解像度まで固定した専用カメラを使う。
+            _camGo = new GameObject("TestCam");
+            _cam = _camGo.AddComponent<Camera>();
+            _cam.orthographic = true;
+            _cam.orthographicSize = 5f;
+            _rt = new RenderTexture(800, 600, 16);
+            _cam.targetTexture = _rt;
+            _cam.enabled = false;
+
             _go = new GameObject("TestGizmo");
             _gizmo = _go.AddComponent<ToolPostureGizmo>();
+            _gizmo.targetCamera = _cam;
 
-            // 旋回リングだけを残す (カメラ無しでも Scale は既定値で決まる)
+            // 旋回リングだけを残す
             _gizmo.showAxisTip = false;
             _gizmo.showSpinRing = false;
             _gizmo.showWorkArc = false;
@@ -151,23 +165,42 @@ namespace ToolPosture.Tests
         }
 
         [TearDown]
-        public void TearDown() => Object.DestroyImmediate(_go);
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_go);
+            _cam.targetTexture = null;
+            Object.DestroyImmediate(_camGo);
+            _rt.Release();
+            Object.DestroyImmediate(_rt);
+        }
 
         /// <summary>
         /// リング上の点を、視線と接線の両方に直交する向きへずらしながら撃ち、
         /// 当たらなくなるまでの距離 (= 実効的な掴み半幅) を返す。
+        /// あわせて、最後に当たった点が円弧の中心円からどれだけ離れていたかも返す。
         /// </summary>
-        private float MeasureHalfWidth(Vector3 point, Vector3 tangent, Vector3 viewDir, float step)
+        private float MeasureHalfWidth(Vector3 point, Vector3 tangent, Vector3 viewDir,
+                                       float step, out float hitDistanceFromArc)
         {
+            PathFrame f = _gizmo.Frame;
+            float radius = _gizmo.Scale * 1.42f;
             Vector3 perp = Vector3.Cross(viewDir, tangent).normalized;
 
             float half = -1f;
+            hitDistanceFromArc = -1f;
+
             for (float d = 0f; d <= 1f; d += step)
             {
                 var ray = new Ray(point + perp * d - viewDir * 20f, viewDir);
-                if (_gizmo.TryPick(ray, out GizmoHandleId id) && id == GizmoHandleId.AzimuthRing)
-                    half = d;
-                else break;
+                if (!_gizmo.TryPick(ray, out GizmoHandleId id, out Vector3 hit)) break;
+                if (id != GizmoHandleId.AzimuthRing) break;
+
+                half = d;
+
+                Vector3 rel = hit - f.Origin;
+                float inPlane = Vector3.ProjectOnPlane(rel, f.Normal).magnitude - radius;
+                float outPlane = Vector3.Dot(rel, f.Normal);
+                hitDistanceFromArc = Mathf.Sqrt(inPlane * inPlane + outPlane * outPlane);
             }
             return half;
         }
@@ -187,23 +220,22 @@ namespace ToolPosture.Tests
             Vector3 point = shape.PointAt(0f);
             Vector3 tangent = shape.TangentAt(0f);
 
-            float min = float.MaxValue, max = 0f;
             foreach (float elevDeg in new[] { 90f, 45f, 20f, 5f, 1f })
             {
                 float e = elevDeg * Mathf.Deg2Rad;
                 Vector3 viewDir = -(L * Mathf.Cos(e) + N * Mathf.Sin(e)).normalized;
 
-                float half = MeasureHalfWidth(point, tangent, viewDir, step);
-                Assert.Greater(half, 0f, $"仰角 {elevDeg} 度でリング上を掴めること");
+                float half = MeasureHalfWidth(point, tangent, viewDir, step, out float hitDist);
 
-                min = Mathf.Min(min, half);
-                max = Mathf.Max(max, half);
+                // 平面内で半径方向のずれを見る方式は、ここが仰角と共に 0 へ潰れていた
+                Assert.Greater(half, tube * 0.85f, $"仰角 {elevDeg} 度で掴み幅が保たれること");
+
+                // 当たった点は必ずチューブの表面 = 円弧から tube の距離にある。
+                // 掴み幅の上限は縛らない。視線が寝ると円弧が湾曲して逃げるので、
+                // 直交方向へ tube 以上ずらしてもチューブを掠り続ける (緩い方向のずれ)。
+                Assert.LessOrEqual(hitDist, tube * 1.05f,
+                                   $"仰角 {elevDeg} 度で当たり点が円弧から tube 以内にあること");
             }
-
-            // 断面が正 8 角形なので内接半径 cos(22.5) = 0.924 倍まで細くなりうる
-            Assert.Greater(min, tube * 0.85f, "公称の太さを大きく下回らないこと");
-            Assert.Less(max, tube * 1.05f, "公称の太さを超えないこと");
-            Assert.Less(max / min, 1.2f, "視線角度による差が小さいこと");
         }
 
         [Test]

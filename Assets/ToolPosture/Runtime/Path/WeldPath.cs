@@ -83,12 +83,16 @@ namespace ToolPosture.Demo
 
         private void OnEnable()
         {
-            if (gizmo != null) gizmo.BuildingExtraGeometry += DrawPath;
+            if (gizmo == null) return;
+            gizmo.PreparingFrame += PushFrame;
+            gizmo.BuildingExtraGeometry += DrawPath;
         }
 
         private void OnDisable()
         {
-            if (gizmo != null) gizmo.BuildingExtraGeometry -= DrawPath;
+            if (gizmo == null) return;
+            gizmo.PreparingFrame -= PushFrame;
+            gizmo.BuildingExtraGeometry -= DrawPath;
         }
 
         private void Update()
@@ -96,9 +100,19 @@ namespace ToolPosture.Demo
             if (gizmo == null) return;
 
             if (Application.isPlaying && useKeyboardShortcuts) HandleKeyboard();
+            PushFrame(gizmo);
+        }
 
+        /// <summary>
+        /// 現在の区間・位置のフレームをギズモへ渡す。
+        ///
+        /// Update からだけでなく描画直前にも呼ばれる。編集中はエディタが Update を
+        /// 回さないことがあり、それだけに頼るとギズモがフォールバック位置に出てしまう。
+        /// </summary>
+        private void PushFrame(ToolPostureGizmo target)
+        {
             segmentIndex = Mathf.Clamp(segmentIndex, 0, Mathf.Max(0, SegmentCount - 1));
-            gizmo.Frame = GetFrame(segmentIndex, segmentU);
+            target.Frame = GetFrame(segmentIndex, segmentU);
         }
 
         private void HandleKeyboard()
