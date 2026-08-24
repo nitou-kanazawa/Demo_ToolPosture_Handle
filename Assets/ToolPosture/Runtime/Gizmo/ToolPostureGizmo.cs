@@ -335,6 +335,34 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public Vector3 ToolAxisLmn => angles.GetAxisLmn();
 
+        /// <summary>
+        /// 投影角 (狙い角 w / 進行角 t) の可動範囲から決まる、この方位での傾斜角の限界。
+        /// 内部値 (N からの傾き α) で返す。
+        ///
+        /// 方位によって変わる。w と t は工具軸を L / M へ投影した角なので、
+        /// 斜め方向へ倒すと両方が同時に増え、正面へ倒すより早く上限に当たる。
+        /// </summary>
+        public void GetProjectedTiltLimit(float azimuthDeg, out float loDeg, out float hiDeg)
+        {
+            hiDeg = Mathf.Atan(TiltLimits.MaxTanTilt(this, azimuthDeg)) * Mathf.Rad2Deg;
+            loDeg = -Mathf.Atan(TiltLimits.MaxTanTilt(this, azimuthDeg + 180f)) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>
+        /// 実際に動かせる傾斜角の範囲。内部値 (N からの傾き α)。
+        ///
+        /// tiltConvention の可動範囲と、投影角から決まる限界の積集合になる。
+        /// 傾斜が思ったより動かない場合、効いているのはたいてい後者。
+        /// </summary>
+        public void GetTiltRange(float azimuthDeg, out float loDeg, out float hiDeg)
+        {
+            GetProjectedTiltLimit(azimuthDeg, out float projectedLo, out float projectedHi);
+
+            AngleConvention conv = Profile.tiltConvention;
+            hiDeg = conv.useLimits ? Mathf.Min(conv.MaxInternal, projectedHi) : projectedHi;
+            loDeg = conv.useLimits ? Mathf.Max(conv.MinInternal, projectedLo) : projectedLo;
+        }
+
         // Quaternion での出力はここには置かない。工具軸から回転を組むには
         // 「向けたい対象のどのローカル軸を工具軸に合わせるか」という対象側の都合が要り、
         // その値はロボットのフランジと工具モデルで別物になる。

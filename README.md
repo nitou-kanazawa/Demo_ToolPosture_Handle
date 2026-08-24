@@ -353,7 +353,7 @@ Assets/ToolPosture/
   Presets/          GizmoTheme_Touch / GizmoTheme_HighContrast
                     ToolPostureProfile_NarrowGroove
   Editor/           ToolPostureGizmoEditor      シーンビュー版 + 折りたたみインスペクタ
-  Tests/EditMode/   83 件
+  Tests/EditMode/   87 件
 ```
 
 EditMode テストは Test Runner、または `unity test --mode EditMode --output result.xml --timeout 300` で実行できます。

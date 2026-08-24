@@ -283,6 +283,88 @@ namespace ToolPosture.Tests
     }
 
     /// <summary>
+    /// 傾斜角の可動範囲。規約の範囲と、投影角 w / t から決まる限界の積集合になる。
+    /// 「規約を広げても動く範囲が変わらない」ことがあるのは後者が効いているため。
+    /// </summary>
+    public class TiltRangeTests
+    {
+        private const float Tol = 1e-2f;
+
+        private GameObject _go;
+        private ToolPostureGizmo _gizmo;
+        private ToolPostureProfile _profile;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _go = new GameObject("TestGizmo");
+            _gizmo = _go.AddComponent<ToolPostureGizmo>();
+
+            _profile = ScriptableObject.CreateInstance<ToolPostureProfile>();
+            _profile.workConvention = AngleConvention.Ranged(-25f, 25f);
+            _profile.travelConvention = AngleConvention.Ranged(-20f, 20f);
+            _profile.tiltConvention = AngleConvention.Unlimited();
+            _gizmo.Profile = _profile;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_go);
+            Object.DestroyImmediate(_profile);
+        }
+
+        [Test]
+        public void 投影角の可動範囲が傾斜の限界を決める()
+        {
+            // L 方向 (theta = 0) へ倒すときは狙い角 w の制限がそのまま効く
+            _gizmo.GetProjectedTiltLimit(0f, out float lo0, out float hi0);
+            Assert.AreEqual(25f, hi0, Tol);
+            Assert.AreEqual(-25f, lo0, Tol);
+
+            // M 方向 (theta = 90) へ倒すときは進行角 t の制限
+            _gizmo.GetProjectedTiltLimit(90f, out float lo90, out float hi90);
+            Assert.AreEqual(20f, hi90, Tol);
+            Assert.AreEqual(-20f, lo90, Tol);
+        }
+
+        [Test]
+        public void 斜め方向では両方の投影角が同時に効く()
+        {
+            // w と t は工具軸を L / M へ投影した角なので、斜めだと両方が増える。
+            // tan(alpha) * cos(45) <= tan(25) かつ tan(alpha) * sin(45) <= tan(20)
+            _gizmo.GetProjectedTiltLimit(45f, out _, out float hi);
+
+            float byWork = Mathf.Atan(Mathf.Tan(25f * Mathf.Deg2Rad) / Mathf.Cos(45f * Mathf.Deg2Rad));
+            float byTravel = Mathf.Atan(Mathf.Tan(20f * Mathf.Deg2Rad) / Mathf.Sin(45f * Mathf.Deg2Rad));
+
+            Assert.AreEqual(Mathf.Min(byWork, byTravel) * Mathf.Rad2Deg, hi, Tol);
+        }
+
+        [Test]
+        public void 規約の方が狭ければそちらが効く()
+        {
+            _profile.tiltConvention = AngleConvention.Elevation(-10f, 10f);
+
+            _gizmo.GetTiltRange(0f, out float lo, out float hi);
+
+            Assert.AreEqual(10f, hi, Tol, "投影角は 25 度まで許すが規約が 10 度で止める");
+            Assert.AreEqual(-10f, lo, Tol);
+        }
+
+        [Test]
+        public void 規約を広げても投影角の限界は超えられない()
+        {
+            _profile.tiltConvention = AngleConvention.Elevation(-90f, 90f);
+
+            _gizmo.GetTiltRange(90f, out float lo, out float hi);
+
+            Assert.AreEqual(20f, hi, Tol, "進行角 t の 20 度で頭打ちになる");
+            Assert.AreEqual(-20f, lo, Tol);
+        }
+    }
+
+    /// <summary>
     /// 傾きが 0 になっても旋回角が失われないこと。
     /// 姿勢の保持が球面表現 (theta, phi, spin) 一本なので、theta は姿勢の中にあり、
     /// 別途の保持値やそれを同期する不変条件は存在しない。

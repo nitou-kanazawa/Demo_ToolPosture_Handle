@@ -154,8 +154,39 @@ namespace ToolPosture.EditorTools
                         ? $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°"
                         : $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°   θ は効いていない");
 
+                DrawTiltRange(g);
+
                 EditorGUIUtility.labelWidth = saved;
             }
+        }
+
+        /// <summary>
+        /// 傾斜角が実際にどこまで動かせるか、何がそれを決めているかを出す。
+        ///
+        /// 可動範囲は「tiltConvention の範囲」と「投影角 w / t の範囲から決まる限界」の
+        /// 積集合で、後者は方位によって変わるうえ別の欄にあるので、
+        /// これを出さないと「設定を変えても動く範囲が変わらない」ように見える。
+        /// </summary>
+        private static void DrawTiltRange(ToolPostureGizmo g)
+        {
+            float azimuth = g.AzimuthDeg;
+            g.GetProjectedTiltLimit(azimuth, out float projectedLo, out float projectedHi);
+            g.GetTiltRange(azimuth, out float lo, out float hi);
+
+            AngleConvention conv = g.Profile.tiltConvention;
+            float d0 = conv.ToDisplay(lo);
+            float d1 = conv.ToDisplay(hi);
+
+            Row("傾斜の可動範囲",
+                $"φ {Mathf.Min(d0, d1),6:0.0}° 〜 {Mathf.Max(d0, d1),6:0.0}°" +
+                $"   (α {lo,6:0.0} 〜 {hi,6:0.0})");
+
+            bool upperByProjected = !conv.useLimits || projectedHi <= conv.MaxInternal;
+            bool lowerByProjected = !conv.useLimits || projectedLo >= conv.MinInternal;
+
+            Row("  決めているもの",
+                $"下 {(lowerByProjected ? "投影角 w / t" : "傾斜の規約")}" +
+                $"    上 {(upperByProjected ? "投影角 w / t" : "傾斜の規約")}");
         }
 
         private static string Components(Vector3 v)

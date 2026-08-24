@@ -190,14 +190,7 @@ namespace ToolPosture.Gizmo
         /// この方位で許される上限の両方を満たす範囲を返す。
         /// </summary>
         public void GetAlphaRange(float azimuthDeg, out float lo, out float hi)
-        {
-            AngleConvention conv = G.Profile.tiltConvention;
-            float projectedHi = Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg)) * Mathf.Rad2Deg;
-            float projectedLo = -Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg + 180f)) * Mathf.Rad2Deg;
-
-            hi = conv.useLimits ? Mathf.Min(conv.MaxInternal, projectedHi) : projectedHi;
-            lo = conv.useLimits ? Mathf.Max(conv.MinInternal, projectedLo) : projectedLo;
-        }
+            => G.GetTiltRange(azimuthDeg, out lo, out hi);
 
         private float ClampAlpha(float value, float azimuthDeg)
         {
