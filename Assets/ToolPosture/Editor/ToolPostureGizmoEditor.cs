@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using ToolPosture.Core;
@@ -53,6 +54,8 @@ namespace ToolPosture.EditorTools
             "gizmoShader",
         };
 
+        private readonly HashSet<string> _drawn = new HashSet<string>();
+
         private Editor _themeEditor;
         private Editor _profileEditor;
 
@@ -66,6 +69,7 @@ namespace ToolPosture.EditorTools
         {
             var g = (ToolPostureGizmo)target;
             serializedObject.Update();
+            _drawn.Clear();
 
             DrawPresets();
             DrawGroup("姿勢   θ / φ / spin", PostureProps);
@@ -83,6 +87,10 @@ namespace ToolPosture.EditorTools
 
         private void DrawPresets()
         {
+            // 畳んでいても「その他」へ落ちないよう、先に扱い済みとして記録する
+            _drawn.Add("theme");
+            _drawn.Add("profile");
+
             if (!Section("プリセット", true)) return;
 
             using (ShurikenGUI.Body())
@@ -97,13 +105,16 @@ namespace ToolPosture.EditorTools
         /// </summary>
         private void DrawHandleModules()
         {
+            foreach (string name in HandleProps) _drawn.Add(name);
+            _drawn.Add("hideOthersWhileDragging");
+
             if (!Section("ハンドル   実行中は 1 - 4 キーで切替", true)) return;
 
             using (ShurikenGUI.Body())
             {
                 for (int i = 0; i < HandleProps.Length; i++)
                 {
-                    SerializedProperty p = serializedObject.FindProperty(HandleProps[i]);
+                    SerializedProperty p = Take(HandleProps[i]);
                     if (p == null) continue;
 
                     EditorGUI.BeginChangeCheck();
@@ -115,7 +126,7 @@ namespace ToolPosture.EditorTools
 
                 float saved = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = GroupLabelWidth;
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("hideOthersWhileDragging"),
+                EditorGUILayout.PropertyField(Take("hideOthersWhileDragging"),
                                               new GUIContent("ドラッグ中は他を隠す"));
                 EditorGUIUtility.labelWidth = saved;
             }
@@ -210,6 +221,8 @@ namespace ToolPosture.EditorTools
 
         private void DrawGroup(string title, string[] props, bool defaultOpen = true)
         {
+            foreach (string name in props) _drawn.Add(name);
+
             if (!Section(title, defaultOpen)) return;
 
             using (ShurikenGUI.Body())
@@ -219,7 +232,7 @@ namespace ToolPosture.EditorTools
 
                 foreach (string name in props)
                 {
-                    SerializedProperty p = serializedObject.FindProperty(name);
+                    SerializedProperty p = Take(name);
                     if (p != null) EditorGUILayout.PropertyField(p, true);
                 }
 
@@ -239,12 +252,7 @@ namespace ToolPosture.EditorTools
             for (bool enterChildren = true; it.NextVisible(enterChildren); enterChildren = false)
             {
                 if (it.propertyPath == "m_Script") continue;
-                if (it.propertyPath == "theme" || it.propertyPath == "profile") continue;
-                if (System.Array.IndexOf(PostureProps, it.propertyPath) >= 0) continue;
-                if (System.Array.IndexOf(HandleProps, it.propertyPath) >= 0) continue;
-                if (System.Array.IndexOf(ViewProps, it.propertyPath) >= 0) continue;
-                if (System.Array.IndexOf(InputProps, it.propertyPath) >= 0) continue;
-                if (System.Array.IndexOf(ToolProps, it.propertyPath) >= 0) continue;
+                if (_drawn.Contains(it.propertyPath)) continue;
 
                 if (!header)
                 {
@@ -256,13 +264,24 @@ namespace ToolPosture.EditorTools
         }
 
         /// <summary>
+        /// このフレームで既に描いたプロパティ。DrawRemaining の除外に使う。
+        /// 配列に書いた名前と二重に管理すると取りこぼすので、描いた側で記録する。
+        /// </summary>
+        private SerializedProperty Take(string name)
+        {
+            SerializedProperty p = serializedObject.FindProperty(name);
+            if (p != null) _drawn.Add(name);
+            return p;
+        }
+
+        /// <summary>
         /// プリセットアセットの割当欄。未設定なら組み込み既定を使っている旨を出し、
         /// 割り当て済みならその中身をここで直接編集できるようにする。
         /// </summary>
         private void DrawPresetSlot<T>(string propName, string label, ref Editor cached)
             where T : ScriptableObject
         {
-            SerializedProperty prop = serializedObject.FindProperty(propName);
+            SerializedProperty prop = Take(propName);
             if (prop == null) return;
 
             const float LabelWidth = 56f;

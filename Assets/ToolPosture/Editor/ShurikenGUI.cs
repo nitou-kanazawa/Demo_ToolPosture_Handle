@@ -22,15 +22,28 @@ namespace ToolPosture.EditorTools
         private static GUIStyle _title;
         private static GUIStyle _body;
         private static bool _resolved;
+        private static bool _resolvedProSkin;
 
+        /// <summary>
+        /// 現在のエディタスキンからスタイルを引く。
+        ///
+        /// EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector) は
+        /// テーマに関係なく light スキンを返すので使わないこと
+        /// (ダークテーマで淡いバーになる)。OnGUI 中の GUI.skin が現在のテーマの skin。
+        /// FindStyle なら見つからなくても警告を出さずに null が返る。
+        /// </summary>
         private static void Resolve()
         {
-            if (_resolved) return;
-            _resolved = true;
+            if (_resolved && _resolvedProSkin == EditorGUIUtility.isProSkin) return;
+            if (GUI.skin == null) return;      // OnGUI の外
 
-            GUISkin skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector);
-            GUIStyle titleSrc = skin.FindStyle("ShurikenModuleTitle");
-            GUIStyle bodySrc = skin.FindStyle("ShurikenModuleBg");
+            _resolved = true;
+            _resolvedProSkin = EditorGUIUtility.isProSkin;
+            _title = null;
+            _body = null;
+
+            GUIStyle titleSrc = GUI.skin.FindStyle("ShurikenModuleTitle");
+            GUIStyle bodySrc = GUI.skin.FindStyle("ShurikenModuleBg");
             if (titleSrc == null || bodySrc == null) return;   // 素のスタイルへ落ちる
 
             _title = new GUIStyle(titleSrc)
