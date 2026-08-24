@@ -329,33 +329,59 @@ namespace ToolPosture.Gizmo
             Camera cam = Cam;
             if (cam == null) return;
 
+            Keyboard kb = Keyboard.current;
+            bool snap = kb != null && kb.ctrlKey.isPressed;
+
             if (!PointerSource.TryRead(out PointerSample p))
+            {
+                DrivePointer(default, null, snap);
+                return;
+            }
+
+            DrivePointer(p, cam.ScreenPointToRay(p.position), snap);
+        }
+
+        /// <summary>
+        /// 外から読んだポインタでホバーとドラッグを進める。
+        /// GizmoInputMode.External のときの入口。
+        ///
+        /// ray はポインタ位置からアプリが作ったワールドのレイ。画像の外などで
+        /// レイを作れないときは null を渡すと、新しく掴むのは止まるが、
+        /// 進行中のドラッグは指を離すまで続く。
+        /// </summary>
+        public void DrivePointer(PointerSample pointer, Ray? ray, bool snap = false)
+        {
+            if (!pointer.valid)
             {
                 _hovered = null;
                 EndDrag();
                 return;
             }
 
-            _pointerIsTouch = p.isTouch;
-
-            Keyboard kb = Keyboard.current;
-            bool snap = kb != null && kb.ctrlKey.isPressed;
-            Ray ray = cam.ScreenPointToRay(p.position);
+            _pointerIsTouch = pointer.isTouch;
 
             if (_active != null)
             {
-                if (p.isDown && !p.releasedThisFrame) UpdateDrag(ray, snap);
-                else EndDrag();
+                bool held = pointer.isDown && !pointer.releasedThisFrame;
+                if (!held) EndDrag();
+                else if (ray.HasValue) UpdateDrag(ray.Value, snap);
+                return;
+            }
+
+            if (!ray.HasValue)
+            {
+                _hovered = null;
                 return;
             }
 
             bool overUI = EventSystem.current != null &&
-                          EventSystem.current.IsPointerOverGameObject(p.pointerId);
+                          EventSystem.current.IsPointerOverGameObject(pointer.pointerId);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
-            if (p.pressedThisFrame && !overUI)
+            if (pointer.pressedThisFrame && !overUI)
             {
-                if (TryPick(ray, out GizmoHandleId id, out Vector3 point) && BeginDrag(id, ray, point))
+                if (TryPick(ray.Value, out GizmoHandleId id, out Vector3 point) &&
+                    BeginDrag(id, ray.Value, point))
                 {
                     _hovered = _active;
                     return;
@@ -363,7 +389,7 @@ namespace ToolPosture.Gizmo
             }
 
             // ホバー表示はマウス / ペンのときだけ
-            _hovered = (p.isTouch || overUI) ? null : PickHandle(ray);
+            _hovered = (pointer.isTouch || overUI) ? null : PickHandle(ray.Value);
         }
 
         #endregion
