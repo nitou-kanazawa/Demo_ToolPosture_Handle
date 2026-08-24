@@ -1,5 +1,5 @@
 ﻿<Solution>
   <Project Path="ToolPosture.Runtime.csproj" />
-  <Project Path="ToolPosture.Editor.csproj" />
   <Project Path="ToolPosture.Tests.csproj" />
+  <Project Path="ToolPosture.Editor.csproj" />
 </Solution>

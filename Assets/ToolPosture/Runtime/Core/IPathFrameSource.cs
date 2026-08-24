@@ -19,4 +19,19 @@ namespace ToolPosture.Core
         /// </summary>
         PathFrame GetFrame(int segment, float u);
     }
+
+    /// <summary>
+    /// フレームを 1 つだけ持つ供給元。経路を持たず、外部で計算した任意のフレームを
+    /// そのままギズモへ渡したい場合に使う。
+    /// </summary>
+    public class SingleFrameSource : IPathFrameSource
+    {
+        public PathFrame Frame;
+
+        public SingleFrameSource(PathFrame frame) { Frame = frame; }
+
+        public int SegmentCount => 1;
+
+        public PathFrame GetFrame(int segment, float u) => Frame;
+    }
 }

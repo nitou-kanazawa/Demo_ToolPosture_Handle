@@ -464,7 +464,7 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// スピン 0 度の基準方向。
         /// </summary>
-        private Vector3 U => ToolPostureAngles.SpinZeroReference(G.Frame, Axis);
+        private Vector3 U => G.spinReference.Resolve(G.Frame, Axis);
 
         /// <summary>
         /// +90 度方向。Quaternion.AngleAxis(90, axis) * U と一致する。

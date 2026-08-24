@@ -79,7 +79,8 @@ namespace ToolPosture.Tests
         private static PathFrame UnitFrame()
         {
             // L = +X, M = +Y, N = +Z となる人工フレーム (LMN 成分とワールド成分が一致する)
-            return new PathFrame(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward);
+            PathFrame.TryFromBasis(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward, out var f);
+            return f;
         }
 
         [Test]

@@ -164,6 +164,9 @@ namespace ToolPosture.Gizmo
         [Tooltip("工具モデルのローカル軸のうち、スピン基準に一致させる軸 (シャフト軸と直交)")]
         public Vector3 toolReferenceAxis = Vector3.forward;
 
+        [Tooltip("スピン 0 度をどこから測るか。ロボット側がワールド基準で回転角を定義している場合は WorldAxisCross")]
+        public SpinReference spinReference = SpinReference.FeedProjected;
+
         #endregion
 
         #region 状態
@@ -177,6 +180,7 @@ namespace ToolPosture.Gizmo
         private IGizmoViewport _viewport;
         private CameraViewport _defaultViewport;
         private ToolPostureAngles _anglesAtDragStart;
+        private SingleFrameSource _singleFrameSource;
 
         private Mesh _mesh;
         private Material _matFront;
@@ -245,6 +249,31 @@ namespace ToolPosture.Gizmo
             angles = a;
         }
 
+        #endregion
+
+        #region 工具の回転 (ZYX オイラー等) での入出力
+
+        /// <summary>
+        /// 工具の姿勢を回転で与える。ZYX オイラーなど外部表現からの入口。
+        /// 工具軸が N に一致する場合、旋回角は現在の値が保たれる。
+        /// </summary>
+        public void SetToolRotation(Quaternion rotation)
+        {
+            var a = angles;
+            a.SetToolRotation(_frame, rotation, toolShaftAxis, toolReferenceAxis, spinReference);
+            angles = a;
+        }
+
+        /// <summary>
+        /// 工具の姿勢を ZYX オイラー角で読み出す。
+        /// </summary>
+        public ZyxEulerAngles ToolRotationZyx => ZyxEulerAngles.FromRotation(ToolRotation);
+
+        /// <summary>
+        /// 工具の姿勢を ZYX オイラー角で与える。
+        /// </summary>
+        public void SetToolRotationZyx(ZyxEulerAngles euler) => SetToolRotation(euler.ToRotation());
+
         /// <summary>
         /// フレームに対する工具軸ベクトル X (ワールド)。このツールの主たる出力。
         /// </summary>
@@ -258,7 +287,7 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// スピンまで含めた工具の完全な姿勢。
         /// </summary>
-        public Quaternion ToolRotation => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis);
+        public Quaternion ToolRotation => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis, spinReference);
 
         /// <summary>
         /// 画面 &lt;-&gt; ワールドの変換。既定は targetCamera (未設定なら Camera.main) をそのまま使う
@@ -340,6 +369,21 @@ namespace ToolPosture.Gizmo
             _handles.Add(new TiltArcHandle(this));                  // 工具軸追従版
             _handles.Add(new ArcAngleHandle(this, isWork: false));
             _handles.Add(new AzimuthRingHandle(this));
+        }
+
+        /// <summary>
+        /// フレームを 1 つだけ直接与える。経路を持たず、外部で計算したフレームに対して
+        /// 姿勢を編集したい場合の入口。IPathFrameSource を実装しなくてよい。
+        /// </summary>
+        public void SetFrame(PathFrame frame)
+        {
+            if (_singleFrameSource == null) _singleFrameSource = new SingleFrameSource(frame);
+            else _singleFrameSource.Frame = frame;
+
+            _explicitSource = _singleFrameSource;
+            segmentIndex = 0;
+            segmentU = 0f;
+            _frame = frame;
         }
 
         /// <summary>

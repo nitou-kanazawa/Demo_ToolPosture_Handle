@@ -42,7 +42,11 @@ namespace ToolPosture.Core
         public readonly Vector3 Normal;
         public readonly bool IsValid;
 
-        public PathFrame(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal)
+        /// <summary>
+        /// 検証を行わない生成。正規直交であることが保証できる内部からのみ使う。
+        /// 外部からは TryCreate / TryFromBasis / Fallback を通すこと。
+        /// </summary>
+        private PathFrame(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal)
         {
             Origin = origin;
             CrossFeed = crossFeed;
@@ -81,6 +85,23 @@ namespace ToolPosture.Core
 
             frame = new PathFrame(origin, l.normalized, m, n);
             return true;
+        }
+
+        /// <summary>
+        /// 既に (ほぼ) 正規直交な三つ組からフレームを作る。
+        ///
+        /// 外部の回転行列やロボットのツール座標系から持ち込んだ基底など、L も含めて
+        /// 分かっている場合の入口。M と N を正規直交化した上で L を計算し直すので、
+        /// 多少の数値誤差は吸収される。L は与えられたベクトルと同じ側になる。
+        /// </summary>
+        public static bool TryFromBasis(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal,
+                                        out PathFrame frame)
+        {
+            CrossFeedSide side = Vector3.Dot(crossFeed, Vector3.Cross(normal, feed)) >= 0f
+                ? CrossFeedSide.RightOfTravel
+                : CrossFeedSide.LeftOfTravel;
+
+            return TryCreate(origin, feed, normal, side, out frame);
         }
 
         /// <summary>

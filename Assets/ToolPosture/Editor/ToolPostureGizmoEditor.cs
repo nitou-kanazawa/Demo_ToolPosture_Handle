@@ -148,7 +148,7 @@ namespace ToolPosture.EditorTools
             if (g.showSpinRing)
             {
                 Vector3 spinAxis = angles.GetAxisWorld(f);
-                Vector3 u = ToolPostureAngles.SpinZeroReference(f, spinAxis);
+                Vector3 u = g.spinReference.Resolve(f, spinAxis);
                 Vector3 v = Vector3.Cross(spinAxis, u);
                 Vector3 center = f.Origin + spinAxis * (scale * 0.86f);
 

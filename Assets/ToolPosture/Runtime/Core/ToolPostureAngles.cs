@@ -241,16 +241,16 @@ namespace ToolPosture.Core
             return r.normalized;
         }
 
-        public Vector3 GetSpinZeroReferenceWorld(in PathFrame frame)
-            => SpinZeroReference(frame, GetAxisWorld(frame));
+        public Vector3 GetSpinZeroReferenceWorld(in PathFrame frame, SpinReference spinReference = default)
+            => spinReference.Resolve(frame, GetAxisWorld(frame));
 
         /// <summary>
         /// スピン適用後の工具基準ベクトル (工具軸に直交)。
         /// </summary>
-        public Vector3 GetToolReferenceWorld(in PathFrame frame)
+        public Vector3 GetToolReferenceWorld(in PathFrame frame, SpinReference spinReference = default)
         {
             Vector3 x = GetAxisWorld(frame);
-            return Quaternion.AngleAxis(spinAngleDeg, x) * SpinZeroReference(frame, x);
+            return Quaternion.AngleAxis(spinAngleDeg, x) * spinReference.Resolve(frame, x);
         }
 
         #endregion
@@ -262,14 +262,44 @@ namespace ToolPosture.Core
         /// toolReferenceAxis がスピン基準ベクトルに一致する回転を返す。
         /// toolShaftAxis と toolReferenceAxis は互いに直交していること。
         /// </summary>
-        public Quaternion GetToolRotation(in PathFrame frame, Vector3 toolShaftAxis, Vector3 toolReferenceAxis)
+        public Quaternion GetToolRotation(in PathFrame frame, Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
+                                          SpinReference spinReference = default)
         {
             Vector3 x = GetAxisWorld(frame);
-            Vector3 u = Quaternion.AngleAxis(spinAngleDeg, x) * SpinZeroReference(frame, x);
+            Vector3 u = Quaternion.AngleAxis(spinAngleDeg, x) * spinReference.Resolve(frame, x);
 
             Quaternion world = Quaternion.LookRotation(u, x);
             Quaternion local = Quaternion.LookRotation(toolReferenceAxis.normalized, toolShaftAxis.normalized);
             return world * Quaternion.Inverse(local);
+        }
+
+        /// <summary>
+        /// 工具の姿勢 (回転) から旋回角・仰角・スピンを復元する。GetToolRotation の逆変換。
+        ///
+        /// 工具軸が N に一致する (極) 場合は旋回角が回転から決まらないので、
+        /// SetAxisLmn と同じく現在の値をそのまま残す。
+        /// </summary>
+        public void SetToolRotation(in PathFrame frame, Quaternion toolRotation,
+                                    Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
+                                    SpinReference spinReference = default)
+        {
+            Vector3 x = (toolRotation * toolShaftAxis.normalized).normalized;
+            Vector3 u = (toolRotation * toolReferenceAxis.normalized).normalized;
+
+            SetAxisWorld(frame, x);
+            spinAngleDeg = Vector3.SignedAngle(spinReference.Resolve(frame, x), u, x);
+        }
+
+        /// <summary>
+        /// 工具の姿勢 (回転) から新しい ToolPostureAngles を作る。
+        /// </summary>
+        public static ToolPostureAngles FromToolRotation(in PathFrame frame, Quaternion toolRotation,
+                                                         Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
+                                    SpinReference spinReference = default)
+        {
+            var a = new ToolPostureAngles();
+            a.SetToolRotation(frame, toolRotation, toolShaftAxis, toolReferenceAxis, spinReference);
+            return a;
         }
 
         public override string ToString()
