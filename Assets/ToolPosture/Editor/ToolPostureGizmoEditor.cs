@@ -24,11 +24,53 @@ namespace ToolPosture.EditorTools
 
         #region インスペクタ
 
+        private static readonly string[] PostureProps = { "angles" };
+
+        private static readonly string[] HandleProps =
+        {
+            "showTiltArc", "showAzimuthRing", "showAxisTip", "showSpinRing",
+            "showFrameAxes", "hideOthersWhileDragging",
+        };
+
+        private static readonly string[] ViewProps =
+        {
+            "targetCamera", "restrictToTargetCamera", "colliderGizmo",
+        };
+
+        private static readonly string[] InputProps = { "inputMode", "useKeyboardShortcuts" };
+
+        private static readonly string[] ToolProps =
+        {
+            "gizmoShader", "toolVisual", "toolShaftAxis", "toolReferenceAxis",
+        };
+
+        private Editor _themeEditor;
+        private Editor _profileEditor;
+
+        private void OnDisable()
+        {
+            if (_themeEditor != null) DestroyImmediate(_themeEditor);
+            if (_profileEditor != null) DestroyImmediate(_profileEditor);
+        }
+
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector();
-
             var g = (ToolPostureGizmo)target;
+            serializedObject.Update();
+
+            EditorGUILayout.LabelField("プリセット", EditorStyles.boldLabel);
+            DrawPresetSlot<GizmoTheme>("theme", "見た目 (Theme)", ref _themeEditor);
+            DrawPresetSlot<ToolPostureProfile>("profile", "規約 (Profile)", ref _profileEditor);
+
+            EditorGUILayout.Space();
+            DrawGroup("姿勢", PostureProps);
+            DrawGroup("ハンドル表示", HandleProps);
+            DrawGroup("表示", ViewProps);
+            DrawGroup("入力", InputProps, defaultOpen: false);
+            DrawGroup("シェーダ / 工具モデル", ToolProps, defaultOpen: false);
+            DrawRemaining();
+
+            serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("出力 (読み取り専用)", EditorStyles.boldLabel);
@@ -39,9 +81,9 @@ namespace ToolPosture.EditorTools
                 EditorGUILayout.Vector3Field("工具軸 X (LMN)", a.GetAxisLmn());
                 EditorGUILayout.Vector3Field("工具軸 X (world)", g.ToolAxisWorld);
                 EditorGUILayout.LabelField("導出値 (投影角)",
-                    $"w {g.workConvention.ToDisplay(a.WorkAngleDeg):F2}°   " +
-                    $"t {g.travelConvention.ToDisplay(a.TravelAngleDeg):F2}°   " +
-                    $"spin {g.spinConvention.ToDisplay(a.spinAngleDeg):F2}°");
+                    $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg):F2}°   " +
+                    $"t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg):F2}°   " +
+                    $"spin {g.Profile.spinConvention.ToDisplay(a.spinAngleDeg):F2}°");
                 EditorGUILayout.LabelField("N からの傾き α",
                     a.TiltIsSignificant()
                         ? $"{a.TiltFromNormalDeg:F2}°"
@@ -72,6 +114,123 @@ namespace ToolPosture.EditorTools
 
         #endregion
 
+        #region インスペクタのヘルパ
+
+        /// <summary>
+        /// 折りたたみの開閉。状態は EditorPrefs に残す。
+        /// </summary>
+        private static bool Foldout(string title, bool defaultOpen)
+        {
+            string key = "ToolPostureGizmo.fold." + title;
+            bool open = EditorPrefs.GetBool(key, defaultOpen);
+            bool now = EditorGUILayout.Foldout(open, title, true, EditorStyles.foldoutHeader);
+            if (now != open) EditorPrefs.SetBool(key, now);
+            return now;
+        }
+
+        private void DrawGroup(string title, string[] props, bool defaultOpen = true)
+        {
+            if (!Foldout(title, defaultOpen)) return;
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                foreach (string name in props)
+                {
+                    SerializedProperty p = serializedObject.FindProperty(name);
+                    if (p != null) EditorGUILayout.PropertyField(p, true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// どのグループにも入れていないプロパティを拾う。
+        /// フィールドを足したときにインスペクタから消えるのを防ぐための保険。
+        /// </summary>
+        private void DrawRemaining()
+        {
+            SerializedProperty it = serializedObject.GetIterator();
+            bool header = false;
+
+            for (bool enterChildren = true; it.NextVisible(enterChildren); enterChildren = false)
+            {
+                if (it.propertyPath == "m_Script") continue;
+                if (it.propertyPath == "theme" || it.propertyPath == "profile") continue;
+                if (System.Array.IndexOf(PostureProps, it.propertyPath) >= 0) continue;
+                if (System.Array.IndexOf(HandleProps, it.propertyPath) >= 0) continue;
+                if (System.Array.IndexOf(ViewProps, it.propertyPath) >= 0) continue;
+                if (System.Array.IndexOf(InputProps, it.propertyPath) >= 0) continue;
+                if (System.Array.IndexOf(ToolProps, it.propertyPath) >= 0) continue;
+
+                if (!header)
+                {
+                    header = true;
+                    EditorGUILayout.LabelField("その他", EditorStyles.boldLabel);
+                }
+                EditorGUILayout.PropertyField(it, true);
+            }
+        }
+
+        /// <summary>
+        /// プリセットアセットの割当欄。未設定なら組み込み既定を使っている旨を出し、
+        /// 割り当て済みならその中身をここで直接編集できるようにする。
+        /// </summary>
+        private void DrawPresetSlot<T>(string propName, string label, ref Editor cached)
+            where T : ScriptableObject
+        {
+            SerializedProperty prop = serializedObject.FindProperty(propName);
+            if (prop == null) return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(prop, new GUIContent(label));
+                if (GUILayout.Button("新規", GUILayout.Width(44f)))
+                {
+                    T created = CreateAsset<T>();
+                    if (created != null) prop.objectReferenceValue = created;
+                }
+            }
+
+            var asset = prop.objectReferenceValue as T;
+            if (asset == null)
+            {
+                EditorGUILayout.LabelField(" ", "組み込み既定を使用中", EditorStyles.miniLabel);
+                if (cached != null) { DestroyImmediate(cached); cached = null; }
+                return;
+            }
+
+            string key = "ToolPostureGizmo.inline." + propName;
+            bool open = EditorGUILayout.Foldout(EditorPrefs.GetBool(key, false), "中身を編集", true);
+            EditorPrefs.SetBool(key, open);
+            if (!open)
+            {
+                if (cached != null) { DestroyImmediate(cached); cached = null; }
+                return;
+            }
+
+            if (cached == null || cached.target != asset)
+            {
+                if (cached != null) DestroyImmediate(cached);
+                cached = CreateEditor(asset);
+            }
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                cached.OnInspectorGUI();
+        }
+
+        private static T CreateAsset<T>() where T : ScriptableObject
+        {
+            string path = EditorUtility.SaveFilePanelInProject(
+                "アセットを作成", typeof(T).Name, "asset", "");
+            if (string.IsNullOrEmpty(path)) return null;
+
+            var asset = CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            AssetDatabase.SaveAssets();
+            return asset;
+        }
+
+        #endregion
+
         #region シーンビュー
 
         private void OnSceneGUI()
@@ -87,7 +246,7 @@ namespace ToolPosture.EditorTools
             DrawFrameAxes(g, f, scale);
 
             Vector3 axis = angles.GetAxisWorld(f);
-            Handles.color = g.axisColor;
+            Handles.color = g.Theme.axisColor;
             Handles.DrawAAPolyLine(4f, f.Origin, f.Origin + axis * scale * 1.25f);
 
             bool changed = false;
@@ -101,13 +260,13 @@ namespace ToolPosture.EditorTools
 
                 float alpha = angles.TiltFromNormalDeg;
                 float edited = EditArc(g, f.Origin, f.Normal, tiltDir, scale * WorkArcRadiusScale,
-                                       alpha, g.tiltConvention, g.tiltColor, ref changed);
+                                       alpha, g.Profile.tiltConvention, g.Theme.tiltColor, ref changed);
 
                 if (!Mathf.Approximately(edited, alpha))
                 {
                     float limit = Mathf.Atan(TiltLimits.MaxTanTilt(g, azimuth)) * Mathf.Rad2Deg;
                     angles.TiltFromNormalDeg =
-                        Mathf.Clamp(g.tiltConvention.ClampInternal(edited), -limit, limit);
+                        Mathf.Clamp(g.Profile.tiltConvention.ClampInternal(edited), -limit, limit);
                 }
             }
 
@@ -118,27 +277,27 @@ namespace ToolPosture.EditorTools
                 Vector3 v = f.Feed;        // +90 度 = M
                 float r = scale * AzimuthRingRadiusScale;
 
-                Handles.color = new Color(g.azimuthColor.r, g.azimuthColor.g, g.azimuthColor.b,
+                Handles.color = new Color(g.Theme.azimuthColor.r, g.Theme.azimuthColor.g, g.Theme.azimuthColor.b,
                                           affects ? 0.55f : 0.20f);
                 Handles.DrawWireDisc(f.Origin, f.Normal, r);
 
                 // 傾き 0 でも編集できる。旋回角は姿勢の中に保持されるので、
                 // 次に倒す向きを先に決められる。
-                float na = EditArc(g, f.Origin, u, v, r, angles.azimuthDeg, g.azimuthConvention,
-                                   g.azimuthColor, ref changed);
+                float na = EditArc(g, f.Origin, u, v, r, angles.azimuthDeg, g.Profile.azimuthConvention,
+                                   g.Theme.azimuthColor, ref changed);
                 angles.azimuthDeg = na;
             }
 
             if (g.showSpinRing)
             {
                 Vector3 spinAxis = angles.GetAxisWorld(f);
-                Vector3 u = g.spinReference.Resolve(f, spinAxis);
+                Vector3 u = g.Profile.spinReference.Resolve(f, spinAxis);
                 Vector3 v = Vector3.Cross(spinAxis, u);
                 Vector3 center = f.Origin + spinAxis * (scale * 0.86f);
 
                 float s = EditArc(g, center, u, v, scale * SpinRingRadiusScale,
-                                  angles.spinAngleDeg, g.spinConvention, g.spinColor, ref changed);
-                angles.spinAngleDeg = g.spinConvention.ClampInternal(s);
+                                  angles.spinAngleDeg, g.Profile.spinConvention, g.Theme.spinColor, ref changed);
+                angles.spinAngleDeg = g.Profile.spinConvention.ClampInternal(s);
             }
 
             if (changed)
@@ -157,9 +316,9 @@ namespace ToolPosture.EditorTools
 
         private static void DrawFrameAxes(ToolPostureGizmo g, PathFrame f, float scale)
         {
-            DrawAxis(f.Origin, f.CrossFeed, scale * 0.95f, g.frameColorL, "L");
-            DrawAxis(f.Origin, f.Feed, scale * 1.25f, g.frameColorM, "M");
-            DrawAxis(f.Origin, f.Normal, scale * 1.25f, g.frameColorN, "N");
+            DrawAxis(f.Origin, f.CrossFeed, scale * 0.95f, g.Theme.frameColorL, "L");
+            DrawAxis(f.Origin, f.Feed, scale * 1.25f, g.Theme.frameColorM, "M");
+            DrawAxis(f.Origin, f.Normal, scale * 1.25f, g.Theme.frameColorN, "N");
         }
 
         private static void DrawAxis(Vector3 origin, Vector3 dir, float length, Color color, string label)
@@ -177,7 +336,7 @@ namespace ToolPosture.EditorTools
         private static float EditArc(ToolPostureGizmo g, Vector3 center, Vector3 u, Vector3 v, float radius,
                              float angleDeg, AngleConvention conv, Color color, ref bool changed)
         {
-            conv.GetArcRange(g.fallbackArcHalfWidthDeg, out float lo, out float hi);
+            conv.GetArcRange(g.Theme.fallbackArcHalfWidthDeg, out float lo, out float hi);
             Vector3 normal = Vector3.Cross(u, v);
 
             Handles.color = new Color(color.r, color.g, color.b, 0.14f);
@@ -215,9 +374,9 @@ namespace ToolPosture.EditorTools
             };
 
             string text =
-                $"w {g.workConvention.ToDisplay(a.WorkAngleDeg):F1}°\n" +
-                $"t {g.travelConvention.ToDisplay(a.TravelAngleDeg):F1}°\n" +
-                $"spin {g.spinConvention.ToDisplay(a.spinAngleDeg):F1}°";
+                $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg):F1}°\n" +
+                $"t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg):F1}°\n" +
+                $"spin {g.Profile.spinConvention.ToDisplay(a.spinAngleDeg):F1}°";
 
             Handles.Label(f.Origin + f.Normal * scale * 1.45f, text, style);
 

@@ -44,29 +44,21 @@ namespace ToolPosture.Gizmo
     [AddComponentMenu("Tool Posture/Tool Posture Gizmo")]
     public class ToolPostureGizmo : MonoBehaviour
     {
+        #region プリセット
+
+        [Header("プリセット (未設定なら組み込み既定を使う)")]
+        [Tooltip("見た目と当たりの太さ")]
+        [SerializeField] private GizmoTheme theme;
+
+        [Tooltip("角度規約と可動範囲")]
+        [SerializeField] private ToolPostureProfile profile;
+
+        #endregion
+
         #region 姿勢
 
         [Header("姿勢 (保持は球面表現 theta / phi / spin)")]
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
-
-        [Header("角度規約 (0 度位置 / 回転方向 / 可動範囲)")]
-        [Tooltip("旋回角 theta。母材面内の方位なので既定は無制限")]
-        public AngleConvention azimuthConvention = AngleConvention.Unlimited();
-
-        [Tooltip("傾斜角 alpha = 90 - phi。N からの倒し量")]
-        public AngleConvention tiltConvention = AngleConvention.Elevation();
-
-        public AngleConvention spinConvention = AngleConvention.Unlimited();
-
-        [Header("投影角の可動範囲 (溶接規格側の制限)")]
-        [Tooltip("狙い角 w の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
-        public AngleConvention workConvention = AngleConvention.Ranged(-60f, 60f);
-
-        [Tooltip("進行角 t の許容範囲。ハンドルは持たないが、方位ごとの傾斜上限を決める")]
-        public AngleConvention travelConvention = AngleConvention.Ranged(-60f, 60f);
-
-        [Tooltip("トーチ回転角 0 度の基準")]
-        public SpinReference spinReference = SpinReference.FeedProjected;
 
         #endregion
 
@@ -90,55 +82,17 @@ namespace ToolPosture.Gizmo
 
         #endregion
 
-        #region 寸法
+        #region 表示
 
         [Header("表示")]
         [Tooltip("描画とレイ生成に使うカメラ。未設定なら Camera.main")]
         public Camera targetCamera;
 
-        [Tooltip("ギズモの画面上の大きさ [px]。カメラ距離によらず一定に保たれる")]
-        public float gizmoPixelSize = 130f;
+        [Tooltip("targetCamera にだけ描く")]
+        public bool restrictToTargetCamera = false;
 
-        [Tooltip("円弧・リングの描画幅 [px]")]
-        public float arcPixelWidth = 8f;
-
-        [Tooltip("破線・目盛りの線幅 [px]")]
-        public float thinPixelWidth = 1.2f;
-
-        [Tooltip("ノブの半径 [px]")]
-        public float knobPixelRadius = 8f;
-
-        [Tooltip("軸先端のボールの描画半径 [px]")]
-        public float tipPixelRadius = 8f;
-
-        [Tooltip("可動範囲を使わない角度の円弧の描画半幅 [deg]")]
-        public float fallbackArcHalfWidthDeg = 75f;
-
-        #endregion
-
-        #region 当たり判定
-
-        [Header("当たり判定")]
-        [Tooltip("円弧・リングに巻くチューブの直径 [px]。この幅は視線角度によらず一定")]
-        public float hitPixelWidth = 20f;
-
-        [Tooltip("タッチでのチューブの直径 [px]。指は狙いが粗いのでマウスより太くする")]
-        public float touchHitPixelWidth = 40f;
-
-        [Tooltip("軸先端の当たり判定の半径 [px]")]
-        public float tipHitPixelRadius = 14f;
-
-        [Tooltip("タッチでの軸先端の当たり判定の倍率")]
-        public float touchTipHitScale = 1.9f;
-
-        [Header("当たり判定のデバッグ表示")]
         [Tooltip("コライダーの形を Gizmos で描く。Game View で見るには Gizmos の表示を有効にすること")]
         public ColliderGizmoMode colliderGizmo = ColliderGizmoMode.Off;
-
-        public Color colliderGizmoColor = new Color(0.20f, 0.90f, 1.00f, 0.85f);
-
-        [Tooltip("今は掴めないハンドル (非表示 / ドラッグ中に隠れている) の色")]
-        public Color colliderGizmoDisabledColor = new Color(0.45f, 0.50f, 0.55f, 0.35f);
 
         #endregion
 
@@ -153,25 +107,7 @@ namespace ToolPosture.Gizmo
 
         #endregion
 
-        #region 色
-
-        [Header("色")]
-        public Color frameColorL = new Color(1.00f, 0.48f, 0.32f, 0.95f);
-        public Color frameColorM = new Color(0.42f, 0.90f, 0.48f, 0.95f);
-        public Color frameColorN = new Color(0.36f, 0.64f, 1.00f, 0.95f);
-        public Color tiltColor = new Color(1.00f, 0.45f, 0.74f, 0.95f);
-        public Color axisColor = new Color(1.00f, 0.83f, 0.26f, 0.95f);
-        public Color spinColor = new Color(0.74f, 0.62f, 1.00f, 0.95f);
-        public Color azimuthColor = new Color(0.55f, 0.95f, 0.60f, 0.95f);
-        public Color highlightColor = new Color(1.00f, 1.00f, 0.72f, 1.00f);
-        public Color zeroTickColor = new Color(1.00f, 1.00f, 1.00f, 0.90f);
-        public Color limitColor = new Color(1.00f, 0.38f, 0.32f, 0.95f);
-
-        [Tooltip("手前の物体に隠れている部分の濃さ")]
-        [Range(0f, 1f)] public float occludedAlpha = 0.22f;
-
-        [Tooltip("targetCamera にだけ描く")]
-        public bool restrictToTargetCamera = false;
+        #region シェーダ / 工具モデル
 
         [Header("シェーダ / 工具モデル")]
         [Tooltip("未設定なら ToolPosture/GizmoVertexColor を探す")]
@@ -207,6 +143,25 @@ namespace ToolPosture.Gizmo
         #endregion
 
         #region 公開プロパティ
+
+        /// <summary>
+        /// 見た目と当たりの太さ。未設定なら組み込み既定を返すので null にならない。
+        /// 実行中に差し替えれば次のフレームから反映される。
+        /// </summary>
+        public GizmoTheme Theme
+        {
+            get => theme != null ? theme : GizmoTheme.Default;
+            set => theme = value;
+        }
+
+        /// <summary>
+        /// 角度規約と可動範囲。未設定なら組み込み既定を返すので null にならない。
+        /// </summary>
+        public ToolPostureProfile Profile
+        {
+            get => profile != null ? profile : ToolPostureProfile.Default;
+            set => profile = value;
+        }
 
         /// <summary>
         /// 工具姿勢が乗る LMN フレーム。
@@ -290,9 +245,9 @@ namespace ToolPosture.Gizmo
         }
 
         /// <summary>
-        /// ギズモのワールド上の大きさ。画面上で gizmoPixelSize [px] になるよう保つ。
+        /// ギズモのワールド上の大きさ。画面上で Theme.gizmoPixelSize [px] になるよう保つ。
         /// </summary>
-        public float Scale => Mathf.Max(1e-4f, gizmoPixelSize * WorldPerPixel(Cam, _frame.Origin));
+        public float Scale => Mathf.Max(1e-4f, Theme.gizmoPixelSize * WorldPerPixel(Cam, _frame.Origin));
 
         /// <summary>
         /// ギズモ原点における px からワールド長への換算。
@@ -320,12 +275,12 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// 現在のポインタ種別に応じたチューブの直径 [px]。
         /// </summary>
-        public float HitPixelWidth => _pointerIsTouch ? touchHitPixelWidth : hitPixelWidth;
+        public float HitPixelWidth => _pointerIsTouch ? Theme.touchHitPixelWidth : Theme.hitPixelWidth;
 
         /// <summary>
         /// 現在のポインタ種別に応じた軸先端の当たり判定半径 [px]。
         /// </summary>
-        public float TipHitPixelRadius => tipHitPixelRadius * (_pointerIsTouch ? touchTipHitScale : 1f);
+        public float TipHitPixelRadius => Theme.tipHitPixelRadius * (_pointerIsTouch ? Theme.touchTipHitScale : 1f);
 
         public float ClampProjected(float deg)
             => Mathf.Clamp(deg, -ToolPostureAngles.MaxProjectedAngleDeg, ToolPostureAngles.MaxProjectedAngleDeg);
@@ -391,7 +346,7 @@ namespace ToolPosture.Gizmo
         public void SetToolRotation(Quaternion rotation)
         {
             var a = angles;
-            a.SetToolRotation(_frame, rotation, toolShaftAxis, toolReferenceAxis, spinReference);
+            a.SetToolRotation(_frame, rotation, toolShaftAxis, toolReferenceAxis, Profile.spinReference);
             Angles = a;
         }
 
@@ -419,7 +374,7 @@ namespace ToolPosture.Gizmo
         /// トーチ回転角まで含めた完全な工具姿勢。
         /// </summary>
         public Quaternion ToolRotation
-            => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis, spinReference);
+            => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis, Profile.spinReference);
 
         #endregion
 
@@ -496,7 +451,7 @@ namespace ToolPosture.Gizmo
                 // 編集中は LateUpdate が回らないので、ここで実体を作り直す
                 if (!Application.isPlaying) SyncColliders();
 
-                _colliders.DrawWireframe(colliderGizmoColor, colliderGizmoDisabledColor);
+                _colliders.DrawWireframe(Theme.colliderGizmoColor, Theme.colliderGizmoDisabledColor);
                 return;
             }
 
@@ -506,7 +461,7 @@ namespace ToolPosture.Gizmo
                 bool grabbable = h.Visible &&
                                  (_active == null || !hideOthersWhileDragging || h == _active);
 
-                Gizmos.color = grabbable ? colliderGizmoColor : colliderGizmoDisabledColor;
+                Gizmos.color = grabbable ? Theme.colliderGizmoColor : Theme.colliderGizmoDisabledColor;
                 GizmoHandleColliders.DrawShapeOutline(h.GetShape(), tube);
             }
         }
@@ -703,15 +658,15 @@ namespace ToolPosture.Gizmo
             switch (id)
             {
                 case GizmoHandleId.SpinRing:
-                    a.spinAngleDeg = spinConvention.ClampInternal(spinConvention.ToInternal(displayDeg));
+                    a.spinAngleDeg = Profile.spinConvention.ClampInternal(Profile.spinConvention.ToInternal(displayDeg));
                     break;
                 case GizmoHandleId.AzimuthRing:
                     // 旋回角だけを差し替える。傾きは変わらない。
-                    a.azimuthDeg = azimuthConvention.ToInternal(displayDeg);
+                    a.azimuthDeg = Profile.azimuthConvention.ToInternal(displayDeg);
                     break;
                 case GizmoHandleId.TiltArc:
                     // 傾きだけを差し替える。旋回角は変わらない。
-                    a.TiltFromNormalDeg = tiltConvention.ClampInternal(tiltConvention.ToInternal(displayDeg));
+                    a.TiltFromNormalDeg = Profile.tiltConvention.ClampInternal(Profile.tiltConvention.ToInternal(displayDeg));
                     break;
                 default:
                     return;   // AxisTip は角度 1 つでは決まらない
@@ -729,8 +684,8 @@ namespace ToolPosture.Gizmo
 
             var a = angles;
             a.SetAxisLmn(lmn);      // 極付近では旋回角がそのまま保たれる
-            a.WorkAngleDeg = workConvention.ClampInternal(a.WorkAngleDeg);
-            a.TravelAngleDeg = travelConvention.ClampInternal(a.TravelAngleDeg);
+            a.WorkAngleDeg = Profile.workConvention.ClampInternal(a.WorkAngleDeg);
+            a.TravelAngleDeg = Profile.travelConvention.ClampInternal(a.TravelAngleDeg);
             Angles = a;
         }
 
@@ -820,7 +775,7 @@ namespace ToolPosture.Gizmo
             if (_builder.VertexCount == 0) return;
 
             var bounds = new Bounds(_frame.Origin, Vector3.one * (Scale * 6f));
-            _matBehind.SetColor("_Tint", new Color(1f, 1f, 1f, occludedAlpha));
+            _matBehind.SetColor("_Tint", new Color(1f, 1f, 1f, Theme.occludedAlpha));
 
             var behind = new RenderParams(_matBehind)
             {
@@ -860,15 +815,15 @@ namespace ToolPosture.Gizmo
 
             if (showFrameAxes)
             {
-                b.AddArrow(o, _frame.CrossFeed, s * 0.95f, camPos, lineHalf, headR, headL, frameColorL);
-                b.AddArrow(o, _frame.Feed, s * 1.25f, camPos, lineHalf, headR, headL, frameColorM);
-                b.AddArrow(o, _frame.Normal, s * 1.25f, camPos, lineHalf, headR, headL, frameColorN);
+                b.AddArrow(o, _frame.CrossFeed, s * 0.95f, camPos, lineHalf, headR, headL, Theme.frameColorL);
+                b.AddArrow(o, _frame.Feed, s * 1.25f, camPos, lineHalf, headR, headL, Theme.frameColorM);
+                b.AddArrow(o, _frame.Normal, s * 1.25f, camPos, lineHalf, headR, headL, Theme.frameColorN);
             }
 
             // 工具軸 X は常に描く (軸先端ハンドルの表示に依存しない)
             Vector3 axis = angles.GetAxisWorld(_frame);
-            b.AddArrow(o, axis, s * 1.25f, camPos, PixelToWorld(2.4f), PixelToWorld(6.5f), headL, axisColor);
-            b.AddBillboardDisc(o, cam, PixelToWorld(3.5f), zeroTickColor);
+            b.AddArrow(o, axis, s * 1.25f, camPos, PixelToWorld(2.4f), PixelToWorld(6.5f), headL, Theme.axisColor);
+            b.AddBillboardDisc(o, cam, PixelToWorld(3.5f), Theme.zeroTickColor);
 
             foreach (var h in _handles)
             {

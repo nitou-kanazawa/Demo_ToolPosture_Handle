@@ -158,6 +158,41 @@ AWS work angle = **狙い角**（作業角）です。
 
 ---
 
+## プリセット（ScriptableObject）
+
+インスペクタが 45 フィールドまで膨れていたので、使い回したいものを 2 枚のアセットへ出しました。
+コンポーネントに残るのは 18 フィールドです。
+
+| アセット | 中身 | 切り替えたい単位 |
+|---|---|---|
+| `GizmoTheme` | 色 10 + 寸法 6 + 当たり判定 4 + デバッグ色 2 | 見た目・入力デバイス |
+| `ToolPostureProfile` | 角度規約 3 + 投影角の可動範囲 2 + spin 基準 | 工程・開先形状・材料 |
+
+当たり判定の太さを `GizmoTheme` に入れてあるのは、タッチ向けに「太いチューブ + 大きいノブ」を
+まとめて切り替えたいことが多く、別アセットに分けると 2 枚を必ず対で差し替える運用になるためです。
+
+**どちらも未設定で動きます。**`Theme` / `Profile` プロパティは未設定なら組み込み既定
+（`CreateInstance` した静的インスタンス）を返すので、アセットを 1 つも作らずに使い始められます。
+
+```csharp
+gizmo.Theme = touchTheme;      // 実行中に差し替えれば次のフレームから反映される
+gizmo.Profile = narrowGroove;
+```
+
+同梱のサンプル: `Assets/ToolPosture/Presets/`
+
+- `GizmoTheme_Touch` … チューブとノブを太く
+- `GizmoTheme_HighContrast` … 屋外・明るい背景向けに彩度と不透明度を上げたもの
+- `ToolPostureProfile_NarrowGroove` … 投影角の可動範囲を絞り、傾斜のスナップを 1° に
+
+> アセットなので、**実行中に中身を書き換えるとエディタでは永続化されます。**
+> ギズモ側は読むだけです。インスタンスごとに変えたい場合は `Instantiate` してから差し替えてください。
+
+インスペクタは折りたたみ式にしてあり、割り当てたアセットの中身をその場で編集できます。
+未設定の欄では「新規」ボタンからアセットを作って割り当てられます。
+
+---
+
 ## `ToolPostureGizmo` の責務
 
 このコンポーネントは「**与えられた 1 つのフレームに対して工具軸 X と軸まわりの回転を定める**」
@@ -276,8 +311,10 @@ angles.SetToolRotation(frame, euler.ToRotation(), shaftAxis, referenceAxis, spin
 Assets/ToolPosture/
   Runtime/Core/     PathFrame / ToolPostureAngles / AngleConvention / IPathFrameSource
                     ZyxEulerAngles / SpinReference      ← 依存ゼロの別アセンブリ
+                    ToolPostureProfile          角度規約と可動範囲 (SO)
   Runtime/Path/     WeldPath                    経路。フレームを計算してギズモへ渡す
   Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・レイでの操作 API
+                    GizmoTheme                  見た目と当たりの太さ (SO)
                     GizmoHandles                各ハンドル（値の読み書きと形状）
                     GizmoHandleShape            円弧 / 球の形状記述
                     GizmoHandleColliders        チューブコライダーの生成と追従
@@ -286,7 +323,9 @@ Assets/ToolPosture/
   Runtime/UI/       PostureReadoutUI            数値表示・表示切替
   Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / RobotPostureBridge
                     OrbitCamera / WeldPathSurface
-  Editor/           ToolPostureGizmoEditor      シーンビュー版（Handles 使用）
+  Presets/          GizmoTheme_Touch / GizmoTheme_HighContrast
+                    ToolPostureProfile_NarrowGroove
+  Editor/           ToolPostureGizmoEditor      シーンビュー版 + 折りたたみインスペクタ
   Tests/EditMode/   79 件
 ```
 

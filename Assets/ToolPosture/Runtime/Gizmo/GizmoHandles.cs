@@ -33,8 +33,8 @@ namespace ToolPosture.Gizmo
             float c = Mathf.Cos(a), s = Mathf.Sin(a);
             float max = Mathf.Tan(ToolPostureAngles.MaxProjectedAngleDeg * Mathf.Deg2Rad);
 
-            max = Mathf.Min(max, LimitFor(c, g.workConvention));
-            max = Mathf.Min(max, LimitFor(s, g.travelConvention));
+            max = Mathf.Min(max, LimitFor(c, g.Profile.workConvention));
+            max = Mathf.Min(max, LimitFor(s, g.Profile.travelConvention));
             return Mathf.Max(0f, max);
         }
 
@@ -191,7 +191,7 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public void GetAlphaRange(float azimuthDeg, out float lo, out float hi)
         {
-            AngleConvention conv = G.tiltConvention;
+            AngleConvention conv = G.Profile.tiltConvention;
             float projectedHi = Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg)) * Mathf.Rad2Deg;
             float projectedLo = -Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg + 180f)) * Mathf.Rad2Deg;
 
@@ -221,23 +221,24 @@ namespace ToolPosture.Gizmo
         public override void Drag(Ray ray, bool snap)
         {
             if (!_drag.TryGetValue(ray, out float v)) return;
-            if (snap) v = G.tiltConvention.SnapInternal(v);
+            if (snap) v = G.Profile.tiltConvention.SnapInternal(v);
             Value = v;
         }
 
         public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
         {
             Camera cam = G.Cam;
+            GizmoTheme th = G.Theme;
             if (cam == null) return;
 
             Vector3 o = G.Frame.Origin;
             Vector3 eye = G.EyePosition;
             Vector3 u = U, v = V;
-            Color c = G.tiltColor;
-            Color line = (hover || active) ? G.highlightColor : c;
+            Color c = th.tiltColor;
+            Color line = (hover || active) ? th.highlightColor : c;
             float r = Radius;
-            float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
-            float thin = G.PixelToWorld(G.thinPixelWidth);
+            float halfWidth = G.PixelToWorld(th.arcPixelWidth) * 0.5f;
+            float thin = G.PixelToWorld(th.thinPixelWidth);
 
             float azimuth = PlaneAzimuthDeg;
             GetAlphaRange(azimuth, out float lo, out float hi);
@@ -246,7 +247,7 @@ namespace ToolPosture.Gizmo
 
             // 可動範囲の帯
             b.AddArcBand(o, u, v, r, halfWidth * 0.5f, lo, hi,
-                         GizmoMeshBuilder.Fade(atLimit ? G.limitColor : c, 0.30f));
+                         GizmoMeshBuilder.Fade(atLimit ? th.limitColor : c, 0.30f));
 
             // N から工具軸までの扇形と円弧
             b.AddSector(o, u, v, r * 0.60f, 0f, value, GizmoMeshBuilder.Fade(c, 0.22f));
@@ -256,20 +257,20 @@ namespace ToolPosture.Gizmo
             b.AddScreenDashedLine(o, GizmoMeshBuilder.OnCircle(o, u, v, r * 1.14f, 0f),
                                   eye, thin, G.PixelToWorld(9f), GizmoMeshBuilder.Fade(c, 0.55f));
 
-            b.AddRadialTick(o, u, v, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
+            b.AddRadialTick(o, u, v, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, th.zeroTickColor);
             b.AddRadialTick(o, u, v, r, lo, G.PixelToWorld(10f), thin, eye,
-                            GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
+                            GizmoMeshBuilder.Fade(th.limitColor, 0.8f));
             b.AddRadialTick(o, u, v, r, hi, G.PixelToWorld(10f), thin, eye,
-                            GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
+                            GizmoMeshBuilder.Fade(th.limitColor, 0.8f));
 
             // 円弧が乗っている平面を示す線 (LM 平面上の倒れ方向)
             b.AddScreenDashedLine(o, o + v * r * 0.9f, eye, thin, G.PixelToWorld(7f),
-                                  GizmoMeshBuilder.Fade(G.azimuthColor, 0.45f));
+                                  GizmoMeshBuilder.Fade(th.azimuthColor, 0.45f));
 
             // 現在値のノブ (常に工具軸の上に乗る)
             Vector3 knob = GizmoMeshBuilder.OnCircle(o, u, v, r, value);
             b.AddBillboardDisc(knob, cam,
-                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
+                               G.PixelToWorld(th.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
         }
     }
 
@@ -310,13 +311,13 @@ namespace ToolPosture.Gizmo
             ToolPostureAngles.AnglesFromAxisLmn(lmn, out float w, out float t);
             if (snap)
             {
-                w = G.workConvention.SnapInternal(w);
-                t = G.travelConvention.SnapInternal(t);
+                w = G.Profile.workConvention.SnapInternal(w);
+                t = G.Profile.travelConvention.SnapInternal(t);
             }
 
             var a = G.Angles;
-            a.WorkAngleDeg = G.ClampProjected(G.workConvention.ClampInternal(w));
-            a.TravelAngleDeg = G.ClampProjected(G.travelConvention.ClampInternal(t));
+            a.WorkAngleDeg = G.ClampProjected(G.Profile.workConvention.ClampInternal(w));
+            a.TravelAngleDeg = G.ClampProjected(G.Profile.travelConvention.ClampInternal(t));
             G.Angles = a;
         }
 
@@ -354,15 +355,16 @@ namespace ToolPosture.Gizmo
         public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
         {
             Camera cam = G.Cam;
+            GizmoTheme th = G.Theme;
             if (cam == null) return;
 
             Vector3 tip = Tip;
-            Color col = (hover || active) ? G.highlightColor : G.axisColor;
+            Color col = (hover || active) ? th.highlightColor : th.axisColor;
 
-            b.AddBillboardRing(tip, cam, G.PixelToWorld(G.tipPixelRadius * 1.7f),
-                               G.PixelToWorld(G.thinPixelWidth), GizmoMeshBuilder.Fade(col, 0.5f));
+            b.AddBillboardRing(tip, cam, G.PixelToWorld(th.tipPixelRadius * 1.7f),
+                               G.PixelToWorld(th.thinPixelWidth), GizmoMeshBuilder.Fade(col, 0.5f));
             b.AddBillboardDisc(tip, cam,
-                               G.PixelToWorld(G.tipPixelRadius * ((hover || active) ? 1f : 0.8f)), col);
+                               G.PixelToWorld(th.tipPixelRadius * ((hover || active) ? 1f : 0.8f)), col);
         }
     }
 
@@ -386,7 +388,7 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// スピン 0 度の基準方向。
         /// </summary>
-        private Vector3 U => G.spinReference.Resolve(G.Frame, Axis);
+        private Vector3 U => G.Profile.spinReference.Resolve(G.Frame, Axis);
 
         /// <summary>
         /// +90 度方向。Quaternion.AngleAxis(90, axis) * U と一致する。
@@ -421,35 +423,36 @@ namespace ToolPosture.Gizmo
         public override void Drag(Ray ray, bool snap)
         {
             if (!_drag.TryGetValue(ray, out float v)) return;
-            if (snap) v = G.spinConvention.SnapInternal(v);
-            Value = G.spinConvention.ClampInternal(v);
+            if (snap) v = G.Profile.spinConvention.SnapInternal(v);
+            Value = G.Profile.spinConvention.ClampInternal(v);
         }
 
         public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
         {
             Camera cam = G.Cam;
+            GizmoTheme th = G.Theme;
             if (cam == null) return;
 
             Vector3 c = Center;
             Vector3 eye = G.EyePosition;
-            Color col = G.spinColor;
-            Color line = (hover || active) ? G.highlightColor : col;
+            Color col = th.spinColor;
+            Color line = (hover || active) ? th.highlightColor : col;
             float r = Radius;
-            float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
-            float thin = G.PixelToWorld(G.thinPixelWidth);
+            float halfWidth = G.PixelToWorld(th.arcPixelWidth) * 0.5f;
+            float thin = G.PixelToWorld(th.thinPixelWidth);
 
             b.AddArcBand(c, U, V, r, halfWidth * 0.55f, 0f, 360f, GizmoMeshBuilder.Fade(col, 0.45f));
 
             b.AddSector(c, U, V, r * 0.60f, 0f, Value, GizmoMeshBuilder.Fade(col, 0.20f));
             b.AddArcBand(c, U, V, r, halfWidth, 0f, Value, line);
 
-            b.AddRadialTick(c, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
+            b.AddRadialTick(c, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, th.zeroTickColor);
             b.AddScreenDashedLine(c, c + U * r * 1.3f, eye, thin,
-                                  G.PixelToWorld(9f), GizmoMeshBuilder.Fade(G.zeroTickColor, 0.6f));
+                                  G.PixelToWorld(9f), GizmoMeshBuilder.Fade(th.zeroTickColor, 0.6f));
 
             Vector3 knob = GizmoMeshBuilder.OnCircle(c, U, V, r, Value);
             b.AddBillboardDisc(knob, cam,
-                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
+                               G.PixelToWorld(th.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
         }
     }
 
@@ -509,7 +512,7 @@ namespace ToolPosture.Gizmo
         public override void Drag(Ray ray, bool snap)
         {
             if (!_drag.TryGetValue(ray, out float azimuth)) return;
-            if (snap) azimuth = G.azimuthConvention.SnapInternal(azimuth);
+            if (snap) azimuth = G.Profile.azimuthConvention.SnapInternal(azimuth);
 
             var angles = G.Angles;
             angles.azimuthDeg = azimuth;
@@ -526,18 +529,19 @@ namespace ToolPosture.Gizmo
         public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
         {
             Camera cam = G.Cam;
+            GizmoTheme th = G.Theme;
             if (cam == null) return;
 
             Vector3 o = G.Frame.Origin;
             Vector3 eye = G.EyePosition;
             float r = Radius;
-            float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
+            float halfWidth = G.PixelToWorld(th.arcPixelWidth) * 0.5f;
 
             bool defined = G.AzimuthAffectsToolAxis;
             float azimuth = G.AzimuthDeg;
 
-            Color col = G.azimuthColor;
-            Color line = (hover || active) ? G.highlightColor : col;
+            Color col = th.azimuthColor;
+            Color line = (hover || active) ? th.highlightColor : col;
 
             // 姿勢から決まらない (保持値を使っている) ときは薄く描いて区別する
             float held = defined ? 1f : 0.45f;
@@ -546,7 +550,7 @@ namespace ToolPosture.Gizmo
                          GizmoMeshBuilder.Fade(col, 0.50f * held));
 
             b.AddRadialTick(o, U, V, r, 0f, G.PixelToWorld(18f), G.PixelToWorld(1.6f), eye,
-                            GizmoMeshBuilder.Fade(G.zeroTickColor, held));
+                            GizmoMeshBuilder.Fade(th.zeroTickColor, held));
 
             b.AddSector(o, U, V, r * 0.55f, 0f, azimuth, GizmoMeshBuilder.Fade(col, 0.18f * held));
             b.AddArcBand(o, U, V, r, halfWidth, 0f, azimuth, GizmoMeshBuilder.Fade(line, held));
@@ -557,7 +561,7 @@ namespace ToolPosture.Gizmo
                                   GizmoMeshBuilder.Fade(col, 0.75f * held));
 
             b.AddBillboardDisc(dir, cam,
-                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)),
+                               G.PixelToWorld(th.knobPixelRadius * ((hover || active) ? 1f : 0.7f)),
                                GizmoMeshBuilder.Fade(line, held));
         }
     }

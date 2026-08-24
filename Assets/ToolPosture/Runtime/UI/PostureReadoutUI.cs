@@ -73,19 +73,19 @@ namespace ToolPosture.Demo
             _sb.AppendFormat("区間          {0} / {1}      u = {2:F2}\n",
                              segIndex + 1, Mathf.Max(segCount, 1), segU);
             _sb.AppendLine("────────────────────────────────");
-            AppendAngle("仰角        φ   ", tiltDeg, gizmo.tiltConvention, "1");
+            AppendAngle("仰角        φ   ", tiltDeg, gizmo.Profile.tiltConvention, "1");
             _sb.AppendFormat("<color=#6b7480>  (N からの傾き α {0:F1}°)</color>\n", tiltDeg);
 
-            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.azimuthConvention, "2");
+            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.Profile.azimuthConvention, "2");
             if (!gizmo.AzimuthAffectsToolAxis)
                 _sb.AppendFormat("<color=#ffb86b>  傾き {0:F2}° -> θ は保持値を使用中</color>\n", tiltDeg);
 
-            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.spinConvention, "4");
+            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.Profile.spinConvention, "4");
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("<color=#9aa4b0>投影角 (θ と φ からの導出値。ハンドルは持たない)</color>");
-            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.workConvention, "");
-            AppendAngle("進行角      t   ", a.TravelAngleDeg, gizmo.travelConvention, "");
+            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.Profile.workConvention, "");
+            AppendAngle("進行角      t   ", a.TravelAngleDeg, gizmo.Profile.travelConvention, "");
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("工具軸 X (LMN)");

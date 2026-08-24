@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f209187e13aa2954fa62a8dea23e8b76, type: 3}
+  m_Name: ToolPostureProfile_NarrowGroove
+  m_EditorClassIdentifier: ToolPosture.Core::ToolPosture.Core.ToolPostureProfile
+  azimuthConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 0
+    minDeg: -180
+    maxDeg: 180
+    snapDeg: 5
+  tiltConvention:
+    zeroOffsetDeg: 90
+    invertDirection: 1
+    useLimits: 1
+    minDeg: 0
+    maxDeg: 30
+    snapDeg: 1
+  spinConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 0
+    minDeg: -180
+    maxDeg: 180
+    snapDeg: 5
+  workConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 1
+    minDeg: -25
+    maxDeg: 25
+    snapDeg: 5
+  travelConvention:
+    zeroOffsetDeg: 0
+    invertDirection: 0
+    useLimits: 1
+    minDeg: -20
+    maxDeg: 20
+    snapDeg: 5
+  spinReference:
+    mode: 0
+    worldAxis: {x: 0, y: 0, z: 0}
+    degenerateFallback: {x: 0, y: 0, z: 0}

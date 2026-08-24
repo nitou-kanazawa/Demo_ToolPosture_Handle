@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51d15ab426dd29c46a339b1f28cba081, type: 3}
+  m_Name: GizmoTheme_HighContrast
+  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.GizmoTheme
+  gizmoPixelSize: 130
+  arcPixelWidth: 10
+  thinPixelWidth: 1.2
+  knobPixelRadius: 8
+  tipPixelRadius: 8
+  fallbackArcHalfWidthDeg: 75
+  hitPixelWidth: 20
+  touchHitPixelWidth: 40
+  tipHitPixelRadius: 14
+  touchTipHitScale: 1.9
+  frameColorL: {r: 1, g: 0.3, b: 0.1, a: 1}
+  frameColorM: {r: 0.1, g: 0.85, b: 0.2, a: 1}
+  frameColorN: {r: 0.1, g: 0.45, b: 1, a: 1}
+  tiltColor: {r: 1, g: 0.1, b: 0.55, a: 1}
+  spinColor: {r: 0.55, g: 0.25, b: 1, a: 1}
+  azimuthColor: {r: 0.1, g: 0.9, b: 0.35, a: 1}
+  axisColor: {r: 1, g: 0.75, b: 0, a: 1}
+  highlightColor: {r: 1, g: 1, b: 1, a: 1}
+  zeroTickColor: {r: 1, g: 1, b: 1, a: 0.9}
+  limitColor: {r: 1, g: 0.1, b: 0.05, a: 1}
+  occludedAlpha: 0.4
+  colliderGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  colliderGizmoDisabledColor: {r: 0.45, g: 0.5, b: 0.55, a: 0.35}
