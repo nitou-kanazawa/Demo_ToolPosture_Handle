@@ -16,6 +16,12 @@ namespace ToolPosture.Gizmo
         /// 球。当たり判定は SphereCollider。
         /// </summary>
         Sphere = 1,
+
+        /// <summary>
+        /// 線分。当たり判定は線分に沿ったカプセル。
+        /// 円弧のチューブと同じく断面が円なので、視線角度によらず掴み幅が一定になる。
+        /// </summary>
+        Segment = 2,
     }
 
     /// <summary>
@@ -71,6 +77,32 @@ namespace ToolPosture.Gizmo
                 FromDeg = fromDeg,
                 ToDeg = toDeg,
             };
+
+        /// <summary>
+        /// 線分の長さ。Segment でのみ使う。
+        /// </summary>
+        public float Length;
+
+        /// <summary>
+        /// 線分ハンドル。Center は中点、U が軸方向、Radius がカプセルの半径。
+        /// </summary>
+        public static GizmoHandleShape Line(Vector3 start, Vector3 end, float radius)
+        {
+            Vector3 d = end - start;
+            float length = d.magnitude;
+
+            return new GizmoHandleShape
+            {
+                Kind = GizmoShapeKind.Segment,
+                Center = (start + end) * 0.5f,
+                U = length > 1e-6f ? d / length : Vector3.forward,
+                V = Vector3.up,
+                Radius = radius,
+                Length = length,
+                FromDeg = 0f,
+                ToDeg = 360f,
+            };
+        }
 
         public static GizmoHandleShape Ball(Vector3 center, float radius)
             => new GizmoHandleShape

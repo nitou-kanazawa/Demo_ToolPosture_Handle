@@ -84,14 +84,14 @@ namespace ToolPosture.Demo
         private void OnEnable()
         {
             if (gizmo == null) return;
-            gizmo.PreparingFrame += PushFrame;
+            gizmo.Preparing += PushFrame;
             gizmo.BuildingExtraGeometry += DrawPath;
         }
 
         private void OnDisable()
         {
             if (gizmo == null) return;
-            gizmo.PreparingFrame -= PushFrame;
+            gizmo.Preparing -= PushFrame;
             gizmo.BuildingExtraGeometry -= DrawPath;
         }
 
@@ -109,10 +109,10 @@ namespace ToolPosture.Demo
         /// Update からだけでなく描画直前にも呼ばれる。編集中はエディタが Update を
         /// 回さないことがあり、それだけに頼るとギズモがフォールバック位置に出てしまう。
         /// </summary>
-        private void PushFrame(ToolPostureGizmo target)
+        private void PushFrame(RuntimeGizmo _)
         {
             segmentIndex = Mathf.Clamp(segmentIndex, 0, Mathf.Max(0, SegmentCount - 1));
-            target.Frame = GetFrame(segmentIndex, segmentU);
+            gizmo.Frame = GetFrame(segmentIndex, segmentU);
         }
 
         private void HandleKeyboard()

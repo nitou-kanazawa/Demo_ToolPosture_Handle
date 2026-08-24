@@ -89,7 +89,7 @@ namespace ToolPosture.Gizmo
         /// <summary>
         /// ハンドルの現在の形状にコライダーを合わせる。毎フレーム呼ぶ。
         /// </summary>
-        public void Sync(ToolPostureGizmo gizmo, IList<GizmoHandleBase> handles, GizmoHandleBase active)
+        public void Sync(RuntimeGizmo gizmo, IList<GizmoHandleBase> handles, GizmoHandleBase active)
         {
             EnsureRoot(gizmo);
             if (_entries.Count != handles.Count) Rebuild(handles);
@@ -114,10 +114,9 @@ namespace ToolPosture.Gizmo
 
                 // 掴めないハンドルも位置だけは合わせておく。そうしないと一度も
                 // 配置されないまま原点に残り、デバッグ表示に巨大な形が出てしまう。
-                if (shape.Kind == GizmoShapeKind.Arc)
-                    SyncArc(e, shape, tube, parentScale);
-                else
-                    SyncSphere(e, shape, parentScale);
+                if (shape.Kind == GizmoShapeKind.Arc) SyncArc(e, shape, tube, parentScale);
+                else if (shape.Kind == GizmoShapeKind.Segment) SyncSegment(e, shape, parentScale);
+                else SyncSphere(e, shape, parentScale);
 
                 e.Collider.enabled = e.Handle.Visible &&
                                      (active == null || !gizmo.hideOthersWhileDragging || e.Handle == active);
@@ -138,6 +137,21 @@ namespace ToolPosture.Gizmo
             e.Transform.SetPositionAndRotation(shape.Center,
                                                Quaternion.LookRotation(shape.Normal, shape.V));
             e.Transform.localScale = Vector3.one * (shape.Radius / parentScale);
+        }
+
+        /// <summary>
+        /// 線分のカプセル。半径と長さを直接与えるので localScale は使わない
+        /// (CapsuleCollider は非等倍スケールの扱いが読みにくい)。
+        /// </summary>
+        private static void SyncSegment(Entry e, GizmoHandleShape shape, float parentScale)
+        {
+            e.Transform.SetPositionAndRotation(shape.Center, Quaternion.LookRotation(shape.U));
+            e.Transform.localScale = Vector3.one / parentScale;
+
+            var capsule = (CapsuleCollider)e.Collider;
+            capsule.direction = 2;                  // ローカル Z
+            capsule.radius = shape.Radius;
+            capsule.height = Mathf.Max(shape.Length, shape.Radius * 2f);
         }
 
         private static void SyncSphere(Entry e, GizmoHandleShape shape, float parentScale)
@@ -200,7 +214,7 @@ namespace ToolPosture.Gizmo
 
         #region 構築と破棄
 
-        private void EnsureRoot(ToolPostureGizmo gizmo)
+        private void EnsureRoot(RuntimeGizmo gizmo)
         {
             if (_root != null) return;
 
@@ -226,11 +240,16 @@ namespace ToolPosture.Gizmo
 
                 var e = new Entry { Handle = handles[i], Transform = go.transform };
 
-                if (handles[i].GetShape().Kind == GizmoShapeKind.Sphere)
+                GizmoShapeKind kind = handles[i].GetShape().Kind;
+                if (kind == GizmoShapeKind.Sphere)
                 {
                     var sc = go.AddComponent<SphereCollider>();
                     sc.radius = 1f;
                     e.Collider = sc;
+                }
+                else if (kind == GizmoShapeKind.Segment)
+                {
+                    e.Collider = go.AddComponent<CapsuleCollider>();
                 }
                 else
                 {
@@ -295,6 +314,12 @@ namespace ToolPosture.Gizmo
                 return;
             }
 
+            if (shape.Kind == GizmoShapeKind.Segment)
+            {
+                DrawCapsuleOutline(shape);
+                return;
+            }
+
             float from = Mathf.Min(shape.FromDeg, shape.ToDeg);
             float to = Mathf.Max(shape.FromDeg, shape.ToDeg);
 
@@ -313,6 +338,30 @@ namespace ToolPosture.Gizmo
                 Vector3 radial = shape.U * Mathf.Cos(a) + shape.V * Mathf.Sin(a);
                 DrawCircle(shape.Center + radial * shape.Radius, radial, n, tube, 12);
             }
+        }
+
+        /// <summary>
+        /// 線分のカプセル。両端の輪と、それを結ぶ 4 本の稜線で形が読める。
+        /// </summary>
+        private static void DrawCapsuleOutline(GizmoHandleShape shape)
+        {
+            Vector3 axis = shape.U;
+            Vector3 a = axis == Vector3.up ? Vector3.right : Vector3.Cross(axis, Vector3.up).normalized;
+            Vector3 b = Vector3.Cross(axis, a).normalized;
+
+            float half = Mathf.Max(0f, shape.Length * 0.5f - shape.Radius);
+            Vector3 p0 = shape.Center - axis * half;
+            Vector3 p1 = shape.Center + axis * half;
+
+            DrawCircle(p0, a, b, shape.Radius, 16);
+            DrawCircle(p1, a, b, shape.Radius, 16);
+
+            foreach (Vector3 side in new[] { a, -a, b, -b })
+                Gizmos.DrawLine(p0 + side * shape.Radius, p1 + side * shape.Radius);
+
+            // 端のドーム
+            Gizmos.DrawWireSphere(p0, shape.Radius);
+            Gizmos.DrawWireSphere(p1, shape.Radius);
         }
 
         private static void DrawArcLine(GizmoHandleShape shape, float radius, float normalOffset,

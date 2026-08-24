@@ -216,6 +216,47 @@ gizmo.Profile = narrowGroove;
 
 ---
 
+## 位置ギズモ（`ToolPositionGizmo`）
+
+座標軸に沿った**平行移動だけ**を行うギズモです。回転もスケールも扱いません。
+
+```csharp
+positionGizmo.Position = new Vector3(1f, 0.5f, 0f);
+positionGizmo.AxisRotation = frameRotation;      // 経路のフレームに沿わせる場合
+positionGizmo.PositionChanged += g => ...;
+```
+
+| 項目 | 内容 |
+|---|---|
+| 軸の向き | `World` / `Local` / `Explicit`（コードで `AxisRotation` を与える） |
+| 当たり判定 | **軸に沿ったカプセル**。断面が円なので視線が軸に寝ても掴み幅が変わらない |
+| ドラッグ | レイと軸直線の最近接点（`RayAxisDrag`）。カメラに依存しない |
+| スナップ | `snapStep` [world]。Ctrl 押下で移動量を丸める |
+| `target` | 設定するとその Transform の位置を読み書きする。未設定なら値だけを持つ |
+
+`target` を持たせているのは、姿勢と違って**「モデルのどのローカル軸を向けるか」という
+曖昧さが無い**ためです（姿勢側は `ToolPostureFollower` に分けています）。
+
+### 共通部分は `RuntimeGizmo` に
+
+描画・当たり判定・入力・スケールの扱いは姿勢ギズモと同じなので、
+`RuntimeGizmo` にまとめてあります。派生側は「どんなハンドルを持つか」と
+「何を描くか」だけを実装します。
+
+```csharp
+protected abstract void BuildHandles();
+protected abstract void BuildBaseGeometry(GizmoMeshBuilder b);
+protected virtual void EnsureState() { }
+protected virtual void HandleKeyboard() { }
+protected virtual void OnDragBegan(GizmoHandleBase h) { }
+protected virtual void OnDragCancelled(GizmoHandleBase h) { }
+```
+
+`TryPick` / `BeginDrag` / `UpdateDrag` / `EndDrag` / `CancelDrag` / `SyncColliders` や
+`Theme` / `Cam` / `Scale` / `PixelToWorld` は基底側にあるので、どちらのギズモでも同じです。
+
+---
+
 ## `ToolPostureGizmo` の責務
 
 このコンポーネントは「**与えられた 1 つのフレームに対して工具軸 X と軸まわりの回転を定める**」
@@ -353,12 +394,14 @@ Assets/ToolPosture/
                     ToolPostureProfile          角度規約と可動範囲 (SO)
   Runtime/Path/     WeldPath                    経路。フレームを計算してギズモへ渡す
   Runtime/Tool/     ToolPostureFollower         工具モデルを姿勢に追従させる
-  Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・レイでの操作 API
+  Runtime/Gizmo/    RuntimeGizmo                描画・当たり判定・入力の共通部分
+                    ToolPostureGizmo            工具姿勢 (theta / phi / spin)
+                    ToolPositionGizmo           軸方向の平行移動
                     GizmoTheme                  見た目と当たりの太さ (SO)
                     GizmoHandles                各ハンドル（値の読み書きと形状）
                     GizmoHandleShape            円弧 / 球の形状記述
                     GizmoHandleColliders        チューブコライダーの生成と追従
-                    RayTangentDrag              レイの接線投影による回転ドラッグ
+                    RayTangentDrag / RayAxisDrag  回転 / 平行移動のドラッグ
                     GizmoMeshBuilder / GizmoPointer / IGizmoPointerSource
   Runtime/UI/       PostureReadoutUI            数値表示・表示切替
   Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / RobotPostureBridge
@@ -366,7 +409,7 @@ Assets/ToolPosture/
   Presets/          GizmoTheme_Touch / GizmoTheme_HighContrast
                     ToolPostureProfile_NarrowGroove
   Editor/           ToolPostureGizmoEditor      シーンビュー版 + 折りたたみインスペクタ
-  Tests/EditMode/   87 件
+  Tests/EditMode/   93 件
 ```
 
 EditMode テストは Test Runner、または `unity test --mode EditMode --output result.xml --timeout 300` で実行できます。

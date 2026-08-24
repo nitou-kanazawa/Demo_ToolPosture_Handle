@@ -283,6 +283,117 @@ namespace ToolPosture.Tests
     }
 
     /// <summary>
+    /// 軸方向の平行移動だけを行う位置ギズモ。
+    /// </summary>
+    public class PositionGizmoTests
+    {
+        private const float Tol = 1e-3f;
+
+        private GameObject _go;
+        private ToolPositionGizmo _gizmo;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _go = new GameObject("TestPositionGizmo");
+            _gizmo = _go.AddComponent<ToolPositionGizmo>();
+            _gizmo.Position = Vector3.zero;
+            _gizmo.SyncColliders();
+        }
+
+        [TearDown]
+        public void TearDown() => Object.DestroyImmediate(_go);
+
+        /// <summary>
+        /// 掴んだ点の真上から見下ろすレイ。軸と直交するので最近接点が安定する。
+        /// </summary>
+        private static Ray Above(Vector3 point) => new Ray(point + Vector3.up * 10f, Vector3.down);
+
+        [Test]
+        public void 掴んだ軸の方向にだけ動く()
+        {
+            Vector3 grab = _gizmo.Position + Vector3.right * (_gizmo.AxisLength * 0.5f);
+            Assert.IsTrue(_gizmo.BeginDrag(GizmoHandleId.TranslateX, Above(grab), grab));
+
+            // 斜めに動かしても X 成分しか効かない
+            _gizmo.UpdateDrag(Above(grab + new Vector3(0.3f, 0f, 0.4f)));
+
+            Assert.AreEqual(0.3f, _gizmo.Position.x, Tol);
+            Assert.AreEqual(0f, _gizmo.Position.y, Tol);
+            Assert.AreEqual(0f, _gizmo.Position.z, Tol);
+        }
+
+        [Test]
+        public void 取り消すと掴んだ時点へ戻る()
+        {
+            _gizmo.Position = new Vector3(1f, 2f, 3f);
+
+            Vector3 grab = _gizmo.Position + Vector3.right * (_gizmo.AxisLength * 0.5f);
+            _gizmo.BeginDrag(GizmoHandleId.TranslateX, Above(grab), grab);
+            _gizmo.UpdateDrag(Above(grab + Vector3.right * 0.5f));
+            Assert.AreEqual(1.5f, _gizmo.Position.x, Tol);
+
+            _gizmo.CancelDrag();
+            Assert.AreEqual(0f, Vector3.Distance(new Vector3(1f, 2f, 3f), _gizmo.Position), Tol);
+        }
+
+        [Test]
+        public void スナップは移動量を丸める()
+        {
+            _gizmo.snapStep = 0.25f;
+
+            Vector3 grab = _gizmo.Position + Vector3.right * (_gizmo.AxisLength * 0.5f);
+            _gizmo.BeginDrag(GizmoHandleId.TranslateX, Above(grab), grab);
+            _gizmo.UpdateDrag(Above(grab + Vector3.right * 0.31f), snap: true);
+
+            Assert.AreEqual(0.25f, _gizmo.Position.x, Tol);
+        }
+
+        [Test]
+        public void 軸の向きは指定した空間から取る()
+        {
+            _go.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+
+            // 既定はワールド
+            Assert.AreEqual(0f, Vector3.Distance(Vector3.right, _gizmo.AxisDirection(0)), Tol);
+
+            // 代入すると Explicit へ切り替わる
+            _gizmo.AxisRotation = Quaternion.Euler(0f, 0f, 90f);
+            Assert.AreEqual(0f, Vector3.Distance(Vector3.up, _gizmo.AxisDirection(0)), Tol);
+        }
+
+        [Test]
+        public void 非表示の軸は掴めない()
+        {
+            Vector3 grab = _gizmo.Position + Vector3.right * (_gizmo.AxisLength * 0.5f);
+            Assert.IsTrue(_gizmo.TryPick(Above(grab), out GizmoHandleId id));
+            Assert.AreEqual(GizmoHandleId.TranslateX, id);
+
+            _gizmo.showAxisX = false;
+            _gizmo.SyncColliders();
+
+            Assert.IsFalse(_gizmo.TryPick(Above(grab), out _));
+        }
+
+        [Test]
+        public void 当たり判定はカプセルなので軸に沿ってどこでも掴める()
+        {
+            float tube = _gizmo.PixelToWorld(_gizmo.HitPixelWidth) * 0.5f;
+
+            foreach (float u in new[] { 0.15f, 0.5f, 0.85f })
+            {
+                Vector3 p = _gizmo.Position + Vector3.right * (_gizmo.AxisLength * u);
+                Assert.IsTrue(_gizmo.TryPick(Above(p), out GizmoHandleId id), $"u={u}");
+                Assert.AreEqual(GizmoHandleId.TranslateX, id, $"u={u}");
+
+                // 軸から tube だけ離れても掴めること
+                Vector3 off = p + Vector3.forward * (tube * 0.8f);
+                Assert.IsTrue(_gizmo.TryPick(Above(off), out _), $"u={u} 横ずれ");
+            }
+        }
+    }
+
+    /// <summary>
     /// 傾斜角の可動範囲。規約の範囲と、投影角 w / t から決まる限界の積集合になる。
     /// 「規約を広げても動く範囲が変わらない」ことがあるのは後者が効いているため。
     /// </summary>

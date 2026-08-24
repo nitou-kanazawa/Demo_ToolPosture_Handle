@@ -13,10 +13,16 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public enum GizmoHandleId
     {
+        // 姿勢ギズモ
         AxisTip = 0,
         SpinRing = 1,
         AzimuthRing = 2,
         TiltArc = 3,
+
+        // 位置ギズモ (軸方向の平行移動)
+        TranslateX = 10,
+        TranslateY = 11,
+        TranslateZ = 12,
     }
 
     /// <summary>
@@ -29,13 +35,16 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public abstract class GizmoHandleBase
     {
-        protected readonly ToolPostureGizmo G;
+        /// <summary>
+        /// 描画とスケールの供給元。姿勢か位置かに依らず共通の部分だけを見る。
+        /// </summary>
+        protected readonly RuntimeGizmo Gizmo;
 
         public GizmoHandleId Id { get; }
 
-        protected GizmoHandleBase(ToolPostureGizmo owner, GizmoHandleId id)
+        protected GizmoHandleBase(RuntimeGizmo owner, GizmoHandleId id)
         {
-            G = owner;
+            Gizmo = owner;
             Id = id;
         }
 
@@ -99,6 +108,20 @@ namespace ToolPosture.Gizmo
         }
     }
 
+    /// <summary>
+    /// 姿勢ギズモのハンドルの共通部分。
+    /// 姿勢や規約を読むので、供給元を ToolPostureGizmo として持ち直す。
+    /// </summary>
+    public abstract class PostureHandleBase : GizmoHandleBase
+    {
+        protected readonly ToolPostureGizmo G;
+
+        protected PostureHandleBase(ToolPostureGizmo owner, GizmoHandleId id) : base(owner, id)
+        {
+            G = owner;
+        }
+    }
+
     #endregion
 
     #region 傾きハンドル (追従平面)
@@ -110,7 +133,7 @@ namespace ToolPosture.Gizmo
     /// 旋回リング (theta) と組で球面座標 (theta, alpha) を直接操作する形になり、
     /// この 2 つで工具軸は一意に決まる。
     /// </summary>
-    public class TiltArcHandle : GizmoHandleBase
+    public class TiltArcHandle : PostureHandleBase
     {
         private RayTangentDrag _drag;
 
@@ -239,7 +262,7 @@ namespace ToolPosture.Gizmo
     /// 工具軸 X の先端をドラッグして旋回角と傾斜角を同時に編集する球面ハンドル。
     /// 掴んだ点をそのまま軸方向にする直接操作。
     /// </summary>
-    public class AxisTipHandle : GizmoHandleBase
+    public class AxisTipHandle : PostureHandleBase
     {
         public AxisTipHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.AxisTip) { }
 
@@ -334,7 +357,7 @@ namespace ToolPosture.Gizmo
     /// <summary>
     /// 工具軸まわりの回転 (トーチ回転角) を編集するリングハンドル。
     /// </summary>
-    public class SpinRingHandle : GizmoHandleBase
+    public class SpinRingHandle : PostureHandleBase
     {
         private RayTangentDrag _drag;
 
@@ -427,7 +450,7 @@ namespace ToolPosture.Gizmo
     ///   tan w = r cos(theta),  tan t = r sin(theta)
     /// で再構成するので、保持している値は投影角のまま変わらない。
     /// </summary>
-    public class AzimuthRingHandle : GizmoHandleBase
+    public class AzimuthRingHandle : PostureHandleBase
     {
         /// <summary>
         /// 旋回角が工具軸に影響するとみなす最小の傾き [deg]。
