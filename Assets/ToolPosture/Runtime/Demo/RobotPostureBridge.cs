@@ -82,7 +82,6 @@ namespace ToolPosture.Demo
         /// </summary>
         public void Apply(ZyxEulerAngles euler)
         {
-            gizmo.RefreshFrame();
 
             var a = gizmo.Angles;
             a.SetToolRotation(gizmo.Frame, euler.ToRotation(), robotShaftAxis, robotReferenceAxis, RobotSpin);

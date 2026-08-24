@@ -2,12 +2,14 @@
 
 溶接トーチ / 切削工具の**ツール姿勢**を、Unity のランタイム上でギズモ操作するための実装です。
 
-エディタ専用の `UnityEditor.Handles` に頼らず、描画・当たり判定・ドラッグ処理をすべて自前で持つため、
-ビルドしたアプリの中でそのまま姿勢を編集できます。
+エディタ専用の `UnityEditor.Handles` に頼らないので、ビルドしたアプリの中でそのまま姿勢を編集できます。
+描画は頂点カラーメッシュの手続き生成、当たり判定はハンドルごとのコライダー、
+ドラッグはワールドのレイだけで完結します。
 
 ![gizmo](Assets/Screenshots/toolposture_zyx.png)
 
-- Unity 6000.4 / URP 17.4 / Input System 1.19（Input System 専用設定）
+- Unity 6000.4 / Input System 1.19（Input System 専用設定）
+- **Built-in RP / URP のどちらでも動作**（パッケージ側に URP 依存はありません）
 
 ---
 
@@ -71,52 +73,81 @@ t = atan2(X·M, X·N)     前進後退角  AWS travel angle / CAM lead angle
 | スピンリング | 工具軸に垂直 | spin |
 
 - 表示 / 非表示を個別に切替可能（実行中は `1`〜`5` キー）
-- ドラッグ中は操作中のハンドル以外を隠す
+- ドラッグ中は操作中のハンドル以外を隠す（コライダーも一緒に切れる）
 - 各角に **0 度位置 / 回転方向 / 可動範囲 / スナップ幅** をカスタムできる `AngleConvention`
-- マウス / タッチ / ペンに対応（タッチは当たり判定を自動的に広げる）
+- マウス / タッチ / ペンに対応（タッチは当たり判定を自動的に太くする）
 
-### 回転ドラッグは接線投影方式
+### 当たり判定は円弧に巻いたチューブ
 
-`UnityEditor.Handles` の回転ギズモや Runtime Transform Gizmos と同じ方式です。
-掴んだ時点で「回転中心・掴んだ点・その点の接線」を固定し、スクリーン上のドラッグを
-接線へ投影して弧長 → 角度に換算します。
+ハンドルごとにコライダーを持ちます。円弧・リングには**円弧に沿ったトーラス**、
+軸先端には `SphereCollider` を割り当てます。
 
-光線とハンドル平面の交点から極角を取る方式は、視線が平面に寝ると破綻します（実測）。
+断面が円なので、**スクリーン上のシルエット幅が視線角度によらず一定**です。
+平面内で半径方向のずれを見る方式だと、母材面を浅い角度から見たときに
+掴み幅が `sin(入射角)` で潰れて実質掴めなくなります（旋回リングは母材面そのものに
+乗っているので、溶接の作業視点では常時これを踏みます）。
 
-| 視線と平面のなす角 | 光線 × 平面 | 接線投影 |
+母材面に寝た旋回リングの線上を一周狙って、外せるまでのピクセル数を実測した値です。
+
+| 母材面からの視線仰角 | 平面内で半径方向（旧） | チューブ（現行） |
 |---:|---:|---:|
-| 90° | 1.02 °/5px | 1.10 °/5px |
-| 10° | 2.16 | 1.11 |
-| 2° | 16.90 | 1.12 |
-| 0.2° | 141.45 ／ 発散 | 1.12 |
+| 90° | 12.75px | 10.0px |
+| 45° | 8.25px | 8.0px |
+| 20° | 3.75px | 7.5px |
+| 10° | 1.75px | 7.8px |
+| 5° | 0.75px | 7.8px |
+| 2° | 0.25px | 7.8px |
+| 1° | **0.00px**（掴めない） | 7.8px |
+
+同じ条件で、リングの線上を狙って**別のハンドルを掴んでしまう**割合も
+仰角 20° で 21%（15/72 点）から 2.8%（2/72 点）へ下がりました。
+コライダーは実際の 3D 面までの距離を返すので、重なったハンドルの前後関係が
+正しく決まるためです。
+
+コライダーは **Ignore Raycast レイヤー**に置き、判定には `Physics.Raycast` ではなく
+`Collider.Raycast` を各コライダーへ直接撃ちます。シーンクエリに一切参加しないので、
+アプリ側が干渉チェック等で回している raycast を汚しません。
+
+### 回転ドラッグはレイの接線投影
+
+掴んだ時点で「掴んだ点」と「その点の接線」を固定し、以降はレイと接線直線の
+最近接点だけを見ます。`UnityEditor.Handles` と同じ考え方を、スクリーン座標ではなく
+ワールドのレイで行う版です。**カメラにもスクリーン座標にも依存しません。**
+
+レイが接線と平行に近づくと最近接点が発散するので、`sin²(なす角) < 0.02`（約 8°）の
+間は値の更新を止めて直前の値を保ちます。
 
 ---
 
-## スクリプトからの操作
+## `ToolPostureGizmo` の責務
 
-ギズモは Unity の `Camera` に直接依存せず、`IGizmoViewport` だけを見ます。
-実写画像への重畳ビューなど、投影がアプリ独自（レンズ歪み補正など）の場合でも差し替えられます。
+このコンポーネントは「**与えられた 1 つのフレームに対して工具軸 X と軸まわりの回転を定める**」
+ことだけを行います。フレームをどこから持ってくるか（経路の補間、区間の選択、法線の直交化）は
+関知せず、`Frame` へ代入されたものをそのまま使います。
 
 ```csharp
-public interface IGizmoViewport
-{
-    Camera  RenderCamera { get; }
-    Vector3 EyePosition  { get; }
-    Vector2 PixelSize    { get; }
-    Ray     ScreenPointToRay(Vector2 screenPos);
-    bool    TryWorldToScreenPoint(Vector3 world, out Vector2 screenPos);
-    float   WorldPerPixel(Vector3 world);
-}
+gizmo.Frame = myPath.GetFrame(segment, u);   // 誰が計算してもよい
 ```
+
+デモでは `WeldPath` がこれを担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
+
+## スクリプトからの操作
+
+操作の入口は**ワールドのレイ**です。アプリが独自の 2D→3D 変換を持つ場合
+（実写重畳ビューなど）は、そこで作ったレイをそのまま渡します。
+当たり判定はワールド上のコライダーなので、ギズモ側に投影を教える必要はありません。
 
 ```csharp
 gizmo.inputMode = GizmoInputMode.External;   // 自前の入力読みを止める
-gizmo.Viewport  = myViewport;                // 投影を差し替え (null で既定へ戻る)
 
-gizmo.TryPick(screenPos, out GizmoHandleId id);
-gizmo.BeginDrag(id, screenPos);
-gizmo.UpdateDrag(screenPos, snap);
+Ray ray = myApp.ScreenPointToRay(touchPos);  // アプリ側の 2D -> 3D 変換
+
+if (gizmo.TryPick(ray, out GizmoHandleId id, out Vector3 point))
+    gizmo.BeginDrag(id, ray, point);         // 掴んだ点を渡すと掴み位置が正確になる
+
+gizmo.UpdateDrag(ray, snap);
 gizmo.EndDrag();   /   gizmo.CancelDrag();
+gizmo.UpdateHover(ray);
 
 gizmo.SetSpherical(azimuthDeg, elevationDeg);
 gizmo.SetAngleDisplay(id, displayDeg);       // 規約を通した表示値で与える
@@ -124,6 +155,15 @@ gizmo.SetToolAxisWorld(direction);           // 工具軸を直接与える
 
 gizmo.ToolAxisWorld;   // 主たる出力
 gizmo.ToolRotation;    // spin まで含めた完全な姿勢
+gizmo.PostureChanged;  // 姿勢が変わったときのイベント
+```
+
+アプリ側で既に raycast を撃っている場合は、その `Collider` から引けます
+（ギズモのコライダーは Ignore Raycast レイヤーなので、拾うにはマスクに含めること）。
+
+```csharp
+if (gizmo.TryResolve(hit.collider, out GizmoHandleId id))
+    gizmo.BeginDrag(id, ray, hit.point);
 ```
 
 ### ZYX オイラー（ロボット姿勢）との相互変換
@@ -180,18 +220,19 @@ angles.SetToolRotation(frame, euler.ToRotation(), shaftAxis, referenceAxis, spin
 ```
 Assets/ToolPosture/
   Runtime/Core/     PathFrame / ToolPostureAngles / AngleConvention / IPathFrameSource
-                    ZyxEulerAngles / SpinReference
-  Runtime/Path/     WeldPath                    経路（点列 + 生の法線）
-  Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・外部ドライブ API
-                    GizmoHandles                各ハンドル
-                    TangentRotationDrag         接線投影方式の回転ドラッグ
-                    IGizmoViewport              画面 ⇔ ワールドの抽象
-                    GizmoMeshBuilder / GizmoPicker / GizmoPointer
+                    ZyxEulerAngles / SpinReference      ← 依存ゼロの別アセンブリ
+  Runtime/Path/     WeldPath                    経路。フレームを計算してギズモへ渡す
+  Runtime/Gizmo/    ToolPostureGizmo            ギズモ本体・レイでの操作 API
+                    GizmoHandles                各ハンドル（値の読み書きと形状）
+                    GizmoHandleShape            円弧 / 球の形状記述
+                    GizmoHandleColliders        チューブコライダーの生成と追従
+                    RayTangentDrag              レイの接線投影による回転ドラッグ
+                    GizmoMeshBuilder / GizmoPointer / IGizmoPointerSource
   Runtime/UI/       PostureReadoutUI            数値表示・表示切替
   Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / RobotPostureBridge
                     OrbitCamera / WeldPathSurface
   Editor/           ToolPostureGizmoEditor      シーンビュー版（Handles 使用）
-  Tests/EditMode/   73 件
+  Tests/EditMode/   79 件
 ```
 
 EditMode テストは Test Runner、または `unity test --mode EditMode --output result.xml --timeout 300` で実行できます。

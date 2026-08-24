@@ -13,8 +13,9 @@ namespace ToolPosture.Demo
     /// と変換して (ここがアプリ側の独自ロジックに相当)、ギズモの外部ドライブ API
     /// TryPick / BeginDrag / UpdateDrag / EndDrag に流す。
     ///
-    /// ギズモ側は IGizmoViewport (DistortedOverlayViewport) だけを見るので、
-    /// 当たり判定も回転操作も定スクリーンサイズも歪み込みのマッピングに従う。
+    /// 画像ピクセルからワールドのレイへの変換は DistortedOverlayViewport が持つ。
+    /// ギズモの当たり判定はワールド上のコライダーなので、レイさえ正しく作れれば
+    /// 投影がどうであっても掴める。ギズモ側に投影を教える必要は無い。
     /// </summary>
     [AddComponentMenu("Tool Posture/Overlay View Demo")]
     public class OverlayViewDemo : MonoBehaviour
@@ -91,21 +92,10 @@ namespace ToolPosture.Demo
             gizmo.EndDrag();
             _dragging = false;
 
-            if (from2D)
-            {
-                // ギズモの投影を丸ごと差し替える。以降、当たり判定も接線投影も
-                // 定スクリーンサイズもすべてこのビューポート基準になる。
-                gizmo.Viewport = _viewport;
-                gizmo.inputMode = GizmoInputMode.External;
-                gizmo.restrictToViewportCamera = true;
-            }
-            else
-            {
-                gizmo.Viewport = null;   // 既定 (targetCamera) へ戻す
-                gizmo.inputMode = GizmoInputMode.BuiltIn;
-                gizmo.restrictToViewportCamera = false;
-                gizmo.SetHover(null);
-            }
+            // 当たり判定はワールド上のコライダーなので、投影を差し替える必要は無い。
+            // 2D 側で作ったレイをそのまま渡すだけでよい。
+            gizmo.inputMode = from2D ? GizmoInputMode.External : GizmoInputMode.BuiltIn;
+            if (!from2D) gizmo.SetHover(null);
         }
 
         #endregion
@@ -118,12 +108,15 @@ namespace ToolPosture.Demo
 
             bool inside = TryScreenToImagePixel(p.position, out Vector2 imagePixel);
 
+            // ここがアプリ側の「2D のタッチ位置 -> 3D のレイ」に相当する部分
+            Ray ray = _viewport.ScreenPointToRay(imagePixel);
+
             var kb = UnityEngine.InputSystem.Keyboard.current;
             bool snap = kb != null && kb.ctrlKey.isPressed;
 
             if (_dragging)
             {
-                if (p.isDown && !p.releasedThisFrame) gizmo.UpdateDrag(imagePixel, snap);
+                if (p.isDown && !p.releasedThisFrame) gizmo.UpdateDrag(ray, snap);
                 else { gizmo.EndDrag(); _dragging = false; }
                 return;
             }
@@ -131,14 +124,14 @@ namespace ToolPosture.Demo
             if (!inside) { gizmo.SetHover(null); return; }
 
             if (p.pressedThisFrame &&
-                gizmo.TryPick(imagePixel, out GizmoHandleId id) &&
-                gizmo.BeginDrag(id, imagePixel))
+                gizmo.TryPick(ray, out GizmoHandleId id, out Vector3 point) &&
+                gizmo.BeginDrag(id, ray, point))
             {
                 _dragging = true;
                 return;
             }
 
-            if (!p.isTouch) gizmo.UpdateHover(imagePixel);
+            if (!p.isTouch) gizmo.UpdateHover(ray);
         }
 
         /// <summary>

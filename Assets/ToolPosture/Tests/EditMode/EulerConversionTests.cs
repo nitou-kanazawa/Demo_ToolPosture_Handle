@@ -240,12 +240,9 @@ namespace ToolPosture.Tests
                 PathFrame.TryCreate(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right,
                                     CrossFeedSide.RightOfTravel, out var f);
 
-                gizmo.SetFrame(f);
+                gizmo.Frame = f;
 
                 Assert.AreEqual(0f, Vector3.Distance(f.Origin, gizmo.Frame.Origin), Tol);
-                Assert.AreEqual(0f, Vector3.Distance(f.Normal, gizmo.Frame.Normal), Tol);
-
-                gizmo.RefreshFrame();   // 再計算しても保たれる
                 Assert.AreEqual(0f, Vector3.Distance(f.Normal, gizmo.Frame.Normal), Tol);
             }
             finally { Object.DestroyImmediate(go); }

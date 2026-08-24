@@ -21,6 +21,9 @@ namespace ToolPosture.Demo
 
         public ToolPostureGizmo gizmo;
 
+        [Tooltip("区間の表示に使う経路。未設定ならシーンから探す")]
+        public WeldPath path;
+
         [Header("レイアウト")]
         public Vector2 panelSize = new Vector2(418f, 466f);
         public int fontSize = 14;
@@ -57,8 +60,10 @@ namespace ToolPosture.Demo
             var a = gizmo.Angles;
             Vector3 lmn = a.GetAxisLmn();
             Vector3 world = gizmo.ToolAxisWorld;
-            var src = gizmo.FrameSource;
+            WeldPath src = path != null ? path : FindAnyObjectByType<WeldPath>();
             int segCount = src != null ? src.SegmentCount : 0;
+            int segIndex = src != null ? src.segmentIndex : 0;
+            float segU = src != null ? src.segmentU : 0f;
 
             float tiltDeg = a.TiltFromNormalDeg;
 
@@ -66,7 +71,7 @@ namespace ToolPosture.Demo
             _sb.AppendLine("<b>工具姿勢  (内部表現 = 投影角)</b>");
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendFormat("区間          {0} / {1}      u = {2:F2}\n",
-                             gizmo.segmentIndex + 1, Mathf.Max(segCount, 1), gizmo.segmentU);
+                             segIndex + 1, Mathf.Max(segCount, 1), segU);
             bool followsTool = gizmo.workArcPlane == WorkArcPlaneMode.FollowToolAxis;
 
             _sb.AppendLine("────────────────────────────────");

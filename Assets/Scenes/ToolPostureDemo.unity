@@ -408,8 +408,16 @@ MonoBehaviour:
   - {x: 0.32825166, y: 0.93786186, z: -0.11254342}
   - {x: 0.40370518, y: 0.8971226, z: -0.17942452}
   crossFeedSide: 0
+  gizmo: {fileID: 389373110}
+  segmentIndex: 2
+  segmentU: 0.5
+  useKeyboardShortcuts: 1
+  uStep: 0.1
   drawPathGizmo: 1
   normalGizmoLength: 0.16
+  drawPathAtRuntime: 1
+  pathColor: {r: 0.85, g: 0.87, b: 0.92, a: 0.7}
+  pathNormalColor: {r: 0.36, g: 0.64, b: 1, a: 0.45}
 --- !u!4 &235882968
 Transform:
   m_ObjectHideFlags: 0
@@ -671,9 +679,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891b86ee7ebc379488ebdc34c7b71ce7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPostureGizmo
-  path: {fileID: 235882967}
-  segmentIndex: 2
-  segmentU: 0.5
   angles:
     azimuthDeg: -35.27
     elevationDeg: 73.02
@@ -714,6 +719,10 @@ MonoBehaviour:
     maxDeg: 60
     snapDeg: 5
   workArcPlane: 1
+  spinReference:
+    mode: 0
+    worldAxis: {x: 0, y: 0, z: 0}
+    degenerateFallback: {x: 0, y: 0, z: 0}
   showWorkArc: 1
   showTravelArc: 1
   showAxisTip: 1
@@ -721,16 +730,19 @@ MonoBehaviour:
   showAzimuthRing: 1
   showFrameAxes: 1
   hideOthersWhileDragging: 1
-  showPath: 1
   targetCamera: {fileID: 158694776}
   gizmoPixelSize: 215
   arcPixelWidth: 9
-  hitPixelWidth: 13
-  touchHitPixelWidth: 28
+  thinPixelWidth: 1.2
+  knobPixelRadius: 8
   tipPixelRadius: 9
   fallbackArcHalfWidthDeg: 75
-  maxDegreesPerPixel: 2
+  hitPixelWidth: 20
+  touchHitPixelWidth: 40
+  tipHitPixelRadius: 14
+  touchTipHitScale: 1.9
   inputMode: 0
+  useKeyboardShortcuts: 1
   frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}
   frameColorM: {r: 0.42, g: 0.9, b: 0.48, a: 0.95}
   frameColorN: {r: 0.36, g: 0.64, b: 1, a: 0.95}
@@ -742,18 +754,12 @@ MonoBehaviour:
   highlightColor: {r: 1, g: 1, b: 0.72, a: 1}
   zeroTickColor: {r: 1, g: 1, b: 1, a: 0.9}
   limitColor: {r: 1, g: 0.38, b: 0.32, a: 0.95}
-  pathColor: {r: 0.82, g: 0.85, b: 0.92, a: 0.22}
-  pathNormalColor: {r: 0.36, g: 0.64, b: 1, a: 0.18}
   occludedAlpha: 0.22
-  restrictToViewportCamera: 0
+  restrictToTargetCamera: 0
   gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
   toolVisual: {fileID: 205593997}
   toolShaftAxis: {x: 0, y: 1, z: 0}
   toolReferenceAxis: {x: 0, y: 0, z: 1}
-  spinReference:
-    mode: 0
-    worldAxis: {x: 0, y: 0, z: 0}
-    degenerateFallback: {x: 0, y: 0, z: 0}
 --- !u!4 &389373111
 Transform:
   m_ObjectHideFlags: 0
@@ -1068,6 +1074,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.PostureReadoutUI
   gizmo: {fileID: 389373110}
+  path: {fileID: 235882967}
   panelSize: {x: 392, y: 408}
   fontSize: 14
 --- !u!4 &1680846886

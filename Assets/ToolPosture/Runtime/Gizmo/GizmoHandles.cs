@@ -64,9 +64,10 @@ namespace ToolPosture.Gizmo
     /// <summary>
     /// ランタイムハンドルの共通インターフェース。
     ///
-    /// 入力はスクリーン座標 [px] で受け取り、ワールドへの変換は必ず
-    /// ToolPostureGizmo.Viewport (IGizmoViewport) を通す。これにより
-    /// 実写重畳ビューのようなアプリ独自の投影でもそのまま動く。
+    /// 当たり判定はハンドル自身では行わない。<see cref="GetShape"/> が返す形状を
+    /// もとにコライダー側が判定し、掴まれたハンドルへレイが渡ってくる。
+    /// ドラッグ計算はワールドのレイだけで完結するので、Camera にも
+    /// スクリーン座標にも依存しない。
     /// </summary>
     public abstract class GizmoHandleBase
     {
@@ -80,21 +81,21 @@ namespace ToolPosture.Gizmo
             Id = id;
         }
 
-        protected Ray RayOf(Vector2 screenPos) => G.Viewport.ScreenPointToRay(screenPos);
-
         public abstract bool Visible { get; }
 
         /// <summary>
-        /// このハンドルに当たっているか。当たった場合は視点からの距離を返す。
+        /// このハンドルの現在の形状。コライダーの追従と描画の両方がこれを読む。
         /// </summary>
-        public abstract bool HitTest(Vector2 screenPos, out float distance);
+        public abstract GizmoHandleShape GetShape();
 
         /// <summary>
         /// 掴んだ瞬間。掴み位置と現在値を記録して値の飛びを防ぐ。
         /// </summary>
-        public abstract void BeginDrag(Vector2 screenPos);
+        /// <param name="ray">掴んだ瞬間のレイ。</param>
+        /// <param name="grabPoint">掴んだワールド座標 (コライダーのヒット点)。</param>
+        public abstract void BeginDrag(Ray ray, Vector3 grabPoint);
 
-        public abstract void Drag(Vector2 screenPos, bool snap);
+        public abstract void Drag(Ray ray, bool snap);
 
         /// <summary>
         /// ドラッグ終了時の後片付け。必要なハンドルだけが上書きする。
@@ -102,6 +103,42 @@ namespace ToolPosture.Gizmo
         public virtual void EndDrag() { }
 
         public abstract void Draw(GizmoMeshBuilder b, bool hover, bool active);
+
+        /// <summary>
+        /// 掴んだ点が無い場合に、レイから円弧上の掴み角を推定する。
+        /// レイ上で中心に最も近い点を平面へ落とすので、視線が平面に寝ていても破綻しない。
+        /// </summary>
+        protected static float EstimateGrabAngle(GizmoHandleShape shape, Ray ray, float fallbackDeg)
+        {
+            Vector3 d = ray.direction.normalized;
+            float t = Mathf.Max(0f, Vector3.Dot(shape.Center - ray.origin, d));
+            Vector3 p = ray.origin + d * t;
+
+            Vector3 rel = p - shape.Center;
+            float x = Vector3.Dot(rel, shape.U);
+            float y = Vector3.Dot(rel, shape.V);
+            if (x * x + y * y < 1e-12f) return fallbackDeg;
+
+            return Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>
+        /// 掴み角を決める。コライダーのヒット点があればそれを使い、
+        /// 無ければレイから推定する。
+        /// </summary>
+        protected static float ResolveGrabAngle(GizmoHandleShape shape, Ray ray,
+                                                Vector3 grabPoint, float fallbackDeg)
+        {
+            Vector3 rel = grabPoint - shape.Center;
+            float x = Vector3.Dot(rel, shape.U);
+            float y = Vector3.Dot(rel, shape.V);
+
+            // ヒット点が中心付近 = 有効な掴み点が渡ってきていない
+            if (x * x + y * y < shape.Radius * shape.Radius * 0.04f)
+                return EstimateGrabAngle(shape, ray, fallbackDeg);
+
+            return Mathf.Atan2(y, x) * Mathf.Rad2Deg;
+        }
     }
 
     #endregion
@@ -115,7 +152,7 @@ namespace ToolPosture.Gizmo
     public class ArcAngleHandle : GizmoHandleBase
     {
         private readonly bool _isWork;
-        private TangentRotationDrag _drag;
+        private RayTangentDrag _drag;
 
         public ArcAngleHandle(ToolPostureGizmo owner, bool isWork)
             : base(owner, isWork ? GizmoHandleId.WorkArc : GizmoHandleId.TravelArc)
@@ -141,8 +178,6 @@ namespace ToolPosture.Gizmo
 
         private float Radius => G.Scale * (_isWork ? 0.74f : 1.0f);
 
-        private Color BaseColor => _isWork ? G.workColor : G.travelColor;
-
         private float Value
         {
             get => _isWork ? G.Angles.WorkAngleDeg : G.Angles.TravelAngleDeg;
@@ -155,28 +190,22 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        public override bool HitTest(Vector2 screenPos, out float distance)
+        public override GizmoHandleShape GetShape()
         {
             Conv.GetArcRange(G.fallbackArcHalfWidthDeg, out float lo, out float hi);
-            return GizmoPicker.PickArc(RayOf(screenPos), G.Frame.Origin, U, V, Radius, lo, hi,
-                                       G.PixelToWorld(G.HitPixelWidth), out _, out distance);
+            return GizmoHandleShape.Arc(G.Frame.Origin, U, V, Radius, lo, hi);
         }
 
-        public override void BeginDrag(Vector2 screenPos)
+        public override void BeginDrag(Ray ray, Vector3 grabPoint)
         {
-            // 掴んだ点の平面内極角。視線が平面に寝て交点が取れない場合は
-            // ノブを掴んだものとみなす (接線は現在値の位置で作れば十分)。
-            if (!GizmoPicker.RayPlanePolar(RayOf(screenPos), G.Frame.Origin, U, V,
-                                           out float grabAngle, out _, out _))
-                grabAngle = Value;
-
-            _drag.Begin(G.Viewport, G.Frame.Origin, U, V, Radius, grabAngle, Value,
-                        screenPos, G.maxDegreesPerPixel);
+            GizmoHandleShape shape = GetShape();
+            float value = Value;
+            _drag.Begin(shape, ResolveGrabAngle(shape, ray, grabPoint, value), value, ray);
         }
 
-        public override void Drag(Vector2 screenPos, bool snap)
+        public override void Drag(Ray ray, bool snap)
         {
-            if (!_drag.TryGetValue(screenPos, out float v)) return;
+            if (!_drag.TryGetValue(ray, out float v)) return;
             if (snap) v = Conv.SnapInternal(v);
             Value = G.ClampProjected(Conv.ClampInternal(v));
         }
@@ -187,12 +216,12 @@ namespace ToolPosture.Gizmo
             if (cam == null) return;
 
             Vector3 o = G.Frame.Origin;
-            Vector3 eye = G.Viewport.EyePosition;
-            Color c = BaseColor;
+            Vector3 eye = G.EyePosition;
+            Color c = _isWork ? G.workColor : G.travelColor;
             Color line = (hover || active) ? G.highlightColor : c;
             float r = Radius;
             float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
-            float thin = G.PixelToWorld(1.2f);
+            float thin = G.PixelToWorld(G.thinPixelWidth);
 
             Conv.GetArcRange(G.fallbackArcHalfWidthDeg, out float lo, out float hi);
             float value = Value;
@@ -215,14 +244,15 @@ namespace ToolPosture.Gizmo
 
             // 0 度目盛りと可動範囲の端の目盛り
             b.AddRadialTick(o, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
-            b.AddRadialTick(o, U, V, r, lo, G.PixelToWorld(10f), G.PixelToWorld(1.2f), eye,
+            b.AddRadialTick(o, U, V, r, lo, G.PixelToWorld(10f), thin, eye,
                             GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
-            b.AddRadialTick(o, U, V, r, hi, G.PixelToWorld(10f), G.PixelToWorld(1.2f), eye,
+            b.AddRadialTick(o, U, V, r, hi, G.PixelToWorld(10f), thin, eye,
                             GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
 
             // 現在値のノブ
             Vector3 knob = GizmoMeshBuilder.OnCircle(o, U, V, r, value);
-            b.AddBillboardDisc(knob, cam, G.PixelToWorld((hover || active) ? 8f : 5.5f), line);
+            b.AddBillboardDisc(knob, cam,
+                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
         }
     }
 
@@ -239,14 +269,10 @@ namespace ToolPosture.Gizmo
     /// 極座標を直接操作する形になる。内部表現は投影角のままで、
     ///   tan w = tan(alpha) cos(theta),  tan t = tan(alpha) sin(theta)
     /// として書き戻す。
-    ///
-    /// ドラッグ中は平面の方位を掴んだ時点で固定する。こうすると alpha が負にも
-    /// なれるので、N をまたいで反対側へ倒す操作が値の飛びなく連続になる
-    /// (負の alpha は方位 180 度反転と同じ姿勢を表す)。
     /// </summary>
     public class TiltArcHandle : GizmoHandleBase
     {
-        private TangentRotationDrag _drag;
+        private RayTangentDrag _drag;
 
         public TiltArcHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.TiltArc) { }
 
@@ -313,26 +339,22 @@ namespace ToolPosture.Gizmo
             return Mathf.Clamp(value, lo, hi);
         }
 
-        public override bool HitTest(Vector2 screenPos, out float distance)
+        public override GizmoHandleShape GetShape()
         {
             GetAlphaRange(PlaneAzimuthDeg, out float lo, out float hi);
-            return GizmoPicker.PickArc(RayOf(screenPos), G.Frame.Origin, U, V, Radius, lo, hi,
-                                       G.PixelToWorld(G.HitPixelWidth), out _, out distance);
+            return GizmoHandleShape.Arc(G.Frame.Origin, U, V, Radius, lo, hi);
         }
 
-        public override void BeginDrag(Vector2 screenPos)
+        public override void BeginDrag(Ray ray, Vector3 grabPoint)
         {
-            if (!GizmoPicker.RayPlanePolar(RayOf(screenPos), G.Frame.Origin, U, V,
-                                           out float grabAngle, out _, out _))
-                grabAngle = Value;
-
-            _drag.Begin(G.Viewport, G.Frame.Origin, U, V, Radius, grabAngle, Value,
-                        screenPos, G.maxDegreesPerPixel);
+            GizmoHandleShape shape = GetShape();
+            float value = Value;
+            _drag.Begin(shape, ResolveGrabAngle(shape, ray, grabPoint, value), value, ray);
         }
 
-        public override void Drag(Vector2 screenPos, bool snap)
+        public override void Drag(Ray ray, bool snap)
         {
-            if (!_drag.TryGetValue(screenPos, out float v)) return;
+            if (!_drag.TryGetValue(ray, out float v)) return;
             if (snap) v = G.tiltConvention.SnapInternal(v);
             Value = v;
         }
@@ -343,13 +365,13 @@ namespace ToolPosture.Gizmo
             if (cam == null) return;
 
             Vector3 o = G.Frame.Origin;
-            Vector3 eye = G.Viewport.EyePosition;
+            Vector3 eye = G.EyePosition;
             Vector3 u = U, v = V;
             Color c = G.workColor;
             Color line = (hover || active) ? G.highlightColor : c;
             float r = Radius;
             float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
-            float thin = G.PixelToWorld(1.2f);
+            float thin = G.PixelToWorld(G.thinPixelWidth);
 
             float azimuth = PlaneAzimuthDeg;
             GetAlphaRange(azimuth, out float lo, out float hi);
@@ -369,9 +391,9 @@ namespace ToolPosture.Gizmo
                                   eye, thin, G.PixelToWorld(9f), GizmoMeshBuilder.Fade(c, 0.55f));
 
             b.AddRadialTick(o, u, v, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
-            b.AddRadialTick(o, u, v, r, lo, G.PixelToWorld(10f), G.PixelToWorld(1.2f), eye,
+            b.AddRadialTick(o, u, v, r, lo, G.PixelToWorld(10f), thin, eye,
                             GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
-            b.AddRadialTick(o, u, v, r, hi, G.PixelToWorld(10f), G.PixelToWorld(1.2f), eye,
+            b.AddRadialTick(o, u, v, r, hi, G.PixelToWorld(10f), thin, eye,
                             GizmoMeshBuilder.Fade(G.limitColor, 0.8f));
 
             // 円弧が乗っている平面を示す線 (LM 平面上の倒れ方向)
@@ -380,7 +402,8 @@ namespace ToolPosture.Gizmo
 
             // 現在値のノブ (常に工具軸の上に乗る)
             Vector3 knob = GizmoMeshBuilder.OnCircle(o, u, v, r, value);
-            b.AddBillboardDisc(knob, cam, G.PixelToWorld((hover || active) ? 8f : 5.5f), line);
+            b.AddBillboardDisc(knob, cam,
+                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
         }
     }
 
@@ -390,8 +413,7 @@ namespace ToolPosture.Gizmo
 
     /// <summary>
     /// 工具軸 X の先端をドラッグして狙い角と前進後退角を同時に編集する球面ハンドル。
-    /// 掴んだ点をそのまま軸方向にする直接操作。球はどの視点からも正対するので
-    /// 円弧ハンドルのような視線依存の破綻が無く、光線と球の交点方式のままでよい。
+    /// 掴んだ点をそのまま軸方向にする直接操作。
     /// </summary>
     public class AxisTipHandle : GizmoHandleBase
     {
@@ -399,18 +421,21 @@ namespace ToolPosture.Gizmo
 
         public override bool Visible => G.showAxisTip;
 
+        /// <summary>
+        /// 工具軸の先端が乗る球の半径。ドラッグはこの球面上で行う。
+        /// </summary>
         private float SphereRadius => G.Scale * 1.25f;
 
         private Vector3 Tip => G.Frame.Origin + G.Angles.GetAxisWorld(G.Frame) * SphereRadius;
 
-        public override bool HitTest(Vector2 screenPos, out float distance)
-            => GizmoPicker.PickSphere(RayOf(screenPos), Tip, G.PixelToWorld(G.TipHitPixelRadius), out distance);
+        public override GizmoHandleShape GetShape()
+            => GizmoHandleShape.Ball(Tip, G.PixelToWorld(G.TipHitPixelRadius));
 
-        public override void BeginDrag(Vector2 screenPos) { }
+        public override void BeginDrag(Ray ray, Vector3 grabPoint) { }
 
-        public override void Drag(Vector2 screenPos, bool snap)
+        public override void Drag(Ray ray, bool snap)
         {
-            Vector3 dir = GizmoPicker.ClosestDirectionOnSphere(RayOf(screenPos), G.Frame.Origin, SphereRadius);
+            Vector3 dir = ClosestDirectionOnSphere(ray, G.Frame.Origin, SphereRadius);
             Vector3 lmn = G.Frame.WorldDirectionToLmn(dir);
 
             // 母材の裏側 (N 成分が負) には行かせない
@@ -429,6 +454,37 @@ namespace ToolPosture.Gizmo
             G.Angles = a;
         }
 
+        /// <summary>
+        /// 中心 center・半径 radius の球面上で、レイに最も近い点の方向を返す。
+        /// 球から外れていても最近点を球面へ射影するので、ドラッグが途切れない。
+        /// </summary>
+        public static Vector3 ClosestDirectionOnSphere(Ray ray, Vector3 center, float radius)
+        {
+            Vector3 d = ray.direction.normalized;
+            Vector3 oc = ray.origin - center;
+
+            float b = Vector3.Dot(oc, d);
+            float c = Vector3.Dot(oc, oc) - radius * radius;
+            float disc = b * b - c;
+
+            if (disc >= 0f)
+            {
+                float s = Mathf.Sqrt(disc);
+                float t0 = -b - s;
+                float t1 = -b + s;
+                float t = t0 >= 0f ? t0 : t1;
+                if (t >= 0f)
+                {
+                    Vector3 hit = ray.origin + d * t - center;
+                    if (hit.sqrMagnitude > 1e-10f) return hit.normalized;
+                }
+            }
+
+            float tc = Mathf.Max(0f, Vector3.Dot(center - ray.origin, d));
+            Vector3 p = ray.origin + d * tc - center;
+            return p.sqrMagnitude < 1e-10f ? d : p.normalized;
+        }
+
         public override void Draw(GizmoMeshBuilder b, bool hover, bool active)
         {
             Camera cam = G.Cam;
@@ -437,10 +493,10 @@ namespace ToolPosture.Gizmo
             Vector3 tip = Tip;
             Color col = (hover || active) ? G.highlightColor : G.axisColor;
 
-            b.AddBillboardRing(tip, cam, G.PixelToWorld(G.tipPixelRadius * 1.7f), G.PixelToWorld(1.2f),
-                               GizmoMeshBuilder.Fade(col, 0.5f));
+            b.AddBillboardRing(tip, cam, G.PixelToWorld(G.tipPixelRadius * 1.7f),
+                               G.PixelToWorld(G.thinPixelWidth), GizmoMeshBuilder.Fade(col, 0.5f));
             b.AddBillboardDisc(tip, cam,
-                               G.PixelToWorld((hover || active) ? G.tipPixelRadius : G.tipPixelRadius * 0.8f), col);
+                               G.PixelToWorld(G.tipPixelRadius * ((hover || active) ? 1f : 0.8f)), col);
         }
     }
 
@@ -453,7 +509,7 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public class SpinRingHandle : GizmoHandleBase
     {
-        private TangentRotationDrag _drag;
+        private RayTangentDrag _drag;
 
         public SpinRingHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.SpinRing) { }
 
@@ -486,21 +542,19 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        public override bool HitTest(Vector2 screenPos, out float distance)
-            => GizmoPicker.PickArc(RayOf(screenPos), Center, U, V, Radius, 0f, 360f,
-                                   G.PixelToWorld(G.HitPixelWidth), out _, out distance);
+        public override GizmoHandleShape GetShape()
+            => GizmoHandleShape.Arc(Center, U, V, Radius, 0f, 360f);
 
-        public override void BeginDrag(Vector2 screenPos)
+        public override void BeginDrag(Ray ray, Vector3 grabPoint)
         {
-            if (!GizmoPicker.RayPlanePolar(RayOf(screenPos), Center, U, V, out float grabAngle, out _, out _))
-                grabAngle = Value;
-
-            _drag.Begin(G.Viewport, Center, U, V, Radius, grabAngle, Value, screenPos, G.maxDegreesPerPixel);
+            GizmoHandleShape shape = GetShape();
+            float value = Value;
+            _drag.Begin(shape, ResolveGrabAngle(shape, ray, grabPoint, value), value, ray);
         }
 
-        public override void Drag(Vector2 screenPos, bool snap)
+        public override void Drag(Ray ray, bool snap)
         {
-            if (!_drag.TryGetValue(screenPos, out float v)) return;
+            if (!_drag.TryGetValue(ray, out float v)) return;
             if (snap) v = G.spinConvention.SnapInternal(v);
             Value = G.spinConvention.ClampInternal(v);
         }
@@ -511,11 +565,12 @@ namespace ToolPosture.Gizmo
             if (cam == null) return;
 
             Vector3 c = Center;
-            Vector3 eye = G.Viewport.EyePosition;
+            Vector3 eye = G.EyePosition;
             Color col = G.spinColor;
             Color line = (hover || active) ? G.highlightColor : col;
             float r = Radius;
             float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
+            float thin = G.PixelToWorld(G.thinPixelWidth);
 
             b.AddArcBand(c, U, V, r, halfWidth * 0.55f, 0f, 360f, GizmoMeshBuilder.Fade(col, 0.45f));
 
@@ -523,11 +578,12 @@ namespace ToolPosture.Gizmo
             b.AddArcBand(c, U, V, r, halfWidth, 0f, Value, line);
 
             b.AddRadialTick(c, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, G.zeroTickColor);
-            b.AddScreenDashedLine(c, c + U * r * 1.3f, eye, G.PixelToWorld(1.2f),
+            b.AddScreenDashedLine(c, c + U * r * 1.3f, eye, thin,
                                   G.PixelToWorld(9f), GizmoMeshBuilder.Fade(G.zeroTickColor, 0.6f));
 
             Vector3 knob = GizmoMeshBuilder.OnCircle(c, U, V, r, Value);
-            b.AddBillboardDisc(knob, cam, G.PixelToWorld((hover || active) ? 8f : 5.5f), line);
+            b.AddBillboardDisc(knob, cam,
+                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)), line);
         }
     }
 
@@ -542,18 +598,15 @@ namespace ToolPosture.Gizmo
     /// N からの傾き量は掴んだ時点の値を保ち、方位だけを変える。内部表現 (投影角) は
     ///   tan w = r cos(theta),  tan t = r sin(theta)
     /// で再構成するので、保持している値は投影角のまま変わらない。
-    ///
-    /// 傾き量が 0 のときは方位が定義できない (球面座標の極) ため無効化して薄く描く。
     /// </summary>
     public class AzimuthRingHandle : GizmoHandleBase
     {
-        
         /// <summary>
         /// 旋回角が工具軸に影響するとみなす最小の傾き [deg]。
         /// </summary>
         public const float MinTiltDeg = 0.5f;
 
-        private TangentRotationDrag _drag;
+        private RayTangentDrag _drag;
 
         public AzimuthRingHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.AzimuthRing) { }
 
@@ -576,28 +629,20 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public bool IsDefined => G.AzimuthAffectsToolAxis;
 
-        public override bool HitTest(Vector2 screenPos, out float distance)
+        // 傾き 0 でも掴める。姿勢は変わらないが、次に起こす方向を先に決められる。
+        public override GizmoHandleShape GetShape()
+            => GizmoHandleShape.Arc(G.Frame.Origin, U, V, Radius, 0f, 360f);
+
+        public override void BeginDrag(Ray ray, Vector3 grabPoint)
         {
-            // 傾き 0 でも掴める。姿勢は変わらないが、次に起こす方向を先に決められる。
-            return GizmoPicker.PickArc(RayOf(screenPos), G.Frame.Origin, U, V, Radius, 0f, 360f,
-                                       G.PixelToWorld(G.HitPixelWidth), out _, out distance);
+            GizmoHandleShape shape = GetShape();
+            float start = G.Angles.azimuthDeg;
+            _drag.Begin(shape, ResolveGrabAngle(shape, ray, grabPoint, start), start, ray);
         }
 
-        public override void BeginDrag(Vector2 screenPos)
+        public override void Drag(Ray ray, bool snap)
         {
-            float startAzimuth = G.Angles.azimuthDeg;
-
-            if (!GizmoPicker.RayPlanePolar(RayOf(screenPos), G.Frame.Origin, U, V,
-                                           out float grabAngle, out _, out _))
-                grabAngle = startAzimuth;
-
-            _drag.Begin(G.Viewport, G.Frame.Origin, U, V, Radius, grabAngle, startAzimuth,
-                        screenPos, G.maxDegreesPerPixel);
-        }
-
-        public override void Drag(Vector2 screenPos, bool snap)
-        {
-            if (!_drag.TryGetValue(screenPos, out float azimuth)) return;
+            if (!_drag.TryGetValue(ray, out float azimuth)) return;
             if (snap) azimuth = G.azimuthConvention.SnapInternal(azimuth);
 
             var angles = G.Angles;
@@ -618,7 +663,7 @@ namespace ToolPosture.Gizmo
             if (cam == null) return;
 
             Vector3 o = G.Frame.Origin;
-            Vector3 eye = G.Viewport.EyePosition;
+            Vector3 eye = G.EyePosition;
             float r = Radius;
             float halfWidth = G.PixelToWorld(G.arcPixelWidth) * 0.5f;
 
@@ -645,7 +690,8 @@ namespace ToolPosture.Gizmo
             b.AddScreenDashedLine(o, dir, eye, G.PixelToWorld(defined ? 1.6f : 1.0f), G.PixelToWorld(10f),
                                   GizmoMeshBuilder.Fade(col, 0.75f * held));
 
-            b.AddBillboardDisc(dir, cam, G.PixelToWorld((hover || active) ? 8f : 5.5f),
+            b.AddBillboardDisc(dir, cam,
+                               G.PixelToWorld(G.knobPixelRadius * ((hover || active) ? 1f : 0.7f)),
                                GizmoMeshBuilder.Fade(line, held));
         }
     }

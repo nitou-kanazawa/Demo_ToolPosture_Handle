@@ -29,7 +29,6 @@ namespace ToolPosture.EditorTools
             DrawDefaultInspector();
 
             var g = (ToolPostureGizmo)target;
-            g.RefreshFrame();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("出力 (読み取り専用)", EditorStyles.boldLabel);
@@ -78,7 +77,6 @@ namespace ToolPosture.EditorTools
         private void OnSceneGUI()
         {
             var g = (ToolPostureGizmo)target;
-            g.RefreshFrame();
 
             PathFrame f = g.Frame;
             if (!f.IsValid) return;

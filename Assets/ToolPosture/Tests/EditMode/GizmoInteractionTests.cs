@@ -7,128 +7,247 @@ using ToolPosture.Demo;
 namespace ToolPosture.Tests
 {
     /// <summary>
-    /// テスト用の単純なビューポート。ワールドの XY をそのままスクリーンへ写す正射影。
-    /// pixelsPerUnit = 100 なので 1m = 100px。
+    /// 円弧ハンドルの回転ドラッグ。掴んだ点の接線へレイを投影する方式。
     /// </summary>
-    class FlatViewport : IGizmoViewport
-    {
-        public const float PixelsPerUnit = 100f;
-        public static readonly Vector2 Center = new Vector2(400f, 300f);
-
-        public Camera RenderCamera => null;
-        public Vector3 EyePosition => new Vector3(0f, 0f, -10f);
-        public Vector2 PixelSize => new Vector2(800f, 600f);
-
-        public Ray ScreenPointToRay(Vector2 screenPos)
-            => new Ray(new Vector3((screenPos.x - Center.x) / PixelsPerUnit,
-                                   (screenPos.y - Center.y) / PixelsPerUnit,
-                                   -10f), Vector3.forward);
-
-        public bool TryWorldToScreenPoint(Vector3 worldPos, out Vector2 screenPos)
-        {
-            screenPos = new Vector2(worldPos.x * PixelsPerUnit + Center.x,
-                                    worldPos.y * PixelsPerUnit + Center.y);
-            return true;
-        }
-
-        public float WorldPerPixel(Vector3 worldPos) => 1f / PixelsPerUnit;
-    }
-
-    public class TangentRotationDragTests
+    public class RayTangentDragTests
     {
         private const float Tol = 1e-3f;
 
-        private static void Setup(out FlatViewport vp, out Vector3 center, out Vector3 u, out Vector3 v)
-        {
-            vp = new FlatViewport();
-            center = Vector3.zero;
-            u = Vector3.right;    // 0 度方向
-            v = Vector3.up;       // +90 度方向
-        }
+        /// <summary>
+        /// -Z から +Z を覗く平行光線。ワールドの XY 平面がそのまま操作面になる。
+        /// </summary>
+        private static Ray RayAt(float x, float y)
+            => new Ray(new Vector3(x, y, -10f), Vector3.forward);
+
+        /// <summary>
+        /// XY 平面上の全周リング。0 度方向 +X、+90 度方向 +Y。
+        /// </summary>
+        private static GizmoHandleShape Ring(float radius)
+            => GizmoHandleShape.Arc(Vector3.zero, Vector3.right, Vector3.up, radius, 0f, 360f);
 
         [Test]
         public void 接線方向へのドラッグは弧長を角度に換算する()
         {
-            Setup(out var vp, out var c, out var u, out var v);
-            float radius = 0.5f;
+            // 0 度の位置 (0.5, 0, 0) を掴む。その点の接線は +Y。
+            var drag = new RayTangentDrag();
+            drag.Begin(Ring(0.5f), 0f, 0f, RayAt(0.5f, 0f));
 
-            // 0 度の位置を掴む。その点の接線は +v (画面では +Y)。
-            vp.TryWorldToScreenPoint(c + u * radius, out Vector2 grabScreen);
-
-            var drag = new TangentRotationDrag();
-            drag.Begin(vp, c, u, v, radius, 0f, 0f, grabScreen, 0f);
-            Assert.IsTrue(drag.IsValid);
-
-            // 50px = 0.5m の弧長 -> 0.5 / 0.5 = 1 rad = 57.2958 度
-            Assert.IsTrue(drag.TryGetValue(grabScreen + new Vector2(0f, 50f), out float value));
+            // 接線方向へ 0.5m = 0.5 / 0.5 = 1 rad = 57.2958 度
+            Assert.IsTrue(drag.TryGetValue(RayAt(0.5f, 0.5f), out float value));
             Assert.AreEqual(57.2958f, value, 1e-2f);
 
-            // 逆方向なら符号が反転する
-            drag.TryGetValue(grabScreen + new Vector2(0f, -50f), out float back);
+            drag.TryGetValue(RayAt(0.5f, -0.5f), out float back);
             Assert.AreEqual(-57.2958f, back, 1e-2f);
         }
 
         [Test]
         public void 接線と直交する方向へ動かしても角度は変わらない()
         {
-            Setup(out var vp, out var c, out var u, out var v);
-            vp.TryWorldToScreenPoint(c + u * 0.5f, out Vector2 grabScreen);
+            var drag = new RayTangentDrag();
+            drag.Begin(Ring(0.5f), 0f, 12f, RayAt(0.5f, 0f));
 
-            var drag = new TangentRotationDrag();
-            drag.Begin(vp, c, u, v, 0.5f, 0f, 12f, grabScreen, 0f);
-
-            drag.TryGetValue(grabScreen + new Vector2(80f, 0f), out float value);
+            drag.TryGetValue(RayAt(1.3f, 0f), out float value);
             Assert.AreEqual(12f, value, Tol);
         }
 
         [Test]
         public void 掴んだ時点の値からの相対で動く()
         {
-            Setup(out var vp, out var c, out var u, out var v);
-            vp.TryWorldToScreenPoint(c + u * 0.5f, out Vector2 grabScreen);
+            var drag = new RayTangentDrag();
+            drag.Begin(Ring(0.5f), 0f, -30f, RayAt(0.5f, 0f));
 
-            var drag = new TangentRotationDrag();
-            drag.Begin(vp, c, u, v, 0.5f, 0f, -30f, grabScreen, 0f);
-
-            drag.TryGetValue(grabScreen + new Vector2(0f, 50f), out float value);
+            drag.TryGetValue(RayAt(0.5f, 0.5f), out float value);
             Assert.AreEqual(-30f + 57.2958f, value, 1e-2f);
         }
 
         [Test]
         public void 半径が大きいほど感度は下がる()
         {
-            Setup(out var vp, out var c, out var u, out var v);
+            var small = new RayTangentDrag();
+            small.Begin(Ring(0.25f), 0f, 0f, RayAt(0.25f, 0f));
+            small.TryGetValue(RayAt(0.25f, 0.1f), out float sv);
 
-            var small = new TangentRotationDrag();
-            vp.TryWorldToScreenPoint(c + u * 0.25f, out Vector2 s1);
-            small.Begin(vp, c, u, v, 0.25f, 0f, 0f, s1, 0f);
+            var large = new RayTangentDrag();
+            large.Begin(Ring(1.0f), 0f, 0f, RayAt(1.0f, 0f));
+            large.TryGetValue(RayAt(1.0f, 0.1f), out float lv);
 
-            var large = new TangentRotationDrag();
-            vp.TryWorldToScreenPoint(c + u * 1.0f, out Vector2 s2);
-            large.Begin(vp, c, u, v, 1.0f, 0f, 0f, s2, 0f);
-
-            Assert.Greater(small.DegreesPerPixel, large.DegreesPerPixel);
-            Assert.AreEqual(4f, small.DegreesPerPixel / large.DegreesPerPixel, 1e-2f);
+            Assert.Greater(Mathf.Abs(sv), Mathf.Abs(lv));
+            Assert.AreEqual(4f, sv / lv, 1e-3f);
         }
 
         [Test]
-        public void 感度は上限でクランプされる()
+        public void 視線が円弧の平面に寝ても感度は変わらない()
         {
-            Setup(out var vp, out var c, out var u, out var v);
-            vp.TryWorldToScreenPoint(c + u * 0.02f, out Vector2 grabScreen);
+            // 光線と円弧平面の交点から極角を取る方式は、ここで発散する。
+            GizmoHandleShape shape = Ring(0.5f);
+            Vector3 anchor = shape.PointAt(0f);          // (0.5, 0, 0)
+            Vector3 tangent = shape.TangentAt(0f);       // +Y
 
-            var drag = new TangentRotationDrag();
-            drag.Begin(vp, c, u, v, 0.02f, 0f, 0f, grabScreen, 2f);
+            foreach (float tiltDeg in new[] { 0f, 60f, 88f, 89.9f })
+            {
+                // 接線とは直交させたまま、視線だけを円弧の平面へ寝かせる
+                Vector3 dir = Quaternion.AngleAxis(tiltDeg, tangent) * Vector3.forward;
 
-            // クランプ無しなら 28.6 deg/px になるところを 2 deg/px に抑える
-            Assert.AreEqual(2f, drag.DegreesPerPixel, Tol);
+                var drag = new RayTangentDrag();
+                drag.Begin(shape, 0f, 0f, new Ray(anchor - dir * 10f, dir));
+
+                Vector3 moved = anchor + tangent * 0.5f;
+                Assert.IsTrue(drag.TryGetValue(new Ray(moved - dir * 10f, dir), out float value),
+                              $"tilt={tiltDeg}");
+                Assert.AreEqual(57.2958f, value, 1e-2f, $"tilt={tiltDeg}");
+            }
         }
 
         [Test]
-        public void 開始していなければ値を返さない()
+        public void レイが接線と平行に近いと値を更新しない()
         {
-            var drag = new TangentRotationDrag();
-            Assert.IsFalse(drag.TryGetValue(Vector2.zero, out _));
+            var drag = new RayTangentDrag();
+            drag.Begin(Ring(0.5f), 0f, 25f, RayAt(0.5f, 0f));
+
+            // 接線 (+Y) に沿って覗き込む = 最近接点が発散する
+            var alongTangent = new Ray(new Vector3(0.5f, -10f, 0f), Vector3.up);
+            Assert.IsFalse(drag.TryGetValue(alongTangent, out float value));
+            Assert.AreEqual(25f, value, Tol, "直前の値を保つ");
+        }
+
+        [Test]
+        public void 掴んだ瞬間が退化していても回復する()
+        {
+            var drag = new RayTangentDrag();
+
+            // 掴んだ瞬間は接線と平行 = 起点が取れない
+            drag.Begin(Ring(0.5f), 0f, 40f, new Ray(new Vector3(0.5f, -10f, 0f), Vector3.up));
+
+            // 次に有効なレイが来たところを起点にし直す
+            Assert.IsTrue(drag.TryGetValue(RayAt(0.5f, 0f), out float first));
+            Assert.AreEqual(40f, first, Tol);
+
+            Assert.IsTrue(drag.TryGetValue(RayAt(0.5f, 0.5f), out float value));
+            Assert.AreEqual(40f + 57.2958f, value, 1e-2f);
+        }
+    }
+
+    /// <summary>
+    /// コライダーによる当たり判定。円弧に巻いたチューブは断面が円なので、
+    /// 掴み幅が視線角度に依存しない。
+    /// </summary>
+    public class ColliderPickTests
+    {
+        private GameObject _go;
+        private ToolPostureGizmo _gizmo;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _go = new GameObject("TestGizmo");
+            _gizmo = _go.AddComponent<ToolPostureGizmo>();
+
+            // 旋回リングだけを残す (カメラ無しでも Scale は既定値で決まる)
+            _gizmo.showAxisTip = false;
+            _gizmo.showSpinRing = false;
+            _gizmo.showWorkArc = false;
+            _gizmo.showTravelArc = false;
+            _gizmo.SyncColliders();
+        }
+
+        [TearDown]
+        public void TearDown() => Object.DestroyImmediate(_go);
+
+        /// <summary>
+        /// リング上の点を、視線と接線の両方に直交する向きへずらしながら撃ち、
+        /// 当たらなくなるまでの距離 (= 実効的な掴み半幅) を返す。
+        /// </summary>
+        private float MeasureHalfWidth(Vector3 point, Vector3 tangent, Vector3 viewDir, float step)
+        {
+            Vector3 perp = Vector3.Cross(viewDir, tangent).normalized;
+
+            float half = -1f;
+            for (float d = 0f; d <= 1f; d += step)
+            {
+                var ray = new Ray(point + perp * d - viewDir * 20f, viewDir);
+                if (_gizmo.TryPick(ray, out GizmoHandleId id) && id == GizmoHandleId.AzimuthRing)
+                    half = d;
+                else break;
+            }
+            return half;
+        }
+
+        [Test]
+        public void 掴み幅は視線角度によらず一定()
+        {
+            PathFrame f = _gizmo.Frame;
+            Vector3 L = f.CrossFeed, N = f.Normal;
+
+            float radius = _gizmo.Scale * 1.42f;
+            float tube = _gizmo.PixelToWorld(_gizmo.HitPixelWidth) * 0.5f;
+            float step = tube / 40f;
+
+            // 半径方向が視線と揃う最悪の点。半径方向 L の側を狙う。
+            var shape = GizmoHandleShape.Arc(f.Origin, L, f.Feed, radius, 0f, 360f);
+            Vector3 point = shape.PointAt(0f);
+            Vector3 tangent = shape.TangentAt(0f);
+
+            float min = float.MaxValue, max = 0f;
+            foreach (float elevDeg in new[] { 90f, 45f, 20f, 5f, 1f })
+            {
+                float e = elevDeg * Mathf.Deg2Rad;
+                Vector3 viewDir = -(L * Mathf.Cos(e) + N * Mathf.Sin(e)).normalized;
+
+                float half = MeasureHalfWidth(point, tangent, viewDir, step);
+                Assert.Greater(half, 0f, $"仰角 {elevDeg} 度でリング上を掴めること");
+
+                min = Mathf.Min(min, half);
+                max = Mathf.Max(max, half);
+            }
+
+            // 断面が正 8 角形なので内接半径 cos(22.5) = 0.924 倍まで細くなりうる
+            Assert.Greater(min, tube * 0.85f, "公称の太さを大きく下回らないこと");
+            Assert.Less(max, tube * 1.05f, "公称の太さを超えないこと");
+            Assert.Less(max / min, 1.2f, "視線角度による差が小さいこと");
+        }
+
+        [Test]
+        public void 非表示のハンドルは掴めない()
+        {
+            PathFrame f = _gizmo.Frame;
+            float radius = _gizmo.Scale * 1.42f;
+            Vector3 point = f.Origin + f.CrossFeed * radius;
+            var ray = new Ray(point + f.Normal * 20f, -f.Normal);
+
+            Assert.IsTrue(_gizmo.TryPick(ray, out GizmoHandleId id));
+            Assert.AreEqual(GizmoHandleId.AzimuthRing, id);
+
+            _gizmo.showAzimuthRing = false;
+            _gizmo.SyncColliders();
+
+            Assert.IsFalse(_gizmo.TryPick(ray, out _));
+        }
+
+        [Test]
+        public void 掴んだ点はリング上に乗っている()
+        {
+            PathFrame f = _gizmo.Frame;
+            float radius = _gizmo.Scale * 1.42f;
+            Vector3 point = f.Origin + f.CrossFeed * radius;
+            var ray = new Ray(point + f.Normal * 20f, -f.Normal);
+
+            Assert.IsTrue(_gizmo.TryPick(ray, out _, out Vector3 hit));
+
+            float tube = _gizmo.PixelToWorld(_gizmo.HitPixelWidth) * 0.5f;
+            float r = Vector3.ProjectOnPlane(hit - f.Origin, f.Normal).magnitude;
+            Assert.AreEqual(radius, r, tube * 1.2f, "リングの近傍で当たること");
+        }
+
+        [Test]
+        public void コライダーは無視レイヤーに置かれる()
+        {
+            // アプリ側のシーンクエリを汚さないための約束
+            Transform root = _go.transform.Find("ToolPostureHandleColliders");
+            Assert.IsNotNull(root, "コライダーの根が作られること");
+            Assert.AreEqual(2, root.gameObject.layer);
+
+            foreach (Transform child in root)
+                Assert.AreEqual(2, child.gameObject.layer, child.name);
         }
     }
 
@@ -149,7 +268,6 @@ namespace ToolPosture.Tests
         {
             _go = new GameObject("TestGizmo");
             _gizmo = _go.AddComponent<ToolPostureGizmo>();
-            _gizmo.RefreshFrame();
         }
 
         [TearDown]
@@ -238,13 +356,24 @@ namespace ToolPosture.Tests
         public void 工具軸を直接与えても極では旋回角が保たれる()
         {
             _gizmo.SetSpherical(77f, 65f);
-            _gizmo.RefreshFrame();
 
             // フレームの法線そのもの = 完全な垂直
             _gizmo.SetToolAxisWorld(_gizmo.Frame.Normal);
 
             Assert.AreEqual(90f, _gizmo.ElevationDeg, Tol);
             Assert.AreEqual(77f, _gizmo.AzimuthDeg, Tol);
+        }
+
+        [Test]
+        public void フレームは代入したものがそのまま使われる()
+        {
+            // ギズモは経路を知らない。与えられたフレームを使うだけ。
+            Assert.IsTrue(PathFrame.TryCreate(new Vector3(3f, 1f, -2f), Vector3.right, Vector3.forward,
+                                              CrossFeedSide.RightOfTravel, out PathFrame f));
+            _gizmo.Frame = f;
+
+            Assert.AreEqual(0f, Vector3.Distance(f.Origin, _gizmo.Frame.Origin), 1e-5f);
+            Assert.AreEqual(0f, Vector3.Distance(f.Normal, _gizmo.Frame.Normal), 1e-5f);
         }
     }
 

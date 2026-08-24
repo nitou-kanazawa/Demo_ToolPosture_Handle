@@ -1,20 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using ToolPosture.Core;
+using ToolPosture.Gizmo;
 
 namespace ToolPosture.Demo
 {
     /// <summary>
     /// デモ用のダミー溶接経路。点列と各点の生の法線を保持し、
-    /// 区間 p(i) -> p(i+1) 上の任意位置でフレーム (L, M, N) を返す。
+    /// 区間 p(i) -&gt; p(i+1) 上の任意位置でフレーム (L, M, N) を返す。
     ///
-    /// 本ツールの外部インターフェースはここだけ。実データ構造がある場合は
-    /// GetFrame を同じシグネチャで実装したアダプタに差し替えればよい。
+    /// フレームの計算はこちら側の責務で、ギズモはその結果を受け取るだけ。
+    /// 実データ構造がある場合は GetFrame を同じシグネチャで実装したアダプタに
+    /// 差し替えればよい。
     /// </summary>
     [ExecuteAlways]
+    [DefaultExecutionOrder(-100)]     // ギズモより先にフレームを確定させる
     [AddComponentMenu("Tool Posture/Weld Path")]
     public class WeldPath : MonoBehaviour, IPathFrameSource
     {
+        #region 経路データ
+
         [SerializeField] private List<Vector3> points = new List<Vector3>();
 
         [Tooltip("各点の生の法線 (進行方向と直交していなくてよい。フレーム構築時に直交化される)")]
@@ -23,12 +29,46 @@ namespace ToolPosture.Demo
         [Tooltip("L を進行方向のどちら側に取るか")]
         public CrossFeedSide crossFeedSide = CrossFeedSide.RightOfTravel;
 
-        [Header("シーンビュー表示")]
+        public int PointCount => points.Count;
+        public int SegmentCount => Mathf.Max(0, points.Count - 1);
+
+        #endregion
+
+        #region ギズモの駆動
+
+        [Header("ギズモの駆動")]
+        [Tooltip("この経路上にギズモを乗せる。フレームは毎フレームここから供給される")]
+        public ToolPostureGizmo gizmo;
+
+        [Tooltip("ギズモを乗せる区間 (0 起点)")]
+        public int segmentIndex = 2;
+
+        [Tooltip("区間内の位置")]
+        [Range(0f, 1f)] public float segmentU = 0.5f;
+
+        [Tooltip("実行中に矢印キーで区間と位置を動かす")]
+        public bool useKeyboardShortcuts = true;
+
+        [Tooltip("1 回のキー入力で動く区間内の位置")]
+        public float uStep = 0.1f;
+
+        #endregion
+
+        #region 表示
+
+        [Header("表示")]
         public bool drawPathGizmo = true;
         public float normalGizmoLength = 0.35f;
 
-        public int PointCount => points.Count;
-        public int SegmentCount => Mathf.Max(0, points.Count - 1);
+        [Tooltip("実行中もギズモのメッシュに乗せて経路を描く")]
+        public bool drawPathAtRuntime = true;
+
+        public Color pathColor = new Color(0.85f, 0.87f, 0.92f, 0.70f);
+        public Color pathNormalColor = new Color(0.36f, 0.64f, 1.00f, 0.45f);
+
+        #endregion
+
+        #region ライフサイクル
 
         private void Reset() => BuildDefaultPath();
 
@@ -37,7 +77,46 @@ namespace ToolPosture.Demo
             // 法線の数を点の数に合わせる
             while (normals.Count < points.Count) normals.Add(Vector3.up);
             while (normals.Count > points.Count) normals.RemoveAt(normals.Count - 1);
+
+            segmentIndex = Mathf.Clamp(segmentIndex, 0, Mathf.Max(0, SegmentCount - 1));
         }
+
+        private void OnEnable()
+        {
+            if (gizmo != null) gizmo.BuildingExtraGeometry += DrawPath;
+        }
+
+        private void OnDisable()
+        {
+            if (gizmo != null) gizmo.BuildingExtraGeometry -= DrawPath;
+        }
+
+        private void Update()
+        {
+            if (gizmo == null) return;
+
+            if (Application.isPlaying && useKeyboardShortcuts) HandleKeyboard();
+
+            segmentIndex = Mathf.Clamp(segmentIndex, 0, Mathf.Max(0, SegmentCount - 1));
+            gizmo.Frame = GetFrame(segmentIndex, segmentU);
+        }
+
+        private void HandleKeyboard()
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb == null || SegmentCount == 0) return;
+
+            if (kb.leftArrowKey.wasPressedThisFrame) segmentIndex = Mathf.Max(0, segmentIndex - 1);
+            if (kb.rightArrowKey.wasPressedThisFrame)
+                segmentIndex = Mathf.Min(SegmentCount - 1, segmentIndex + 1);
+
+            if (kb.upArrowKey.wasPressedThisFrame) segmentU = Mathf.Clamp01(segmentU + uStep);
+            if (kb.downArrowKey.wasPressedThisFrame) segmentU = Mathf.Clamp01(segmentU - uStep);
+        }
+
+        #endregion
+
+        #region フレーム
 
         [ContextMenu("ダミー経路を生成")]
         public void BuildDefaultPath()
@@ -94,6 +173,38 @@ namespace ToolPosture.Demo
             return PathFrame.Fallback(origin);
         }
 
+        #endregion
+
+        #region 描画
+
+        /// <summary>
+        /// ギズモのメッシュに経路の線を足す。OnDrawGizmos はシーンビュー限定なので
+        /// 実行時の表示はこちらで行う。
+        /// </summary>
+        private void DrawPath(GizmoMeshBuilder b)
+        {
+            if (!drawPathAtRuntime || gizmo == null || points.Count < 2) return;
+
+            Camera cam = gizmo.Cam;
+            if (cam == null) return;
+
+            Vector3 camPos = gizmo.EyePosition;
+            float lineHalf = gizmo.PixelToWorld(1.4f);
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                Vector3 p = GetWorldPoint(i);
+
+                if (i + 1 < points.Count)
+                    b.AddScreenLine(p, GetWorldPoint(i + 1), camPos, lineHalf, pathColor);
+
+                b.AddScreenDashedLine(p, p + GetWorldNormal(i).normalized * normalGizmoLength,
+                                      camPos, gizmo.PixelToWorld(1f), gizmo.PixelToWorld(7f),
+                                      pathNormalColor);
+                b.AddBillboardDisc(p, cam, gizmo.PixelToWorld(3f), pathColor);
+            }
+        }
+
         private void OnDrawGizmos()
         {
             if (!drawPathGizmo || points.Count < 2 || normals.Count < points.Count) return;
@@ -111,5 +222,7 @@ namespace ToolPosture.Demo
                 Gizmos.DrawLine(p, p + GetWorldNormal(i).normalized * normalGizmoLength);
             }
         }
+
+        #endregion
     }
 }

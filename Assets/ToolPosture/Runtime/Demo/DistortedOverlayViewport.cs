@@ -1,14 +1,14 @@
 using UnityEngine;
-using ToolPosture.Gizmo;
 
 namespace ToolPosture.Demo
 {
     /// <summary>
-    /// 実写重畳ビュー用の IGizmoViewport 実装のサンプル。
+    /// 実写重畳ビューの投影。2D の画面座標とワールドの光線を相互変換する。
     ///
     /// 重畳カメラ (外部パラから配置したピンホールカメラ) の投影に、
     /// 半径方向のレンズ歪み (Brown-Conrady の k1 のみ) を重ねたもの。
-    /// アプリ側が Unity の Camera では表せない投影を持つ場合の典型例。
+    /// アプリが Unity の Camera では表せない投影を持つ場合の典型例で、
+    /// ギズモにはここで作った Ray をそのまま渡す。
     ///
     ///   歪み付与 : n_d = n_u * (1 + k1 * |n_u|^2)
     ///   歪み除去 : n_u = n_d / (1 + k1 * |n_u|^2)   を反復で解く
@@ -17,9 +17,8 @@ namespace ToolPosture.Demo
     /// 表示側のシェーダ ToolPosture/OverlayDistort と同じ式なので、
     /// 画面に見えている位置とギズモの当たり判定が一致する。
     /// </summary>
-    public class DistortedOverlayViewport : IGizmoViewport
+    public class DistortedOverlayViewport
     {
-
         #region フィールドと構築
 
         private const int UndistortIterations = 8;
@@ -43,11 +42,7 @@ namespace ToolPosture.Demo
             K1 = k1;
         }
 
-        public Camera RenderCamera => Camera;
-
         public Vector3 EyePosition => Camera != null ? Camera.transform.position : Vector3.zero;
-
-        public Vector2 PixelSize => ImageSize;
 
         #endregion
 
@@ -120,10 +115,11 @@ namespace ToolPosture.Demo
 
         #endregion
 
-        #region IGizmoViewport
+        #region 2D と 3D の相互変換
 
         /// <summary>
         /// 歪んだ画像上のピクセル座標から、ワールドの光線へ。
+        /// ギズモの TryPick / BeginDrag / UpdateDrag へはこの Ray を渡す。
         /// </summary>
         public Ray ScreenPointToRay(Vector2 screenPos)
         {
@@ -147,8 +143,6 @@ namespace ToolPosture.Demo
             screenPos = FromNormalized(Distort(ToNormalized(new Vector2(p.x, p.y)), K1));
             return true;
         }
-
-        public float WorldPerPixel(Vector3 worldPos) => GizmoPicker.WorldPerPixel(Camera, worldPos);
 
         #endregion
     }
