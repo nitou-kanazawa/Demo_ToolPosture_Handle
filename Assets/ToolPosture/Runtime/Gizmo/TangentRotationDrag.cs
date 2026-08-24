@@ -20,19 +20,23 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public struct TangentRotationDrag
     {
-        /// <summary>接線をスクリーンへ投影するときの微小移動量 [m]。</summary>
-        const float ProbeDistance = 0.01f;
+        /// <summary>
+        /// 接線をスクリーンへ投影するときの微小移動量 [m]。
+        /// </summary>
+        private const float ProbeDistance = 0.01f;
 
-        float _startValue;
-        Vector2 _startScreen;
-        Vector2 _tangentDir;     // スクリーン上の接線方向 (正規化済み)
-        float _degPerPixel;
-        bool _valid;
+        private float _startValue;
+        private Vector2 _startScreen;
+        private Vector2 _tangentDir;     // スクリーン上の接線方向 (正規化済み)
+        private float _degPerPixel;
+        private bool _valid;
 
         public bool IsValid => _valid;
         public float StartValue => _startValue;
 
-        /// <summary>1 ピクセルあたりの角度 [deg]。感度の確認・テスト用。</summary>
+        /// <summary>
+        /// 1 ピクセルあたりの角度 [deg]。感度の確認・テスト用。
+        /// </summary>
         public float DegreesPerPixel => _degPerPixel;
 
         /// <summary>
@@ -80,7 +84,9 @@ namespace ToolPosture.Gizmo
             _valid = true;
         }
 
-        /// <summary>現在のスクリーン座標から角度値を求める。</summary>
+        /// <summary>
+        /// 現在のスクリーン座標から角度値を求める。
+        /// </summary>
         public bool TryGetValue(Vector2 screenPos, out float value)
         {
             value = _startValue;

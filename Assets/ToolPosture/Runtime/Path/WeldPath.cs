@@ -15,10 +15,10 @@ namespace ToolPosture.Demo
     [AddComponentMenu("Tool Posture/Weld Path")]
     public class WeldPath : MonoBehaviour, IPathFrameSource
     {
-        [SerializeField] List<Vector3> points = new List<Vector3>();
+        [SerializeField] private List<Vector3> points = new List<Vector3>();
 
         [Tooltip("各点の生の法線 (進行方向と直交していなくてよい。フレーム構築時に直交化される)")]
-        [SerializeField] List<Vector3> normals = new List<Vector3>();
+        [SerializeField] private List<Vector3> normals = new List<Vector3>();
 
         [Tooltip("L を進行方向のどちら側に取るか")]
         public CrossFeedSide crossFeedSide = CrossFeedSide.RightOfTravel;
@@ -30,9 +30,9 @@ namespace ToolPosture.Demo
         public int PointCount => points.Count;
         public int SegmentCount => Mathf.Max(0, points.Count - 1);
 
-        void Reset() => BuildDefaultPath();
+        private void Reset() => BuildDefaultPath();
 
-        void OnValidate()
+        private void OnValidate()
         {
             // 法線の数を点の数に合わせる
             while (normals.Count < points.Count) normals.Add(Vector3.up);
@@ -94,7 +94,7 @@ namespace ToolPosture.Demo
             return PathFrame.Fallback(origin);
         }
 
-        void OnDrawGizmos()
+        private void OnDrawGizmos()
         {
             if (!drawPathGizmo || points.Count < 2 || normals.Count < points.Count) return;
 

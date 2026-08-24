@@ -9,7 +9,9 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public static class GizmoPicker
     {
-        /// <summary>指定ワールド座標における 1 ピクセル分のワールド長。</summary>
+        /// <summary>
+        /// 指定ワールド座標における 1 ピクセル分のワールド長。
+        /// </summary>
         public static float WorldPerPixel(Camera cam, Vector3 worldPoint)
         {
             if (cam == null || cam.pixelHeight <= 0) return 0.01f;

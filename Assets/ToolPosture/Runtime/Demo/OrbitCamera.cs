@@ -31,19 +31,19 @@ namespace ToolPosture.Demo
         public float zoomStep = 0.12f;
         public float pinchZoomSpeed = 0.004f;
 
-        Vector3 _panOffset;
-        float _pinchPrevDistance = -1f;
+        private Vector3 _panOffset;
+        private float _pinchPrevDistance = -1f;
 
-        Vector3 Pivot => (target != null ? target.position : Vector3.zero) + _panOffset;
+        private Vector3 Pivot => (target != null ? target.position : Vector3.zero) + _panOffset;
 
-        void OnEnable()
+        private void OnEnable()
         {
             _panOffset = Vector3.zero;
             if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             Apply();
         }
 
-        void LateUpdate()
+        private void LateUpdate()
         {
             if (!HandleTouch()) HandleMouse();
             Apply();
@@ -51,8 +51,10 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ タッチ
 
-        /// <summary>タッチで操作したなら true。マウス処理はスキップする。</summary>
-        bool HandleTouch()
+        /// <summary>
+        /// タッチで操作したなら true。マウス処理はスキップする。
+        /// </summary>
+        private bool HandleTouch()
         {
             int count = GizmoPointer.ActiveTouchCount();
             if (count == 0)
@@ -79,7 +81,7 @@ namespace ToolPosture.Demo
             return true;
         }
 
-        void HandlePinch()
+        private void HandlePinch()
         {
             if (!GizmoPointer.TryGetActiveTouch(0, out Vector2 p0, out Vector2 d0, out _)) return;
             if (!GizmoPointer.TryGetActiveTouch(1, out Vector2 p1, out Vector2 d1, out _)) return;
@@ -100,7 +102,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ マウス
 
-        void HandleMouse()
+        private void HandleMouse()
         {
             Mouse mouse = Mouse.current;
             if (mouse == null) return;
@@ -123,7 +125,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------
 
-        void Apply()
+        private void Apply()
         {
             Quaternion rot = Quaternion.Euler(pitch, yaw, 0f);
             transform.SetPositionAndRotation(Pivot - rot * Vector3.forward * distance, rot);

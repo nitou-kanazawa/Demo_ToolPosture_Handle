@@ -57,22 +57,30 @@ namespace ToolPosture.Core
                 snapDeg = snap,
             };
 
-        /// <summary>内部値 -> 表示値。</summary>
+        /// <summary>
+        /// 内部値 -> 表示値。
+        /// </summary>
         public float ToDisplay(float internalDeg)
             => (invertDirection ? -internalDeg : internalDeg) + zeroOffsetDeg;
 
-        /// <summary>表示値 -> 内部値。</summary>
+        /// <summary>
+        /// 表示値 -> 内部値。
+        /// </summary>
         public float ToInternal(float displayDeg)
         {
             float v = displayDeg - zeroOffsetDeg;
             return invertDirection ? -v : v;
         }
 
-        /// <summary>可動範囲でクランプする (内部値)。</summary>
+        /// <summary>
+        /// 可動範囲でクランプする (内部値)。
+        /// </summary>
         public float ClampInternal(float internalDeg)
             => useLimits ? Mathf.Clamp(internalDeg, minDeg, maxDeg) : internalDeg;
 
-        /// <summary>表示値の刻みでスナップする (入出力とも内部値)。</summary>
+        /// <summary>
+        /// 表示値の刻みでスナップする (入出力とも内部値)。
+        /// </summary>
         public float SnapInternal(float internalDeg)
         {
             if (snapDeg <= 0f) return internalDeg;
@@ -80,7 +88,9 @@ namespace ToolPosture.Core
             return ToInternal(Mathf.Round(d / snapDeg) * snapDeg);
         }
 
-        /// <summary>ギズモが円弧を描く内部値の範囲。制限が無い場合は既定の幅を返す。</summary>
+        /// <summary>
+        /// ギズモが円弧を描く内部値の範囲。制限が無い場合は既定の幅を返す。
+        /// </summary>
         public void GetArcRange(float fallbackHalfWidthDeg, out float lo, out float hi)
         {
             if (useLimits)

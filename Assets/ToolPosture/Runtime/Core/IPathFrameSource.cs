@@ -9,10 +9,14 @@ namespace ToolPosture.Core
     /// </summary>
     public interface IPathFrameSource
     {
-        /// <summary>区間数 (点列なら 点数 - 1)。</summary>
+        /// <summary>
+        /// 区間数 (点列なら 点数 - 1)。
+        /// </summary>
         int SegmentCount { get; }
 
-        /// <summary>区間 segment の位置 u (0..1) におけるフレーム。</summary>
+        /// <summary>
+        /// 区間 segment の位置 u (0..1) におけるフレーム。
+        /// </summary>
         PathFrame GetFrame(int segment, float u);
     }
 }

@@ -19,14 +19,18 @@ namespace ToolPosture.Demo
     /// </summary>
     public class DistortedOverlayViewport : IGizmoViewport
     {
-        const int UndistortIterations = 8;
+        private const int UndistortIterations = 8;
 
         public Camera Camera;
 
-        /// <summary>半径方向歪み係数。負で樽型、正で糸巻き型。</summary>
+        /// <summary>
+        /// 半径方向歪み係数。負で樽型、正で糸巻き型。
+        /// </summary>
         public float K1;
 
-        /// <summary>画像の解像度 [px]。</summary>
+        /// <summary>
+        /// 画像の解像度 [px]。
+        /// </summary>
         public Vector2 ImageSize;
 
         public DistortedOverlayViewport(Camera camera, Vector2 imageSize, float k1)
@@ -44,14 +48,14 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ 正規化
 
-        Vector2 ToNormalized(Vector2 pixel)
+        private Vector2 ToNormalized(Vector2 pixel)
         {
             float halfHeight = ImageSize.y * 0.5f;
             return new Vector2((pixel.x - ImageSize.x * 0.5f) / halfHeight,
                                (pixel.y - halfHeight) / halfHeight);
         }
 
-        Vector2 FromNormalized(Vector2 n)
+        private Vector2 FromNormalized(Vector2 n)
         {
             float halfHeight = ImageSize.y * 0.5f;
             return new Vector2(n.x * halfHeight + ImageSize.x * 0.5f,
@@ -111,7 +115,9 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ IGizmoViewport
 
-        /// <summary>歪んだ画像上のピクセル座標から、ワールドの光線へ。</summary>
+        /// <summary>
+        /// 歪んだ画像上のピクセル座標から、ワールドの光線へ。
+        /// </summary>
         public Ray ScreenPointToRay(Vector2 screenPos)
         {
             if (Camera == null) return new Ray(Vector3.zero, Vector3.forward);
@@ -120,7 +126,9 @@ namespace ToolPosture.Demo
             return Camera.ScreenPointToRay(FromNormalized(undistorted));
         }
 
-        /// <summary>ワールド座標から、歪んだ画像上のピクセル座標へ。</summary>
+        /// <summary>
+        /// ワールド座標から、歪んだ画像上のピクセル座標へ。
+        /// </summary>
         public bool TryWorldToScreenPoint(Vector3 worldPos, out Vector2 screenPos)
         {
             screenPos = default;

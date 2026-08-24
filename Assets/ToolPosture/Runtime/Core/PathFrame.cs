@@ -2,13 +2,19 @@ using UnityEngine;
 
 namespace ToolPosture.Core
 {
-    /// <summary>L (直交方向) を進行方向のどちら側に取るか。</summary>
+    /// <summary>
+    /// L (直交方向) を進行方向のどちら側に取るか。
+    /// </summary>
     public enum CrossFeedSide
     {
-        /// <summary>進行方向を向いたときの右側。右手系での L = M x N と同じ幾何。</summary>
+        /// <summary>
+        /// 進行方向を向いたときの右側。右手系での L = M x N と同じ幾何。
+        /// </summary>
         RightOfTravel = 0,
 
-        /// <summary>進行方向を向いたときの左側。</summary>
+        /// <summary>
+        /// 進行方向を向いたときの左側。
+        /// </summary>
         LeftOfTravel = 1,
     }
 
@@ -28,7 +34,7 @@ namespace ToolPosture.Core
     /// </summary>
     public readonly struct PathFrame
     {
-        const float Eps = 1e-6f;
+        private const float Eps = 1e-6f;
 
         public readonly Vector3 Origin;
         public readonly Vector3 CrossFeed;
@@ -45,7 +51,9 @@ namespace ToolPosture.Core
             IsValid = true;
         }
 
-        /// <summary>退化した区間に使う既定フレーム (M = +Z, N = +Y)。</summary>
+        /// <summary>
+        /// 退化した区間に使う既定フレーム (M = +Z, N = +Y)。
+        /// </summary>
         public static PathFrame Fallback(Vector3 origin)
             => new PathFrame(origin, Vector3.right, Vector3.forward, Vector3.up);
 
@@ -54,8 +62,7 @@ namespace ToolPosture.Core
         /// 生の法線は進行方向と直交しているとは限らないので Gram-Schmidt で直交化する。
         /// 区間長ゼロ、または法線が進行方向と平行な場合は false を返す。
         /// </summary>
-        public static bool TryCreate(Vector3 origin, Vector3 travel, Vector3 rawNormal,
-                                     CrossFeedSide side, out PathFrame frame)
+        public static bool TryCreate(Vector3 origin, Vector3 travel, Vector3 rawNormal, CrossFeedSide side, out PathFrame frame)
         {
             frame = default;
 
@@ -76,9 +83,10 @@ namespace ToolPosture.Core
             return true;
         }
 
-        /// <summary>構築に失敗した場合に前のフレームを引き継ぐ版。</summary>
-        public static PathFrame CreateOrInherit(Vector3 origin, Vector3 travel, Vector3 rawNormal,
-                                                CrossFeedSide side, PathFrame previous)
+        /// <summary>
+        /// 構築に失敗した場合に前のフレームを引き継ぐ版。
+        /// </summary>
+        public static PathFrame CreateOrInherit(Vector3 origin, Vector3 travel, Vector3 rawNormal, CrossFeedSide side, PathFrame previous)
         {
             if (TryCreate(origin, travel, rawNormal, side, out var f)) return f;
             return previous.IsValid
@@ -86,11 +94,15 @@ namespace ToolPosture.Core
                 : Fallback(origin);
         }
 
-        /// <summary>LMN 成分 (x = L, y = M, z = N) をワールド方向に変換する。</summary>
+        /// <summary>
+        /// LMN 成分 (x = L, y = M, z = N) をワールド方向に変換する。
+        /// </summary>
         public Vector3 LmnToWorldDirection(Vector3 lmn)
             => CrossFeed * lmn.x + Feed * lmn.y + Normal * lmn.z;
 
-        /// <summary>ワールド方向を LMN 成分 (x = L, y = M, z = N) に変換する。</summary>
+        /// <summary>
+        /// ワールド方向を LMN 成分 (x = L, y = M, z = N) に変換する。
+        /// </summary>
         public Vector3 WorldDirectionToLmn(Vector3 dir) => new Vector3(
             Vector3.Dot(dir, CrossFeed),
             Vector3.Dot(dir, Feed),
@@ -98,7 +110,9 @@ namespace ToolPosture.Core
 
         public Vector3 LmnToWorldPoint(Vector3 lmn) => Origin + LmnToWorldDirection(lmn);
 
-        /// <summary>フレームの姿勢 (ローカル +X = L, +Y = N, +Z = M)。</summary>
+        /// <summary>
+        /// フレームの姿勢 (ローカル +X = L, +Y = N, +Z = M)。
+        /// </summary>
         public Quaternion Rotation => Quaternion.LookRotation(Feed, Normal);
     }
 }

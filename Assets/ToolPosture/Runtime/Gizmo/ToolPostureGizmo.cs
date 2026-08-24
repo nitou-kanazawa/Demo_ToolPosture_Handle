@@ -7,10 +7,14 @@ using ToolPosture.Core;
 
 namespace ToolPosture.Gizmo
 {
-    /// <summary>ポインタ入力を誰が読むか。</summary>
+    /// <summary>
+    /// ポインタ入力を誰が読むか。
+    /// </summary>
     public enum GizmoInputMode
     {
-        /// <summary>マウス / タッチ / ペンを自前で読む。</summary>
+        /// <summary>
+        /// マウス / タッチ / ペンを自前で読む。
+        /// </summary>
         BuiltIn = 0,
 
         /// <summary>
@@ -39,7 +43,7 @@ namespace ToolPosture.Gizmo
 
         [Header("経路")]
         [Tooltip("フレームの供給元。コードから FrameSource を設定した場合はそちらが優先される")]
-        [SerializeField] Demo.WeldPath path;
+        [SerializeField] private Demo.WeldPath path;
 
         [Tooltip("対象の区間 (0 起点)")]
         public int segmentIndex = 2;
@@ -51,7 +55,7 @@ namespace ToolPosture.Gizmo
         // ------------------------------------------------------------------ 姿勢
 
         [Header("姿勢 (保持は球面表現 theta / phi / spin)")]
-        [SerializeField] ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
+        [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
 
         [Header("角度規約 (0 度位置 / 回転方向 / 可動範囲)")]
         public AngleConvention workConvention = AngleConvention.Ranged(-60f, 60f);
@@ -154,24 +158,26 @@ namespace ToolPosture.Gizmo
 
         // ------------------------------------------------------------------ 状態
 
-        PathFrame _frame;
-        IPathFrameSource _explicitSource;
-        readonly List<GizmoHandleBase> _handles = new List<GizmoHandleBase>();
-        GizmoHandleBase _hovered;
-        GizmoHandleBase _active;
-        bool _pointerIsTouch;
-        IGizmoViewport _viewport;
-        CameraViewport _defaultViewport;
-        ToolPostureAngles _anglesAtDragStart;
+        private PathFrame _frame;
+        private IPathFrameSource _explicitSource;
+        private readonly List<GizmoHandleBase> _handles = new List<GizmoHandleBase>();
+        private GizmoHandleBase _hovered;
+        private GizmoHandleBase _active;
+        private bool _pointerIsTouch;
+        private IGizmoViewport _viewport;
+        private CameraViewport _defaultViewport;
+        private ToolPostureAngles _anglesAtDragStart;
 
-        Mesh _mesh;
-        Material _matFront;
-        Material _matBehind;
-        readonly GizmoMeshBuilder _builder = new GizmoMeshBuilder();
+        private Mesh _mesh;
+        private Material _matFront;
+        private Material _matBehind;
+        private readonly GizmoMeshBuilder _builder = new GizmoMeshBuilder();
 
         // ------------------------------------------------------------------ 公開プロパティ
 
-        /// <summary>コードからフレーム供給元を差し替える。null なら インスペクタの WeldPath を使う。</summary>
+        /// <summary>
+        /// コードからフレーム供給元を差し替える。null なら インスペクタの WeldPath を使う。
+        /// </summary>
         public IPathFrameSource FrameSource
         {
             get => _explicitSource ?? path;
@@ -193,13 +199,19 @@ namespace ToolPosture.Gizmo
 
         // ------------------------------------------------- 球面表現 (theta / phi) での入出力
 
-        /// <summary>旋回角 theta [deg]。L 軸正方向が 0 度。</summary>
+        /// <summary>
+        /// 旋回角 theta [deg]。L 軸正方向が 0 度。
+        /// </summary>
         public float AzimuthDeg => angles.azimuthDeg;
 
-        /// <summary>仰角 phi [deg]。LM 平面から測る (90 度で工具軸が N に一致)。</summary>
+        /// <summary>
+        /// 仰角 phi [deg]。LM 平面から測る (90 度で工具軸が N に一致)。
+        /// </summary>
         public float ElevationDeg => angles.elevationDeg;
 
-        /// <summary>N からの傾き角 alpha [deg] (= 90 - phi)。</summary>
+        /// <summary>
+        /// N からの傾き角 alpha [deg] (= 90 - phi)。
+        /// </summary>
         public float TiltFromNormalDeg => angles.TiltFromNormalDeg;
 
         /// <summary>
@@ -208,7 +220,9 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public bool AzimuthAffectsToolAxis => angles.TiltIsSignificant();
 
-        /// <summary>球面表現で姿勢を設定する。</summary>
+        /// <summary>
+        /// 球面表現で姿勢を設定する。
+        /// </summary>
         public void SetSpherical(float azimuthDeg, float elevationDeg)
         {
             var a = angles;
@@ -217,13 +231,19 @@ namespace ToolPosture.Gizmo
             angles = a;
         }
 
-        /// <summary>フレームに対する工具軸ベクトル X (ワールド)。このツールの主たる出力。</summary>
+        /// <summary>
+        /// フレームに対する工具軸ベクトル X (ワールド)。このツールの主たる出力。
+        /// </summary>
         public Vector3 ToolAxisWorld => angles.GetAxisWorld(_frame);
 
-        /// <summary>工具軸ベクトル X の LMN 成分 (x = L, y = M, z = N)。</summary>
+        /// <summary>
+        /// 工具軸ベクトル X の LMN 成分 (x = L, y = M, z = N)。
+        /// </summary>
         public Vector3 ToolAxisLmn => angles.GetAxisLmn();
 
-        /// <summary>スピンまで含めた工具の完全な姿勢。</summary>
+        /// <summary>
+        /// スピンまで含めた工具の完全な姿勢。
+        /// </summary>
         public Quaternion ToolRotation => angles.GetToolRotation(_frame, toolShaftAxis, toolReferenceAxis);
 
         /// <summary>
@@ -245,10 +265,14 @@ namespace ToolPosture.Gizmo
             set => _viewport = value;
         }
 
-        /// <summary>描画に使うカメラ (ビューポート由来)。</summary>
+        /// <summary>
+        /// 描画に使うカメラ (ビューポート由来)。
+        /// </summary>
         public Camera Cam => Viewport.RenderCamera;
 
-        /// <summary>ギズモのワールド半径 (画面上の大きさを一定に保つ)。</summary>
+        /// <summary>
+        /// ギズモのワールド半径 (画面上の大きさを一定に保つ)。
+        /// </summary>
         public float Scale => Mathf.Max(1e-4f, gizmoPixelSize * Viewport.WorldPerPixel(_frame.Origin));
 
         public float PixelToWorld(float pixels) => pixels * Viewport.WorldPerPixel(_frame.Origin);
@@ -257,13 +281,19 @@ namespace ToolPosture.Gizmo
         public GizmoHandleId? ActiveHandle => _active?.Id;
         public bool IsDragging => _active != null;
 
-        /// <summary>直近のポインタがタッチだったか。当たり判定の広さを切り替えるのに使う。</summary>
+        /// <summary>
+        /// 直近のポインタがタッチだったか。当たり判定の広さを切り替えるのに使う。
+        /// </summary>
         public bool PointerIsTouch => _pointerIsTouch;
 
-        /// <summary>現在のポインタ種別に応じた円弧・リングの当たり判定幅 [px]。</summary>
+        /// <summary>
+        /// 現在のポインタ種別に応じた円弧・リングの当たり判定幅 [px]。
+        /// </summary>
         public float HitPixelWidth => _pointerIsTouch ? touchHitPixelWidth : hitPixelWidth;
 
-        /// <summary>現在のポインタ種別に応じた軸先端の当たり判定半径 [px]。</summary>
+        /// <summary>
+        /// 現在のポインタ種別に応じた軸先端の当たり判定半径 [px]。
+        /// </summary>
         public float TipHitPixelRadius => tipPixelRadius * (_pointerIsTouch ? 2.8f : 1.8f);
 
         public float ClampProjected(float deg)
@@ -271,20 +301,20 @@ namespace ToolPosture.Gizmo
 
         // ------------------------------------------------------------------ ライフサイクル
 
-        void OnEnable()
+        private void OnEnable()
         {
             BuildHandles();
             RefreshFrame();
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             _hovered = null;
             _active = null;
             ReleaseResources();
         }
 
-        void BuildHandles()
+        private void BuildHandles()
         {
             _handles.Clear();
             // 掴みやすさの優先順: 小さい的から先に判定する
@@ -296,7 +326,9 @@ namespace ToolPosture.Gizmo
             _handles.Add(new AzimuthRingHandle(this));
         }
 
-        /// <summary>現在の区間・位置からフレームを再計算する。</summary>
+        /// <summary>
+        /// 現在の区間・位置からフレームを再計算する。
+        /// </summary>
         public void RefreshFrame()
         {
             var src = FrameSource;
@@ -310,7 +342,7 @@ namespace ToolPosture.Gizmo
             _frame = src.GetFrame(segmentIndex, segmentU);
         }
 
-        void Update()
+        private void Update()
         {
             RefreshFrame();
 
@@ -323,7 +355,7 @@ namespace ToolPosture.Gizmo
             ApplyToolVisual();
         }
 
-        void LateUpdate()
+        private void LateUpdate()
         {
             RefreshFrame();
             Render();
@@ -331,7 +363,7 @@ namespace ToolPosture.Gizmo
 
         // ------------------------------------------------------------------ 入力
 
-        void HandlePointer()
+        private void HandlePointer()
         {
             if (Cam == null) return;
 
@@ -386,7 +418,9 @@ namespace ToolPosture.Gizmo
             return h != null;
         }
 
-        /// <summary>指定ハンドルのドラッグを開始する。掴み位置と現在値が記録される。</summary>
+        /// <summary>
+        /// 指定ハンドルのドラッグを開始する。掴み位置と現在値が記録される。
+        /// </summary>
         public bool BeginDrag(GizmoHandleId id, Vector2 screenPos)
         {
             GizmoHandleBase h = FindHandle(id);
@@ -398,14 +432,18 @@ namespace ToolPosture.Gizmo
             return true;
         }
 
-        /// <summary>ドラッグ中の更新。BeginDrag していない場合は何もしない。</summary>
+        /// <summary>
+        /// ドラッグ中の更新。BeginDrag していない場合は何もしない。
+        /// </summary>
         public void UpdateDrag(Vector2 screenPos, bool snap = false)
         {
             if (_active == null) return;
             _active.Drag(screenPos, snap);
         }
 
-        /// <summary>ドラッグを確定して終了する。</summary>
+        /// <summary>
+        /// ドラッグを確定して終了する。
+        /// </summary>
         public void EndDrag()
         {
             if (_active == null) return;
@@ -413,7 +451,9 @@ namespace ToolPosture.Gizmo
             _active = null;
         }
 
-        /// <summary>ドラッグを中断し、BeginDrag 時点の姿勢へ戻す。</summary>
+        /// <summary>
+        /// ドラッグを中断し、BeginDrag 時点の姿勢へ戻す。
+        /// </summary>
         public void CancelDrag()
         {
             if (_active == null) return;
@@ -422,11 +462,15 @@ namespace ToolPosture.Gizmo
             _active = null;
         }
 
-        /// <summary>ホバー表示を外から指定する (2D ビューのカーソル位置など)。</summary>
+        /// <summary>
+        /// ホバー表示を外から指定する (2D ビューのカーソル位置など)。
+        /// </summary>
         public void SetHover(GizmoHandleId? id)
             => _hovered = id.HasValue ? FindHandle(id.Value) : null;
 
-        /// <summary>ホバー判定をスクリーン座標から行う。</summary>
+        /// <summary>
+        /// ホバー判定をスクリーン座標から行う。
+        /// </summary>
         public void UpdateHover(Vector2 screenPos) => _hovered = PickHandle(screenPos);
 
         /// <summary>
@@ -461,7 +505,9 @@ namespace ToolPosture.Gizmo
             Angles = a;
         }
 
-        /// <summary>工具軸をワールド方向で直接与える。</summary>
+        /// <summary>
+        /// 工具軸をワールド方向で直接与える。
+        /// </summary>
         public void SetToolAxisWorld(Vector3 worldDirection)
         {
             Vector3 lmn = _frame.WorldDirectionToLmn(worldDirection.normalized);
@@ -474,14 +520,14 @@ namespace ToolPosture.Gizmo
             Angles = a;
         }
 
-        GizmoHandleBase FindHandle(GizmoHandleId id)
+        private GizmoHandleBase FindHandle(GizmoHandleId id)
         {
             foreach (var h in _handles)
                 if (h.Id == id) return h;
             return null;
         }
 
-        GizmoHandleBase PickHandle(Vector2 screenPos)
+        private GizmoHandleBase PickHandle(Vector2 screenPos)
         {
             GizmoHandleBase best = null;
             float bestDist = float.MaxValue;
@@ -498,7 +544,7 @@ namespace ToolPosture.Gizmo
             return best;
         }
 
-        void HandleKeyboard()
+        private void HandleKeyboard()
         {
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
@@ -526,7 +572,7 @@ namespace ToolPosture.Gizmo
             if (_hovered != null && !_hovered.Visible) _hovered = null;
         }
 
-        void ApplyToolVisual()
+        private void ApplyToolVisual()
         {
             if (toolVisual == null) return;
             toolVisual.SetPositionAndRotation(_frame.Origin, ToolRotation);
@@ -534,7 +580,7 @@ namespace ToolPosture.Gizmo
 
         // ------------------------------------------------------------------ 描画
 
-        bool EnsureResources()
+        private bool EnsureResources()
         {
             if (_mesh == null)
             {
@@ -558,7 +604,7 @@ namespace ToolPosture.Gizmo
             return true;
         }
 
-        void ReleaseResources()
+        private void ReleaseResources()
         {
             if (_mesh != null) DestroyResource(_mesh);
             if (_matFront != null) DestroyResource(_matFront);
@@ -568,13 +614,13 @@ namespace ToolPosture.Gizmo
             _matBehind = null;
         }
 
-        static void DestroyResource(UnityEngine.Object o)
+        private static void DestroyResource(UnityEngine.Object o)
         {
             if (Application.isPlaying) Destroy(o);
             else DestroyImmediate(o);
         }
 
-        void Render()
+        private void Render()
         {
             Camera cam = Cam;
             if (cam == null || !EnsureResources()) return;
@@ -609,7 +655,7 @@ namespace ToolPosture.Gizmo
             Graphics.RenderMesh(front, _mesh, 0, Matrix4x4.identity);
         }
 
-        void BuildGeometry(GizmoMeshBuilder b)
+        private void BuildGeometry(GizmoMeshBuilder b)
         {
             Camera cam = Cam;
             if (cam == null || !_frame.IsValid) return;
@@ -644,8 +690,10 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>経路の点列と各点の法線。WeldPath.OnDrawGizmos はシーンビュー限定なので実行時用に描く。</summary>
-        void BuildPathGeometry(GizmoMeshBuilder b, Vector3 camPos)
+        /// <summary>
+        /// 経路の点列と各点の法線。WeldPath.OnDrawGizmos はシーンビュー限定なので実行時用に描く。
+        /// </summary>
+        private void BuildPathGeometry(GizmoMeshBuilder b, Vector3 camPos)
         {
             Camera cam = Cam;
             if (cam == null || path == null || path.PointCount < 2) return;

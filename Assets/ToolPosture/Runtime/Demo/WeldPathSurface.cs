@@ -25,14 +25,14 @@ namespace ToolPosture.Demo
         [Tooltip("溶接線が面に埋まらないよう法線方向に下げる量")]
         public float sinkDepth = 0.012f;
 
-        Mesh _mesh;
-        readonly List<Vector3> _verts = new List<Vector3>();
-        readonly List<Vector3> _normals = new List<Vector3>();
-        readonly List<int> _tris = new List<int>();
+        private Mesh _mesh;
+        private readonly List<Vector3> _verts = new List<Vector3>();
+        private readonly List<Vector3> _normals = new List<Vector3>();
+        private readonly List<int> _tris = new List<int>();
 
-        void OnEnable() => Rebuild();
+        private void OnEnable() => Rebuild();
 
-        void Update()
+        private void Update()
         {
             if (!Application.isPlaying) Rebuild();
         }

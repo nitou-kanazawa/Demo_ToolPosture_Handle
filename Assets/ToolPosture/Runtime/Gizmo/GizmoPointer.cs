@@ -4,7 +4,9 @@ using UnityEngine.InputSystem.Controls;
 
 namespace ToolPosture.Gizmo
 {
-    /// <summary>1 回分のポインタ入力。マウス / タッチ / ペンを同じ形で扱う。</summary>
+    /// <summary>
+    /// 1 回分のポインタ入力。マウス / タッチ / ペンを同じ形で扱う。
+    /// </summary>
     public struct PointerSample
     {
         public bool valid;
@@ -14,7 +16,9 @@ namespace ToolPosture.Gizmo
         public bool releasedThisFrame;
         public bool isTouch;
 
-        /// <summary>EventSystem.IsPointerOverGameObject に渡す ID。マウス / ペンは -1。</summary>
+        /// <summary>
+        /// EventSystem.IsPointerOverGameObject に渡す ID。マウス / ペンは -1。
+        /// </summary>
         public int pointerId;
     }
 
@@ -26,8 +30,10 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public static class GizmoPointer
     {
-        /// <summary>マウス / ペンの EventSystem 上のポインタ ID (PointerInputModule.kMouseLeftId)。</summary>
-        const int MousePointerId = -1;
+        /// <summary>
+        /// マウス / ペンの EventSystem 上のポインタ ID (PointerInputModule.kMouseLeftId)。
+        /// </summary>
+        private const int MousePointerId = -1;
 
         /// <summary>
         /// 現在のポインタを 1 つ返す。接触中のタッチがあればタッチを優先し、
@@ -87,7 +93,9 @@ namespace ToolPosture.Gizmo
             return false;
         }
 
-        /// <summary>接触中のタッチ数。</summary>
+        /// <summary>
+        /// 接触中のタッチ数。
+        /// </summary>
         public static int ActiveTouchCount()
         {
             Touchscreen ts = Touchscreen.current;
@@ -100,7 +108,9 @@ namespace ToolPosture.Gizmo
             return n;
         }
 
-        /// <summary>接触中のタッチのうち index 番目の位置と移動量。</summary>
+        /// <summary>
+        /// 接触中のタッチのうち index 番目の位置と移動量。
+        /// </summary>
         public static bool TryGetActiveTouch(int index, out Vector2 position, out Vector2 delta, out int touchId)
         {
             position = default;
@@ -127,7 +137,7 @@ namespace ToolPosture.Gizmo
             return false;
         }
 
-        static bool IsActive(TouchControl t)
+        private static bool IsActive(TouchControl t)
         {
             UnityEngine.InputSystem.TouchPhase phase = t.phase.ReadValue();
             return phase == UnityEngine.InputSystem.TouchPhase.Began

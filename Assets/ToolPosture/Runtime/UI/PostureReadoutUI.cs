@@ -22,23 +22,23 @@ namespace ToolPosture.Demo
         public Vector2 panelSize = new Vector2(418f, 466f);
         public int fontSize = 14;
 
-        Text _body;
-        Button[] _toggleButtons;
-        Text[] _toggleLabels;
-        readonly StringBuilder _sb = new StringBuilder(1024);
+        private Text _body;
+        private Button[] _toggleButtons;
+        private Text[] _toggleLabels;
+        private readonly StringBuilder _sb = new StringBuilder(1024);
 
-        static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.08f, 0.82f);
-        static readonly Color OnColor = new Color(0.20f, 0.42f, 0.62f, 0.95f);
-        static readonly Color OffColor = new Color(0.16f, 0.17f, 0.20f, 0.90f);
+        private static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.08f, 0.82f);
+        private static readonly Color OnColor = new Color(0.20f, 0.42f, 0.62f, 0.95f);
+        private static readonly Color OffColor = new Color(0.16f, 0.17f, 0.20f, 0.90f);
 
-        void Awake()
+        private void Awake()
         {
             if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             EnsureEventSystem();
             BuildUI();
         }
 
-        void Update()
+        private void Update()
         {
             if (gizmo == null || _body == null) return;
             _body.text = BuildText();
@@ -47,7 +47,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ テキスト
 
-        string BuildText()
+        private string BuildText()
         {
             var a = gizmo.Angles;
             Vector3 lmn = a.GetAxisLmn();
@@ -100,7 +100,7 @@ namespace ToolPosture.Demo
             return _sb.ToString();
         }
 
-        void AppendAngle(string label, float internalDeg, AngleConvention conv, string key)
+        private void AppendAngle(string label, float internalDeg, AngleConvention conv, string key)
         {
             float display = conv.ToDisplay(internalDeg);
             bool limited = conv.useLimits &&
@@ -119,7 +119,7 @@ namespace ToolPosture.Demo
         /// Input System 専用設定 (Active Input Handling = Input System Package) では
         /// 一切入力を拾えないので InputSystemUIInputModule に差し替える。
         /// </summary>
-        static void EnsureEventSystem()
+        private static void EnsureEventSystem()
         {
             EventSystem es = EventSystem.current;
             if (es == null)
@@ -141,7 +141,7 @@ namespace ToolPosture.Demo
                 module.AssignDefaultActions();
         }
 
-        static Font ResolveFont()
+        private static Font ResolveFont()
         {
             Font f = null;
             try { f = Font.CreateDynamicFontFromOSFont("Consolas", 14); }
@@ -149,7 +149,7 @@ namespace ToolPosture.Demo
             return f != null ? f : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
-        void BuildUI()
+        private void BuildUI()
         {
             Font font = ResolveFont();
 
@@ -227,7 +227,7 @@ namespace ToolPosture.Demo
             }
         }
 
-        static RectTransform CreateRect(string name, Transform parent, Color color)
+        private static RectTransform CreateRect(string name, Transform parent, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             var rect = go.GetComponent<RectTransform>();
@@ -236,7 +236,7 @@ namespace ToolPosture.Demo
             return rect;
         }
 
-        void ToggleHandle(int index)
+        private void ToggleHandle(int index)
         {
             if (gizmo == null) return;
             switch (index)
@@ -249,7 +249,7 @@ namespace ToolPosture.Demo
             }
         }
 
-        void UpdateToggleVisuals()
+        private void UpdateToggleVisuals()
         {
             if (_toggleButtons == null || gizmo == null) return;
             bool[] states =

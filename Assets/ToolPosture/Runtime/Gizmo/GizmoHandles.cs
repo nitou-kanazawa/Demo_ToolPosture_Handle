@@ -13,7 +13,9 @@ namespace ToolPosture.Gizmo
         TiltArc = 5,
     }
 
-    /// <summary>狙い角ハンドルの円弧をどの平面に置くか。</summary>
+    /// <summary>
+    /// 狙い角ハンドルの円弧をどの平面に置くか。
+    /// </summary>
     public enum WorkArcPlaneMode
     {
         /// <summary>
@@ -29,10 +31,14 @@ namespace ToolPosture.Gizmo
         FollowToolAxis = 1,
     }
 
-    /// <summary>投影角の可動範囲から、傾き量の上限を求めるための共通処理。</summary>
+    /// <summary>
+    /// 投影角の可動範囲から、傾き量の上限を求めるための共通処理。
+    /// </summary>
     public static class TiltLimits
     {
-        /// <summary>この方位で w / t の可動範囲に収まる最大の傾き量 (tan)。</summary>
+        /// <summary>
+        /// この方位で w / t の可動範囲に収まる最大の傾き量 (tan)。
+        /// </summary>
         public static float MaxTanTilt(ToolPostureGizmo g, float azimuthDeg)
         {
             float a = azimuthDeg * Mathf.Deg2Rad;
@@ -44,7 +50,7 @@ namespace ToolPosture.Gizmo
             return Mathf.Max(0f, max);
         }
 
-        static float LimitFor(float component, AngleConvention conv)
+        private static float LimitFor(float component, AngleConvention conv)
         {
             if (!conv.useLimits || Mathf.Abs(component) < 1e-4f) return float.MaxValue;
             float limitDeg = component > 0f ? conv.maxDeg : conv.minDeg;
@@ -75,15 +81,21 @@ namespace ToolPosture.Gizmo
 
         public abstract bool Visible { get; }
 
-        /// <summary>このハンドルに当たっているか。当たった場合は視点からの距離を返す。</summary>
+        /// <summary>
+        /// このハンドルに当たっているか。当たった場合は視点からの距離を返す。
+        /// </summary>
         public abstract bool HitTest(Vector2 screenPos, out float distance);
 
-        /// <summary>掴んだ瞬間。掴み位置と現在値を記録して値の飛びを防ぐ。</summary>
+        /// <summary>
+        /// 掴んだ瞬間。掴み位置と現在値を記録して値の飛びを防ぐ。
+        /// </summary>
         public abstract void BeginDrag(Vector2 screenPos);
 
         public abstract void Drag(Vector2 screenPos, bool snap);
 
-        /// <summary>ドラッグ終了時の後片付け。必要なハンドルだけが上書きする。</summary>
+        /// <summary>
+        /// ドラッグ終了時の後片付け。必要なハンドルだけが上書きする。
+        /// </summary>
         public virtual void EndDrag() { }
 
         public abstract void Draw(GizmoMeshBuilder b, bool hover, bool active);
@@ -97,8 +109,8 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public class ArcAngleHandle : GizmoHandleBase
     {
-        readonly bool _isWork;
-        TangentRotationDrag _drag;
+        private readonly bool _isWork;
+        private TangentRotationDrag _drag;
 
         public ArcAngleHandle(ToolPostureGizmo owner, bool isWork)
             : base(owner, isWork ? GizmoHandleId.WorkArc : GizmoHandleId.TravelArc)
@@ -110,19 +122,23 @@ namespace ToolPosture.Gizmo
             ? G.showWorkArc && G.workArcPlane == WorkArcPlaneMode.FixedCrossFeed
             : G.showTravelArc;
 
-        AngleConvention Conv => _isWork ? G.workConvention : G.travelConvention;
+        private AngleConvention Conv => _isWork ? G.workConvention : G.travelConvention;
 
-        /// <summary>0 度方向 (常に面法線 N)。</summary>
-        Vector3 U => G.Frame.Normal;
+        /// <summary>
+        /// 0 度方向 (常に面法線 N)。
+        /// </summary>
+        private Vector3 U => G.Frame.Normal;
 
-        /// <summary>正方向 (狙い角なら L、前進後退角なら M)。</summary>
-        Vector3 V => _isWork ? G.Frame.CrossFeed : G.Frame.Feed;
+        /// <summary>
+        /// 正方向 (狙い角なら L、前進後退角なら M)。
+        /// </summary>
+        private Vector3 V => _isWork ? G.Frame.CrossFeed : G.Frame.Feed;
 
-        float Radius => G.Scale * (_isWork ? 0.74f : 1.0f);
+        private float Radius => G.Scale * (_isWork ? 0.74f : 1.0f);
 
-        Color BaseColor => _isWork ? G.workColor : G.travelColor;
+        private Color BaseColor => _isWork ? G.workColor : G.travelColor;
 
-        float Value
+        private float Value
         {
             get => _isWork ? G.Angles.WorkAngleDeg : G.Angles.TravelAngleDeg;
             set
@@ -223,7 +239,7 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public class TiltArcHandle : GizmoHandleBase
     {
-        TangentRotationDrag _drag;
+        private TangentRotationDrag _drag;
 
         public TiltArcHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.TiltArc) { }
 
@@ -237,11 +253,15 @@ namespace ToolPosture.Gizmo
         /// </summary>
         public float PlaneAzimuthDeg => G.Angles.azimuthDeg;
 
-        /// <summary>0 度方向 = 面法線 N。</summary>
-        Vector3 U => G.Frame.Normal;
+        /// <summary>
+        /// 0 度方向 = 面法線 N。
+        /// </summary>
+        private Vector3 U => G.Frame.Normal;
 
-        /// <summary>+ 方向 = 工具が倒れている向き d(theta)。</summary>
-        Vector3 V
+        /// <summary>
+        /// + 方向 = 工具が倒れている向き d(theta)。
+        /// </summary>
+        private Vector3 V
         {
             get
             {
@@ -250,10 +270,12 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        float Radius => G.Scale * 0.74f;
+        private float Radius => G.Scale * 0.74f;
 
-        /// <summary>この平面内で N から工具軸まで測った符号付き傾き角。</summary>
-        float Value
+        /// <summary>
+        /// この平面内で N から工具軸まで測った符号付き傾き角。
+        /// </summary>
+        private float Value
         {
             get => G.Angles.TiltFromNormalDeg;
             set
@@ -278,7 +300,7 @@ namespace ToolPosture.Gizmo
             lo = conv.useLimits ? Mathf.Max(conv.minDeg, projectedLo) : projectedLo;
         }
 
-        float ClampAlpha(float value, float azimuthDeg)
+        private float ClampAlpha(float value, float azimuthDeg)
         {
             GetAlphaRange(azimuthDeg, out float lo, out float hi);
             return Mathf.Clamp(value, lo, hi);
@@ -368,9 +390,9 @@ namespace ToolPosture.Gizmo
 
         public override bool Visible => G.showAxisTip;
 
-        float SphereRadius => G.Scale * 1.25f;
+        private float SphereRadius => G.Scale * 1.25f;
 
-        Vector3 Tip => G.Frame.Origin + G.Angles.GetAxisWorld(G.Frame) * SphereRadius;
+        private Vector3 Tip => G.Frame.Origin + G.Angles.GetAxisWorld(G.Frame) * SphereRadius;
 
         public override bool HitTest(Vector2 screenPos, out float distance)
             => GizmoPicker.PickSphere(RayOf(screenPos), Tip, G.PixelToWorld(G.TipHitPixelRadius), out distance);
@@ -415,28 +437,34 @@ namespace ToolPosture.Gizmo
 
     // -------------------------------------------------------------------- 回転リングハンドル
 
-    /// <summary>工具軸まわりの回転 (トーチ回転角) を編集するリングハンドル。</summary>
+    /// <summary>
+    /// 工具軸まわりの回転 (トーチ回転角) を編集するリングハンドル。
+    /// </summary>
     public class SpinRingHandle : GizmoHandleBase
     {
-        TangentRotationDrag _drag;
+        private TangentRotationDrag _drag;
 
         public SpinRingHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.SpinRing) { }
 
         public override bool Visible => G.showSpinRing;
 
-        Vector3 Axis => G.Angles.GetAxisWorld(G.Frame);
+        private Vector3 Axis => G.Angles.GetAxisWorld(G.Frame);
 
-        /// <summary>スピン 0 度の基準方向。</summary>
-        Vector3 U => ToolPostureAngles.SpinZeroReference(G.Frame, Axis);
+        /// <summary>
+        /// スピン 0 度の基準方向。
+        /// </summary>
+        private Vector3 U => ToolPostureAngles.SpinZeroReference(G.Frame, Axis);
 
-        /// <summary>+90 度方向。Quaternion.AngleAxis(90, axis) * U と一致する。</summary>
-        Vector3 V => Vector3.Cross(Axis, U);
+        /// <summary>
+        /// +90 度方向。Quaternion.AngleAxis(90, axis) * U と一致する。
+        /// </summary>
+        private Vector3 V => Vector3.Cross(Axis, U);
 
-        Vector3 Center => G.Frame.Origin + Axis * (G.Scale * 0.86f);
+        private Vector3 Center => G.Frame.Origin + Axis * (G.Scale * 0.86f);
 
-        float Radius => G.Scale * 0.50f;
+        private float Radius => G.Scale * 0.50f;
 
-        float Value
+        private float Value
         {
             get => G.Angles.spinAngleDeg;
             set
@@ -507,24 +535,32 @@ namespace ToolPosture.Gizmo
     public class AzimuthRingHandle : GizmoHandleBase
     {
         
-        /// <summary>旋回角が工具軸に影響するとみなす最小の傾き [deg]。</summary>
+        /// <summary>
+        /// 旋回角が工具軸に影響するとみなす最小の傾き [deg]。
+        /// </summary>
         public const float MinTiltDeg = 0.5f;
 
-        TangentRotationDrag _drag;
+        private TangentRotationDrag _drag;
 
         public AzimuthRingHandle(ToolPostureGizmo owner) : base(owner, GizmoHandleId.AzimuthRing) { }
 
         public override bool Visible => G.showAzimuthRing;
 
-        /// <summary>0 度方向 = L (直交方向)。</summary>
-        Vector3 U => G.Frame.CrossFeed;
+        /// <summary>
+        /// 0 度方向 = L (直交方向)。
+        /// </summary>
+        private Vector3 U => G.Frame.CrossFeed;
 
-        /// <summary>+90 度方向 = M (進行方向)。</summary>
-        Vector3 V => G.Frame.Feed;
+        /// <summary>
+        /// +90 度方向 = M (進行方向)。
+        /// </summary>
+        private Vector3 V => G.Frame.Feed;
 
-        float Radius => G.Scale * 1.42f;
+        private float Radius => G.Scale * 1.42f;
 
-        /// <summary>旋回角が姿勢そのものから決まるか。false なら保持値を表示・編集している。</summary>
+        /// <summary>
+        /// 旋回角が姿勢そのものから決まるか。false なら保持値を表示・編集している。
+        /// </summary>
         public bool IsDefined => G.AzimuthAffectsToolAxis;
 
         public override bool HitTest(Vector2 screenPos, out float distance)

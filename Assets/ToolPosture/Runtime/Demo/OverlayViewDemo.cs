@@ -38,29 +38,29 @@ namespace ToolPosture.Demo
         [Tooltip("true のとき 2D 画面からギズモを操作する (3D ビュー側の操作は止まる)")]
         public bool controlFrom2D;
 
-        RenderTexture _renderTexture;
-        RawImage _image;
-        RectTransform _imageRect;
-        Material _material;
-        Text _label;
-        DistortedOverlayViewport _viewport;
-        bool _dragging;
-        bool _appliedMode;
+        private RenderTexture _renderTexture;
+        private RawImage _image;
+        private RectTransform _imageRect;
+        private Material _material;
+        private Text _label;
+        private DistortedOverlayViewport _viewport;
+        private bool _dragging;
+        private bool _appliedMode;
 
-        void Awake()
+        private void Awake()
         {
             if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             BuildOverlay();
             ApplyMode(controlFrom2D, force: true);
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             if (overlayCamera != null) overlayCamera.targetTexture = null;
             if (_renderTexture != null) _renderTexture.Release();
         }
 
-        void Update()
+        private void Update()
         {
             if (gizmo == null || _viewport == null) return;
 
@@ -78,7 +78,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ モード切替
 
-        void ApplyMode(bool from2D, bool force)
+        private void ApplyMode(bool from2D, bool force)
         {
             _appliedMode = from2D;
             if (gizmo == null) return;
@@ -105,7 +105,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ 2D からの操作
 
-        void DriveFrom2D()
+        private void DriveFrom2D()
         {
             if (!GizmoPointer.TryRead(out PointerSample p)) return;
 
@@ -157,7 +157,7 @@ namespace ToolPosture.Demo
 
         // ------------------------------------------------------------------ 構築
 
-        void BuildOverlay()
+        private void BuildOverlay()
         {
             if (overlayCamera == null)
             {
@@ -227,7 +227,7 @@ namespace ToolPosture.Demo
             _label.verticalOverflow = VerticalWrapMode.Overflow;
         }
 
-        static Font ResolveFont()
+        private static Font ResolveFont()
         {
             Font f = null;
             try { f = Font.CreateDynamicFontFromOSFont("Consolas", 12); }
@@ -235,7 +235,7 @@ namespace ToolPosture.Demo
             return f != null ? f : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
-        void UpdateLabel()
+        private void UpdateLabel()
         {
             if (_label == null) return;
 

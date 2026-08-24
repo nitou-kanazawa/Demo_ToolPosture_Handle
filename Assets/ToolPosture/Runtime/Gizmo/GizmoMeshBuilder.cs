@@ -11,9 +11,9 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public class GizmoMeshBuilder
     {
-        readonly List<Vector3> _verts = new List<Vector3>(2048);
-        readonly List<Color32> _colors = new List<Color32>(2048);
-        readonly List<int> _tris = new List<int>(4096);
+        private readonly List<Vector3> _verts = new List<Vector3>(2048);
+        private readonly List<Color32> _colors = new List<Color32>(2048);
+        private readonly List<int> _tris = new List<int>(4096);
 
         public int VertexCount => _verts.Count;
 
@@ -35,14 +35,14 @@ namespace ToolPosture.Gizmo
             mesh.SetTriangles(_tris, 0, true);
         }
 
-        int Push(Vector3 p, Color32 c)
+        private int Push(Vector3 p, Color32 c)
         {
             _verts.Add(p);
             _colors.Add(c);
             return _verts.Count - 1;
         }
 
-        void Tri(int a, int b, int c)
+        private void Tri(int a, int b, int c)
         {
             _tris.Add(a);
             _tris.Add(b);
@@ -56,17 +56,21 @@ namespace ToolPosture.Gizmo
             Tri(i0, i2, i3);
         }
 
-        /// <summary>平面 (u が 0 度, v が +90 度) 上の、中心から半径 radius・角度 angleDeg の点。</summary>
+        /// <summary>
+        /// 平面 (u が 0 度, v が +90 度) 上の、中心から半径 radius・角度 angleDeg の点。
+        /// </summary>
         public static Vector3 OnCircle(Vector3 center, Vector3 u, Vector3 v, float radius, float angleDeg)
         {
             float a = angleDeg * Mathf.Deg2Rad;
             return center + (u * Mathf.Cos(a) + v * Mathf.Sin(a)) * radius;
         }
 
-        static int ArcSegments(float a0, float a1)
+        private static int ArcSegments(float a0, float a1)
             => Mathf.Clamp(Mathf.CeilToInt(Mathf.Abs(a1 - a0) / 3f), 1, 240);
 
-        /// <summary>円弧の帯 (リボン)。</summary>
+        /// <summary>
+        /// 円弧の帯 (リボン)。
+        /// </summary>
         public void AddArcBand(Vector3 center, Vector3 u, Vector3 v, float radius, float halfWidth,
                                float a0Deg, float a1Deg, Color32 col)
         {
@@ -85,7 +89,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>中心から広がる扇形 (角度の塗りつぶし)。</summary>
+        /// <summary>
+        /// 中心から広がる扇形 (角度の塗りつぶし)。
+        /// </summary>
         public void AddSector(Vector3 center, Vector3 u, Vector3 v, float radius,
                               float a0Deg, float a1Deg, Color32 col)
         {
@@ -102,7 +108,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>カメラに正対する板でラインを描く (画面上の太さが一定になる)。</summary>
+        /// <summary>
+        /// カメラに正対する板でラインを描く (画面上の太さが一定になる)。
+        /// </summary>
         public void AddScreenLine(Vector3 a, Vector3 b, Vector3 camPos, float halfWidth, Color32 col)
         {
             Vector3 dir = b - a;
@@ -113,7 +121,9 @@ namespace ToolPosture.Gizmo
             AddQuad(a - side, a + side, b + side, b - side, col);
         }
 
-        /// <summary>破線。</summary>
+        /// <summary>
+        /// 破線。
+        /// </summary>
         public void AddScreenDashedLine(Vector3 a, Vector3 b, Vector3 camPos, float halfWidth,
                                         float dashLength, Color32 col)
         {
@@ -128,7 +138,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>円錐 (矢印の頭)。</summary>
+        /// <summary>
+        /// 円錐 (矢印の頭)。
+        /// </summary>
         public void AddCone(Vector3 baseCenter, Vector3 dir, float radius, float height, Color32 col, int segments = 16)
         {
             dir = dir.normalized;
@@ -149,7 +161,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>カメラに正対する円板 (ノブ / ハンドルの掴み点)。</summary>
+        /// <summary>
+        /// カメラに正対する円板 (ノブ / ハンドルの掴み点)。
+        /// </summary>
         public void AddBillboardDisc(Vector3 center, Camera cam, float radius, Color32 col, int segments = 24)
         {
             if (cam == null) return;
@@ -165,7 +179,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>カメラに正対するリング (輪郭のみ)。</summary>
+        /// <summary>
+        /// カメラに正対するリング (輪郭のみ)。
+        /// </summary>
         public void AddBillboardRing(Vector3 center, Camera cam, float radius, float halfWidth, Color32 col, int segments = 32)
         {
             if (cam == null) return;
@@ -173,7 +189,7 @@ namespace ToolPosture.Gizmo
             AddArcBandSegments(center, u, v, radius, halfWidth, 0f, 360f, col, segments);
         }
 
-        void AddArcBandSegments(Vector3 center, Vector3 u, Vector3 v, float radius, float halfWidth,
+        private void AddArcBandSegments(Vector3 center, Vector3 u, Vector3 v, float radius, float halfWidth,
                                 float a0, float a1, Color32 col, int n)
         {
             float rIn = radius - halfWidth, rOut = radius + halfWidth;
@@ -190,7 +206,9 @@ namespace ToolPosture.Gizmo
             }
         }
 
-        /// <summary>円弧上の目盛り (半径方向の短い線)。</summary>
+        /// <summary>
+        /// 円弧上の目盛り (半径方向の短い線)。
+        /// </summary>
         public void AddRadialTick(Vector3 center, Vector3 u, Vector3 v, float radius, float angleDeg,
                                   float length, float halfWidth, Vector3 camPos, Color32 col)
         {
@@ -199,7 +217,9 @@ namespace ToolPosture.Gizmo
             AddScreenLine(p0, p1, camPos, halfWidth, col);
         }
 
-        /// <summary>矢印付きの軸。</summary>
+        /// <summary>
+        /// 矢印付きの軸。
+        /// </summary>
         public void AddArrow(Vector3 origin, Vector3 dir, float length, Vector3 camPos,
                              float lineHalfWidth, float headRadius, float headLength, Color32 col)
         {

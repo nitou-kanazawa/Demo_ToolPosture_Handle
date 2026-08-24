@@ -14,16 +14,24 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public interface IGizmoViewport
     {
-        /// <summary>描画に使うカメラ。ビルボードの向きと RenderParams.camera に使う。</summary>
+        /// <summary>
+        /// 描画に使うカメラ。ビルボードの向きと RenderParams.camera に使う。
+        /// </summary>
         Camera RenderCamera { get; }
 
-        /// <summary>視点位置。スクリーン幅一定の線を張るのに使う。</summary>
+        /// <summary>
+        /// 視点位置。スクリーン幅一定の線を張るのに使う。
+        /// </summary>
         Vector3 EyePosition { get; }
 
-        /// <summary>このビューポートの解像度 [px]。</summary>
+        /// <summary>
+        /// このビューポートの解像度 [px]。
+        /// </summary>
         Vector2 PixelSize { get; }
 
-        /// <summary>スクリーン座標 [px] からワールドの光線へ。</summary>
+        /// <summary>
+        /// スクリーン座標 [px] からワールドの光線へ。
+        /// </summary>
         Ray ScreenPointToRay(Vector2 screenPos);
 
         /// <summary>
@@ -32,11 +40,15 @@ namespace ToolPosture.Gizmo
         /// </summary>
         bool TryWorldToScreenPoint(Vector3 worldPos, out Vector2 screenPos);
 
-        /// <summary>指定ワールド座標における 1 ピクセル分のワールド長。</summary>
+        /// <summary>
+        /// 指定ワールド座標における 1 ピクセル分のワールド長。
+        /// </summary>
         float WorldPerPixel(Vector3 worldPos);
     }
 
-    /// <summary>Unity の Camera をそのまま使う標準ビューポート。</summary>
+    /// <summary>
+    /// Unity の Camera をそのまま使う標準ビューポート。
+    /// </summary>
     public class CameraViewport : IGizmoViewport
     {
         public Camera Camera { get; set; }

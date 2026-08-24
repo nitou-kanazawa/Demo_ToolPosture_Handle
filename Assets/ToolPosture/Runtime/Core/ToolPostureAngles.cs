@@ -33,10 +33,14 @@ namespace ToolPosture.Core
     [Serializable]
     public struct ToolPostureAngles
     {
-        /// <summary>投影角 (w / t) として設定できる絶対値の上限。tan の発散を避ける。</summary>
+        /// <summary>
+        /// 投影角 (w / t) として設定できる絶対値の上限。tan の発散を避ける。
+        /// </summary>
         public const float MaxProjectedAngleDeg = 85f;
 
-        /// <summary>これ未満の水平成分では旋回角が決まらないとみなす閾値。</summary>
+        /// <summary>
+        /// これ未満の水平成分では旋回角が決まらないとみなす閾値。
+        /// </summary>
         public const float PoleEpsilon = 1e-4f;
 
         [Tooltip("旋回角 theta : LM 平面上で L 軸正方向から測った角 [deg]")]
@@ -55,11 +59,15 @@ namespace ToolPosture.Core
             this.spinAngleDeg = spinAngleDeg;
         }
 
-        /// <summary>球面表現から構築する。コンストラクタと同じだが呼び出し側で意図が読める。</summary>
+        /// <summary>
+        /// 球面表現から構築する。コンストラクタと同じだが呼び出し側で意図が読める。
+        /// </summary>
         public static ToolPostureAngles FromSpherical(float azimuthDeg, float elevationDeg, float spinDeg)
             => new ToolPostureAngles(azimuthDeg, elevationDeg, spinDeg);
 
-        /// <summary>投影角 (狙い角 / 前進後退角) から構築する。</summary>
+        /// <summary>
+        /// 投影角 (狙い角 / 前進後退角) から構築する。
+        /// </summary>
         public static ToolPostureAngles FromProjected(float workDeg, float travelDeg, float spinDeg)
         {
             var r = new ToolPostureAngles(0f, 90f, spinDeg);
@@ -67,12 +75,16 @@ namespace ToolPosture.Core
             return r;
         }
 
-        /// <summary>垂直姿勢 (旋回角 0)。旋回角を保ちたい場合は elevationDeg だけを 90 にする。</summary>
+        /// <summary>
+        /// 垂直姿勢 (旋回角 0)。旋回角を保ちたい場合は elevationDeg だけを 90 にする。
+        /// </summary>
         public static ToolPostureAngles Vertical => new ToolPostureAngles(0f, 90f, 0f);
 
         // ------------------------------------------------------------------ 工具軸
 
-        /// <summary>工具軸 X の LMN 成分 (x = L, y = M, z = N)。定義から常に単位ベクトル。</summary>
+        /// <summary>
+        /// 工具軸 X の LMN 成分 (x = L, y = M, z = N)。定義から常に単位ベクトル。
+        /// </summary>
         public Vector3 GetAxisLmn()
         {
             float th = azimuthDeg * Mathf.Deg2Rad;
@@ -81,7 +93,9 @@ namespace ToolPosture.Core
             return new Vector3(c * Mathf.Cos(th), c * Mathf.Sin(th), Mathf.Sin(ph));
         }
 
-        /// <summary>工具軸 X のワールド方向。</summary>
+        /// <summary>
+        /// 工具軸 X のワールド方向。
+        /// </summary>
         public Vector3 GetAxisWorld(in PathFrame frame)
             => frame.LmnToWorldDirection(GetAxisLmn()).normalized;
 
@@ -133,7 +147,9 @@ namespace ToolPosture.Core
             set => SetProjected(WorkAngleDeg, value);
         }
 
-        /// <summary>投影角の組から工具軸を決める。X = normalize(tan(w) L + tan(t) M + N)。</summary>
+        /// <summary>
+        /// 投影角の組から工具軸を決める。X = normalize(tan(w) L + tan(t) M + N)。
+        /// </summary>
         public void SetProjected(float workDeg, float travelDeg)
         {
             float w = Mathf.Clamp(workDeg, -MaxProjectedAngleDeg, MaxProjectedAngleDeg) * Mathf.Deg2Rad;
@@ -141,7 +157,9 @@ namespace ToolPosture.Core
             SetAxisLmn(new Vector3(Mathf.Tan(w), Mathf.Tan(t), 1f));
         }
 
-        /// <summary>LMN 成分から投影角を求める (姿勢を持たない純粋な変換)。</summary>
+        /// <summary>
+        /// LMN 成分から投影角を求める (姿勢を持たない純粋な変換)。
+        /// </summary>
         public static void AnglesFromAxisLmn(Vector3 lmn, out float workDeg, out float travelDeg)
         {
             float n = Mathf.Max(lmn.z, 1e-5f);
@@ -161,7 +179,9 @@ namespace ToolPosture.Core
             set => elevationDeg = 90f - value;
         }
 
-        /// <summary>旋回角が姿勢に影響する程度に傾いているか。</summary>
+        /// <summary>
+        /// 旋回角が姿勢に影響する程度に傾いているか。
+        /// </summary>
         public bool TiltIsSignificant(float thresholdDeg = 0.5f)
             => Mathf.Abs(TiltFromNormalDeg) > thresholdDeg;
 
@@ -213,7 +233,9 @@ namespace ToolPosture.Core
         public Vector3 GetSpinZeroReferenceWorld(in PathFrame frame)
             => SpinZeroReference(frame, GetAxisWorld(frame));
 
-        /// <summary>スピン適用後の工具基準ベクトル (工具軸に直交)。</summary>
+        /// <summary>
+        /// スピン適用後の工具基準ベクトル (工具軸に直交)。
+        /// </summary>
         public Vector3 GetToolReferenceWorld(in PathFrame frame)
         {
             Vector3 x = GetAxisWorld(frame);

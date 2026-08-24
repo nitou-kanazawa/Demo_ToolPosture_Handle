@@ -6,7 +6,7 @@ namespace ToolPosture.Tests
 {
     public class PathFrameTests
     {
-        const float Tol = 1e-4f;
+        private const float Tol = 1e-4f;
 
         [Test]
         public void 生の法線が進行方向と直交していなくても正規直交フレームになる()
@@ -74,9 +74,9 @@ namespace ToolPosture.Tests
 
     public class ProjectedAngleTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
-        static PathFrame UnitFrame()
+        private static PathFrame UnitFrame()
         {
             // L = +X, M = +Y, N = +Z となる人工フレーム (LMN 成分とワールド成分が一致する)
             return new PathFrame(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward);
@@ -311,7 +311,7 @@ namespace ToolPosture.Tests
 
     public class ToolRotationTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
         [Test]
         public void 工具姿勢はシャフト軸を工具軸に一致させる()
@@ -366,7 +366,7 @@ namespace ToolPosture.Tests
 
     public class AngleConventionTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
         [Test]
         public void 表示値と内部値は往復できる()

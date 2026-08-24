@@ -13,10 +13,10 @@ namespace ToolPosture.EditorTools
     [CustomEditor(typeof(ToolPostureGizmo))]
     public class ToolPostureGizmoEditor : Editor
     {
-        const float WorkArcRadiusScale = 0.74f;
-        const float TravelArcRadiusScale = 1.0f;
-        const float SpinRingRadiusScale = 0.50f;
-        const float AzimuthRingRadiusScale = 1.42f;
+        private const float WorkArcRadiusScale = 0.74f;
+        private const float TravelArcRadiusScale = 1.0f;
+        private const float SpinRingRadiusScale = 0.50f;
+        private const float AzimuthRingRadiusScale = 1.42f;
 
         public override void OnInspectorGUI()
         {
@@ -65,7 +65,7 @@ namespace ToolPosture.EditorTools
             }
         }
 
-        void OnSceneGUI()
+        private void OnSceneGUI()
         {
             var g = (ToolPostureGizmo)target;
             g.RefreshFrame();
@@ -157,14 +157,14 @@ namespace ToolPosture.EditorTools
             DrawLabel(g, f, angles, scale);
         }
 
-        static void DrawFrameAxes(ToolPostureGizmo g, PathFrame f, float scale)
+        private static void DrawFrameAxes(ToolPostureGizmo g, PathFrame f, float scale)
         {
             DrawAxis(f.Origin, f.CrossFeed, scale * 0.95f, g.frameColorL, "L");
             DrawAxis(f.Origin, f.Feed, scale * 1.25f, g.frameColorM, "M");
             DrawAxis(f.Origin, f.Normal, scale * 1.25f, g.frameColorN, "N");
         }
 
-        static void DrawAxis(Vector3 origin, Vector3 dir, float length, Color color, string label)
+        private static void DrawAxis(Vector3 origin, Vector3 dir, float length, Color color, string label)
         {
             Handles.color = color;
             Vector3 tip = origin + dir * length;
@@ -173,8 +173,10 @@ namespace ToolPosture.EditorTools
             Handles.Label(tip + dir * (length * 0.12f), label);
         }
 
-        /// <summary>円弧の描画とノブによる編集。戻り値は編集後の角度 (内部値)。</summary>
-        static float EditArc(ToolPostureGizmo g, Vector3 center, Vector3 u, Vector3 v, float radius,
+        /// <summary>
+        /// 円弧の描画とノブによる編集。戻り値は編集後の角度 (内部値)。
+        /// </summary>
+        private static float EditArc(ToolPostureGizmo g, Vector3 center, Vector3 u, Vector3 v, float radius,
                              float angleDeg, AngleConvention conv, Color color, ref bool changed)
         {
             conv.GetArcRange(g.fallbackArcHalfWidthDeg, out float lo, out float hi);
@@ -206,7 +208,7 @@ namespace ToolPosture.EditorTools
             return Event.current.control ? conv.SnapInternal(raw) : raw;
         }
 
-        static void DrawLabel(ToolPostureGizmo g, PathFrame f, ToolPostureAngles a, float scale)
+        private static void DrawLabel(ToolPostureGizmo g, PathFrame f, ToolPostureAngles a, float scale)
         {
             var style = new GUIStyle(EditorStyles.miniLabel)
             {

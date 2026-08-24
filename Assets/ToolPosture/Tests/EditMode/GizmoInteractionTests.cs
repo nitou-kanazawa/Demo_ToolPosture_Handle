@@ -36,9 +36,9 @@ namespace ToolPosture.Tests
 
     public class TangentRotationDragTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
-        static void Setup(out FlatViewport vp, out Vector3 center, out Vector3 u, out Vector3 v)
+        private static void Setup(out FlatViewport vp, out Vector3 center, out Vector3 u, out Vector3 v)
         {
             vp = new FlatViewport();
             center = Vector3.zero;
@@ -139,10 +139,10 @@ namespace ToolPosture.Tests
     /// </summary>
     public class AzimuthPreservationTests
     {
-        const float Tol = 1e-2f;
+        private const float Tol = 1e-2f;
 
-        GameObject _go;
-        ToolPostureGizmo _gizmo;
+        private GameObject _go;
+        private ToolPostureGizmo _gizmo;
 
         [SetUp]
         public void SetUp()
