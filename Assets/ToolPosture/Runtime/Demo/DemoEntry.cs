@@ -58,11 +58,18 @@ namespace ToolPosture.Demo
         [SerializeField] private bool active = true;
         [SerializeField] private ViewMode view = ViewMode.View3D;
 
+        [Tooltip("2D のとき使う「画面座標 → ワールドのレイ」。IGizmoRayProvider を実装したコンポーネント。" +
+                 "コードから差す場合は ScreenToRay を使う (そちらが優先)")]
+        [SerializeField] private MonoBehaviour rayProvider;
+
         /// <summary>
         /// 2D ビューの画面座標 → ワールドのレイ。触れない位置なら null を返す。
         /// View2D のときだけ使う。レンズ歪みの補正はこの中で済ませておくこと。
+        /// 設定するとインスペクタの rayProvider より優先される。
         /// </summary>
         public Func<Vector2, Ray?> ScreenToRay;
+
+        private IGizmoRayProvider _provider;
 
         // インスペクタから直接いじられた場合も拾うため、当てた値を覚えておく。
         private HandleMode _appliedMode;
@@ -110,7 +117,14 @@ namespace ToolPosture.Demo
 
         #region ライフサイクル
 
-        private void OnEnable() => Apply();
+        private void OnEnable()
+        {
+            _provider = rayProvider as IGizmoRayProvider;
+            if (rayProvider != null && _provider == null)
+                Debug.LogWarning("DemoEntry: rayProvider が IGizmoRayProvider を実装していない", this);
+
+            Apply();
+        }
 
         private void Update()
         {
@@ -155,11 +169,11 @@ namespace ToolPosture.Demo
             RuntimeGizmo gizmo = Current;
             if (gizmo == null || !gizmo.enabled) return;
 
-            if (ScreenToRay == null)
+            if (ScreenToRay == null && _provider == null)
             {
                 if (_warnedNoRay) return;
                 _warnedNoRay = true;
-                Debug.LogWarning("DemoEntry: View2D だが ScreenToRay が未設定のため操作できない", this);
+                Debug.LogWarning("DemoEntry: View2D だが 2D → レイ の変換が未設定のため操作できない", this);
                 return;
             }
 
@@ -174,7 +188,17 @@ namespace ToolPosture.Demo
                 return;
             }
 
-            gizmo.DrivePointer(pointer, ScreenToRay(pointer.position), snap);
+            gizmo.DrivePointer(pointer, MakeRay(pointer.position), snap);
+        }
+
+        /// <summary>
+        /// 画面座標をワールドのレイにする。触れない位置なら null。
+        /// </summary>
+        private Ray? MakeRay(Vector2 screenPosition)
+        {
+            if (ScreenToRay != null) return ScreenToRay(screenPosition);
+
+            return _provider.TryScreenToRay(screenPosition, out Ray ray) ? ray : (Ray?)null;
         }
 
         #endregion
