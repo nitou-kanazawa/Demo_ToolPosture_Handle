@@ -255,16 +255,16 @@ namespace ToolPosture.Gizmo
 
             // 0 度方向 = N
             b.AddScreenDashedLine(o, GizmoMeshBuilder.OnCircle(o, u, v, r * 1.14f, 0f),
-                                  eye, thin, G.PixelToWorld(9f), GizmoMeshBuilder.Fade(c, 0.55f));
+                                  eye, thin, G.PixelToWorld(th.dashPixelLength), GizmoMeshBuilder.Fade(c, 0.55f));
 
-            b.AddRadialTick(o, u, v, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, th.zeroTickColor);
-            b.AddRadialTick(o, u, v, r, lo, G.PixelToWorld(10f), thin, eye,
+            b.AddRadialTick(o, u, v, r, 0f, G.PixelToWorld(th.tickPixelLength), G.PixelToWorld(th.tickPixelWidth), eye, th.zeroTickColor);
+            b.AddRadialTick(o, u, v, r, lo, G.PixelToWorld(th.limitTickPixelLength), thin, eye,
                             GizmoMeshBuilder.Fade(th.limitColor, 0.8f));
-            b.AddRadialTick(o, u, v, r, hi, G.PixelToWorld(10f), thin, eye,
+            b.AddRadialTick(o, u, v, r, hi, G.PixelToWorld(th.limitTickPixelLength), thin, eye,
                             GizmoMeshBuilder.Fade(th.limitColor, 0.8f));
 
             // 円弧が乗っている平面を示す線 (LM 平面上の倒れ方向)
-            b.AddScreenDashedLine(o, o + v * r * 0.9f, eye, thin, G.PixelToWorld(7f),
+            b.AddScreenDashedLine(o, o + v * r * 0.9f, eye, thin, G.PixelToWorld(th.dashPixelLength),
                                   GizmoMeshBuilder.Fade(th.azimuthColor, 0.45f));
 
             // 現在値のノブ (常に工具軸の上に乗る)
@@ -446,9 +446,9 @@ namespace ToolPosture.Gizmo
             b.AddSector(c, U, V, r * 0.60f, 0f, Value, GizmoMeshBuilder.Fade(col, 0.20f));
             b.AddArcBand(c, U, V, r, halfWidth, 0f, Value, line);
 
-            b.AddRadialTick(c, U, V, r, 0f, G.PixelToWorld(16f), G.PixelToWorld(1.6f), eye, th.zeroTickColor);
+            b.AddRadialTick(c, U, V, r, 0f, G.PixelToWorld(th.tickPixelLength), G.PixelToWorld(th.tickPixelWidth), eye, th.zeroTickColor);
             b.AddScreenDashedLine(c, c + U * r * 1.3f, eye, thin,
-                                  G.PixelToWorld(9f), GizmoMeshBuilder.Fade(th.zeroTickColor, 0.6f));
+                                  G.PixelToWorld(th.dashPixelLength), GizmoMeshBuilder.Fade(th.zeroTickColor, 0.6f));
 
             Vector3 knob = GizmoMeshBuilder.OnCircle(c, U, V, r, Value);
             b.AddBillboardDisc(knob, cam,
@@ -549,7 +549,7 @@ namespace ToolPosture.Gizmo
             b.AddArcBand(o, U, V, r, halfWidth * 0.55f, 0f, 360f,
                          GizmoMeshBuilder.Fade(col, 0.50f * held));
 
-            b.AddRadialTick(o, U, V, r, 0f, G.PixelToWorld(18f), G.PixelToWorld(1.6f), eye,
+            b.AddRadialTick(o, U, V, r, 0f, G.PixelToWorld(th.tickPixelLength), G.PixelToWorld(th.tickPixelWidth), eye,
                             GizmoMeshBuilder.Fade(th.zeroTickColor, held));
 
             b.AddSector(o, U, V, r * 0.55f, 0f, azimuth, GizmoMeshBuilder.Fade(col, 0.18f * held));
@@ -557,7 +557,7 @@ namespace ToolPosture.Gizmo
 
             // 工具軸を LM 平面へ落とした向き = 倒れている方向 (保持中は破線を細く)
             Vector3 dir = GizmoMeshBuilder.OnCircle(o, U, V, r, azimuth);
-            b.AddScreenDashedLine(o, dir, eye, G.PixelToWorld(defined ? 1.6f : 1.0f), G.PixelToWorld(10f),
+            b.AddScreenDashedLine(o, dir, eye, G.PixelToWorld(defined ? 1.6f : 1.0f), G.PixelToWorld(th.dashPixelLength),
                                   GizmoMeshBuilder.Fade(col, 0.75f * held));
 
             b.AddBillboardDisc(dir, cam,

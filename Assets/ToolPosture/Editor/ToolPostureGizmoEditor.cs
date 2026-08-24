@@ -58,13 +58,11 @@ namespace ToolPosture.EditorTools
             var g = (ToolPostureGizmo)target;
             serializedObject.Update();
 
-            EditorGUILayout.LabelField("プリセット", EditorStyles.boldLabel);
-            DrawPresetSlot<GizmoTheme>("theme", "見た目 (Theme)", ref _themeEditor);
-            DrawPresetSlot<ToolPostureProfile>("profile", "規約 (Profile)", ref _profileEditor);
+            DrawPresets();
 
-            EditorGUILayout.Space();
-            DrawGroup("姿勢", PostureProps);
-            DrawGroup("ハンドル表示", HandleProps);
+            EditorGUILayout.Space(4f);
+            DrawGroup("姿勢  (保持は球面表現 θ / φ / spin)", PostureProps);
+            DrawGroup("ハンドル表示  (実行中は 1 - 4 キーで切替)", HandleProps);
             DrawGroup("表示", ViewProps);
             DrawGroup("入力", InputProps, defaultOpen: false);
             DrawGroup("シェーダ", ToolProps, defaultOpen: false);
@@ -72,25 +70,65 @@ namespace ToolPosture.EditorTools
 
             serializedObject.ApplyModifiedProperties();
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("出力 (読み取り専用)", EditorStyles.boldLabel);
+            DrawReadout(g);
+            DrawActions(g);
+        }
 
-            using (new EditorGUI.DisabledScope(true))
+        private void DrawPresets()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                var a = g.Angles;
-                EditorGUILayout.Vector3Field("工具軸 X (LMN)", a.GetAxisLmn());
-                EditorGUILayout.Vector3Field("工具軸 X (world)", g.ToolAxisWorld);
-                EditorGUILayout.LabelField("導出値 (投影角)",
-                    $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg):F2}°   " +
-                    $"t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg):F2}°   " +
-                    $"spin {g.Profile.spinConvention.ToDisplay(a.spinAngleDeg):F2}°");
-                EditorGUILayout.LabelField("N からの傾き α",
-                    a.TiltIsSignificant()
-                        ? $"{a.TiltFromNormalDeg:F2}°"
-                        : $"{a.TiltFromNormalDeg:F2}°（θ は工具軸に効いていない）");
+                EditorGUILayout.LabelField("プリセット", EditorStyles.miniBoldLabel);
+                DrawPresetSlot<GizmoTheme>("theme", "見た目", ref _themeEditor);
+                DrawPresetSlot<ToolPostureProfile>("profile", "規約", ref _profileEditor);
             }
+        }
 
-            EditorGUILayout.Space();
+        private static void DrawReadout(ToolPostureGizmo g)
+        {
+            EditorGUILayout.Space(4f);
+            var a = g.Angles;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("出力", EditorStyles.miniBoldLabel);
+
+                float saved = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 132f;
+
+                Row("工具軸 X (LMN)", Components(a.GetAxisLmn()));
+                Row("工具軸 X (world)", Components(g.ToolAxisWorld));
+                Row("投影角",
+                    $"w {g.Profile.workConvention.ToDisplay(a.WorkAngleDeg),7:+0.0;-0.0}°" +
+                    $"    t {g.Profile.travelConvention.ToDisplay(a.TravelAngleDeg),7:+0.0;-0.0}°");
+                Row("トーチ回転 spin",
+                    $"{g.Profile.spinConvention.ToDisplay(a.spinAngleDeg),7:+0.0;-0.0}°");
+                Row("N からの傾き α",
+                    a.TiltIsSignificant()
+                        ? $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°"
+                        : $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°   θ は工具軸に効いていない");
+
+                EditorGUIUtility.labelWidth = saved;
+            }
+        }
+
+        private static string Components(Vector3 v)
+            => $"{v.x,7:+0.000;-0.000} {v.y,7:+0.000;-0.000} {v.z,7:+0.000;-0.000}";
+
+        private static void Row(string label, string value)
+        {
+            Rect r = EditorGUILayout.GetControlRect();
+            Rect labelRect = new Rect(r.x, r.y, EditorGUIUtility.labelWidth, r.height);
+            Rect valueRect = new Rect(r.x + EditorGUIUtility.labelWidth, r.y,
+                                      r.width - EditorGUIUtility.labelWidth, r.height);
+
+            EditorGUI.LabelField(labelRect, label);
+            EditorGUI.LabelField(valueRect, value, EditorStyles.miniLabel);
+        }
+
+        private static void DrawActions(ToolPostureGizmo g)
+        {
+            EditorGUILayout.Space(2f);
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("垂直姿勢へ (φ = 90°)"))
@@ -117,29 +155,35 @@ namespace ToolPosture.EditorTools
         #region インスペクタのヘルパ
 
         /// <summary>
-        /// 折りたたみの開閉。状態は EditorPrefs に残す。
+        /// 見出し付きの折りたたみ。開閉状態は EditorPrefs に残す。
         /// </summary>
-        private static bool Foldout(string title, bool defaultOpen)
+        private void DrawGroup(string title, string[] props, bool defaultOpen = true)
         {
             string key = "ToolPostureGizmo.fold." + title;
             bool open = EditorPrefs.GetBool(key, defaultOpen);
-            bool now = EditorGUILayout.Foldout(open, title, true, EditorStyles.foldoutHeader);
+
+            bool now = EditorGUILayout.BeginFoldoutHeaderGroup(open, title);
             if (now != open) EditorPrefs.SetBool(key, now);
-            return now;
-        }
 
-        private void DrawGroup(string title, string[] props, bool defaultOpen = true)
-        {
-            if (!Foldout(title, defaultOpen)) return;
-
-            using (new EditorGUI.IndentLevelScope())
+            if (now)
             {
-                foreach (string name in props)
+                float saved = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.5f, 160f, 240f);
+
+                using (new EditorGUI.IndentLevelScope())
                 {
-                    SerializedProperty p = serializedObject.FindProperty(name);
-                    if (p != null) EditorGUILayout.PropertyField(p, true);
+                    foreach (string name in props)
+                    {
+                        SerializedProperty p = serializedObject.FindProperty(name);
+                        if (p != null) EditorGUILayout.PropertyField(p, true);
+                    }
                 }
+
+                EditorGUIUtility.labelWidth = saved;
+                EditorGUILayout.Space(2f);
             }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
         /// <summary>
@@ -180,28 +224,41 @@ namespace ToolPosture.EditorTools
             SerializedProperty prop = serializedObject.FindProperty(propName);
             if (prop == null) return;
 
+            const float LabelWidth = 56f;
+
+            float saved = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = LabelWidth;
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.PropertyField(prop, new GUIContent(label));
-                if (GUILayout.Button("新規", GUILayout.Width(44f)))
+                if (GUILayout.Button("新規", EditorStyles.miniButton, GUILayout.Width(40f)))
                 {
                     T created = CreateAsset<T>();
                     if (created != null) prop.objectReferenceValue = created;
                 }
             }
+            EditorGUIUtility.labelWidth = saved;
 
             var asset = prop.objectReferenceValue as T;
             if (asset == null)
             {
-                EditorGUILayout.LabelField(" ", "組み込み既定を使用中", EditorStyles.miniLabel);
+                Rect note = EditorGUILayout.GetControlRect(false, 14f);
+                note.xMin += LabelWidth + 4f;
+                EditorGUI.LabelField(note, "組み込み既定を使用中", EditorStyles.miniLabel);
+
                 if (cached != null) { DestroyImmediate(cached); cached = null; }
                 return;
             }
 
             string key = "ToolPostureGizmo.inline." + propName;
-            bool open = EditorGUILayout.Foldout(EditorPrefs.GetBool(key, false), "中身を編集", true);
-            EditorPrefs.SetBool(key, open);
-            if (!open)
+            bool open = EditorPrefs.GetBool(key, false);
+
+            Rect fold = EditorGUILayout.GetControlRect(false, 16f);
+            fold.xMin += LabelWidth + 4f;
+            bool now = EditorGUI.Foldout(fold, open, "中身をここで編集", true);
+            if (now != open) EditorPrefs.SetBool(key, now);
+
+            if (!now)
             {
                 if (cached != null) { DestroyImmediate(cached); cached = null; }
                 return;
@@ -213,8 +270,13 @@ namespace ToolPosture.EditorTools
                 cached = CreateEditor(asset);
             }
 
+            // 箱の中で indent すると欄が細ってラベルが切れるので、
+            // indent は足さずにラベル幅だけ明示的に確保する。
+            float inner = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 176f;
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 cached.OnInspectorGUI();
+            EditorGUIUtility.labelWidth = inner;
         }
 
         private static T CreateAsset<T>() where T : ScriptableObject

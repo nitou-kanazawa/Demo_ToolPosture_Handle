@@ -13,25 +13,35 @@ MonoBehaviour:
   m_Name: GizmoTheme_Touch
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.GizmoTheme
   gizmoPixelSize: 130
-  arcPixelWidth: 11
+  arcPixelWidth: 18
   thinPixelWidth: 1.8
   knobPixelRadius: 11
   tipPixelRadius: 11
   fallbackArcHalfWidthDeg: 75
+  frameAxisPixelWidth: 4.4
+  toolAxisPixelWidth: 6.6
+  arrowHeadPixelRadius: 7
+  toolArrowHeadPixelRadius: 8.5
+  arrowHeadPixelLength: 16
+  originDotPixelRadius: 4.5
+  tickPixelLength: 16
+  limitTickPixelLength: 10
+  tickPixelWidth: 2.2
+  dashPixelLength: 9
   hitPixelWidth: 34
   touchHitPixelWidth: 52
   tipHitPixelRadius: 22
   touchTipHitScale: 1.9
-  frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}
-  frameColorM: {r: 0.42, g: 0.9, b: 0.48, a: 0.95}
-  frameColorN: {r: 0.36, g: 0.64, b: 1, a: 0.95}
-  tiltColor: {r: 1, g: 0.45, b: 0.74, a: 0.95}
-  spinColor: {r: 0.74, g: 0.62, b: 1, a: 0.95}
-  azimuthColor: {r: 0.55, g: 0.95, b: 0.6, a: 0.95}
-  axisColor: {r: 1, g: 0.83, b: 0.26, a: 0.95}
+  frameColorL: {r: 0, g: 0, b: 0, a: 0.95}
+  frameColorM: {r: 0, g: 0, b: 0, a: 0.95}
+  frameColorN: {r: 0, g: 0, b: 0, a: 0.95}
+  tiltColor: {r: 0.12374437, g: 1, b: 0, a: 0.95}
+  spinColor: {r: 0.9547169, g: 0.47143042, b: 0.012609419, a: 0.95}
+  azimuthColor: {r: 0, g: 0.011764706, b: 1, a: 0.95}
+  axisColor: {r: 1, g: 0.5490196, b: 0, a: 1}
   highlightColor: {r: 1, g: 1, b: 0.72, a: 1}
   zeroTickColor: {r: 1, g: 1, b: 1, a: 0.9}
   limitColor: {r: 1, g: 0.38, b: 0.32, a: 0.95}
-  occludedAlpha: 0.22
+  occludedAlpha: 0.8
   colliderGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
   colliderGizmoDisabledColor: {r: 0.45, g: 0.5, b: 0.55, a: 0.35}

@@ -64,6 +64,38 @@ namespace ToolPosture.Gizmo
         [Tooltip("可動範囲を使わない角度の円弧の描画半幅 [deg]")]
         public float fallbackArcHalfWidthDeg = 75f;
 
+        [Header("軸と矢印 [px]")]
+        [Tooltip("LMN フレームの矢印の太さ")]
+        public float frameAxisPixelWidth = 3.2f;
+
+        [Tooltip("工具軸 X の矢印の太さ")]
+        public float toolAxisPixelWidth = 4.8f;
+
+        [Tooltip("フレームの矢印の頭の半径")]
+        public float arrowHeadPixelRadius = 5.5f;
+
+        [Tooltip("工具軸の矢印の頭の半径")]
+        public float toolArrowHeadPixelRadius = 6.5f;
+
+        [Tooltip("矢印の頭の長さ")]
+        public float arrowHeadPixelLength = 16f;
+
+        [Tooltip("原点の点の半径")]
+        public float originDotPixelRadius = 3.5f;
+
+        [Header("目盛りと破線 [px]")]
+        [Tooltip("0 度目盛りの長さ")]
+        public float tickPixelLength = 16f;
+
+        [Tooltip("可動範囲の端の目盛りの長さ")]
+        public float limitTickPixelLength = 10f;
+
+        [Tooltip("0 度目盛りの太さ")]
+        public float tickPixelWidth = 1.6f;
+
+        [Tooltip("破線の 1 区切りの長さ")]
+        public float dashPixelLength = 9f;
+
         #endregion
 
         #region 当たり判定

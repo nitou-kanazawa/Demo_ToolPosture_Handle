@@ -18,6 +18,16 @@ MonoBehaviour:
   knobPixelRadius: 8
   tipPixelRadius: 8
   fallbackArcHalfWidthDeg: 75
+  frameAxisPixelWidth: 4
+  toolAxisPixelWidth: 6
+  arrowHeadPixelRadius: 5.5
+  toolArrowHeadPixelRadius: 6.5
+  arrowHeadPixelLength: 16
+  originDotPixelRadius: 3.5
+  tickPixelLength: 16
+  limitTickPixelLength: 10
+  tickPixelWidth: 2
+  dashPixelLength: 9
   hitPixelWidth: 20
   touchHitPixelWidth: 40
   tipHitPixelRadius: 14

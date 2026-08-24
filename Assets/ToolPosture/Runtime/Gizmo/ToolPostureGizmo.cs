@@ -46,7 +46,6 @@ namespace ToolPosture.Gizmo
     {
         #region プリセット
 
-        [Header("プリセット (未設定なら組み込み既定を使う)")]
         [Tooltip("見た目と当たりの太さ")]
         [SerializeField] private GizmoTheme theme;
 
@@ -57,14 +56,12 @@ namespace ToolPosture.Gizmo
 
         #region 姿勢
 
-        [Header("姿勢 (保持は球面表現 theta / phi / spin)")]
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
 
         #endregion
 
         #region ハンドル表示
 
-        [Header("ハンドル表示 (実行中は 1 - 4 キーで切替)")]
         [Tooltip("傾斜角 alpha の円弧。N と工具軸が張る平面に乗る")]
         public bool showTiltArc = true;
 
@@ -84,7 +81,6 @@ namespace ToolPosture.Gizmo
 
         #region 表示
 
-        [Header("表示")]
         [Tooltip("描画とレイ生成に使うカメラ。未設定なら Camera.main")]
         public Camera targetCamera;
 
@@ -98,7 +94,6 @@ namespace ToolPosture.Gizmo
 
         #region 入力
 
-        [Header("入力")]
         [Tooltip("BuiltIn なら自前でポインタを読む。External ならレイを外から渡す")]
         public GizmoInputMode inputMode = GizmoInputMode.BuiltIn;
 
@@ -109,7 +104,6 @@ namespace ToolPosture.Gizmo
 
         #region シェーダ
 
-        [Header("シェーダ")]
         [Tooltip("未設定なら ToolPosture/GizmoVertexColor を探す")]
         public Shader gizmoShader;
 
@@ -773,9 +767,9 @@ namespace ToolPosture.Gizmo
             Vector3 o = _frame.Origin;
             Vector3 camPos = EyePosition;
             float s = Scale;
-            float lineHalf = PixelToWorld(1.6f);
-            float headR = PixelToWorld(5.5f);
-            float headL = PixelToWorld(16f);
+            float lineHalf = PixelToWorld(Theme.frameAxisPixelWidth) * 0.5f;
+            float headR = PixelToWorld(Theme.arrowHeadPixelRadius);
+            float headL = PixelToWorld(Theme.arrowHeadPixelLength);
 
             // 経路の可視化など、ギズモと一緒に描きたいものを外から足す口
             BuildingExtraGeometry?.Invoke(b);
@@ -789,8 +783,9 @@ namespace ToolPosture.Gizmo
 
             // 工具軸 X は常に描く (軸先端ハンドルの表示に依存しない)
             Vector3 axis = angles.GetAxisWorld(_frame);
-            b.AddArrow(o, axis, s * 1.25f, camPos, PixelToWorld(2.4f), PixelToWorld(6.5f), headL, Theme.axisColor);
-            b.AddBillboardDisc(o, cam, PixelToWorld(3.5f), Theme.zeroTickColor);
+            b.AddArrow(o, axis, s * 1.25f, camPos, PixelToWorld(Theme.toolAxisPixelWidth) * 0.5f,
+                       PixelToWorld(Theme.toolArrowHeadPixelRadius), headL, Theme.axisColor);
+            b.AddBillboardDisc(o, cam, PixelToWorld(Theme.originDotPixelRadius), Theme.zeroTickColor);
 
             foreach (var h in _handles)
             {
