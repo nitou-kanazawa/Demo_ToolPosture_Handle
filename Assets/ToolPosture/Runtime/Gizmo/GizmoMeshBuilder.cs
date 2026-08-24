@@ -11,6 +11,8 @@ namespace ToolPosture.Gizmo
     /// </summary>
     public class GizmoMeshBuilder
     {
+        #region バッファ操作
+
         private readonly List<Vector3> _verts = new List<Vector3>(2048);
         private readonly List<Color32> _colors = new List<Color32>(2048);
         private readonly List<int> _tris = new List<int>(4096);
@@ -48,6 +50,10 @@ namespace ToolPosture.Gizmo
             _tris.Add(b);
             _tris.Add(c);
         }
+
+        #endregion
+
+        #region 円弧と扇形
 
         public void AddQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color32 col)
         {
@@ -108,6 +114,10 @@ namespace ToolPosture.Gizmo
             }
         }
 
+        #endregion
+
+        #region 線
+
         /// <summary>
         /// カメラに正対する板でラインを描く (画面上の太さが一定になる)。
         /// </summary>
@@ -137,6 +147,10 @@ namespace ToolPosture.Gizmo
                 AddScreenLine(Vector3.Lerp(a, b, t0), Vector3.Lerp(a, b, t1), camPos, halfWidth, col);
             }
         }
+
+        #endregion
+
+        #region 立体とビルボード
 
         /// <summary>
         /// 円錐 (矢印の頭)。
@@ -206,6 +220,10 @@ namespace ToolPosture.Gizmo
             }
         }
 
+        #endregion
+
+        #region 目盛りと矢印
+
         /// <summary>
         /// 円弧上の目盛り (半径方向の短い線)。
         /// </summary>
@@ -230,7 +248,14 @@ namespace ToolPosture.Gizmo
             AddCone(headBase, dir, headRadius, headLength, col);
         }
 
+        #endregion
+
+        #region 色
+
         public static Color32 Fade(Color c, float alphaScale)
             => (Color32)new Color(c.r, c.g, c.b, c.a * alphaScale);
+
+        #endregion
+
     }
 }

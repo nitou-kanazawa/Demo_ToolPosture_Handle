@@ -39,7 +39,7 @@ namespace ToolPosture.Gizmo
     [AddComponentMenu("Tool Posture/Tool Posture Gizmo")]
     public class ToolPostureGizmo : MonoBehaviour
     {
-        // ------------------------------------------------------------------ 経路
+        #region 経路
 
         [Header("経路")]
         [Tooltip("フレームの供給元。コードから FrameSource を設定した場合はそちらが優先される")]
@@ -52,7 +52,9 @@ namespace ToolPosture.Gizmo
         [Tooltip("区間内の位置")]
         public float segmentU = 0.5f;
 
-        // ------------------------------------------------------------------ 姿勢
+        #endregion
+
+        #region 姿勢
 
         [Header("姿勢 (保持は球面表現 theta / phi / spin)")]
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
@@ -73,7 +75,9 @@ namespace ToolPosture.Gizmo
                  "FollowToolAxis = N と現在の工具軸が張る平面 (円弧の角は N からの傾き α)")]
         public WorkArcPlaneMode workArcPlane = WorkArcPlaneMode.FollowToolAxis;
 
-        // ------------------------------------------------------------------ ハンドル表示
+        #endregion
+
+        #region ハンドル表示
 
         [Header("ハンドル表示 (実行中は 1 - 5 キーで切替)")]
         public bool showWorkArc = true;
@@ -92,7 +96,9 @@ namespace ToolPosture.Gizmo
         [Tooltip("経路の点列と法線をランタイムでも描画する")]
         public bool showPath = true;
 
-        // ------------------------------------------------------------------ 表示設定
+        #endregion
+
+        #region 表示設定
 
         [Header("表示")]
         public Camera targetCamera;
@@ -116,7 +122,9 @@ namespace ToolPosture.Gizmo
         [Tooltip("回転ドラッグ感度の上限 [deg/px]。接線が視線と平行に近いときの暴れ止め")]
         public float maxDegreesPerPixel = 2f;
 
-        // ------------------------------------------------------------------ 入力
+        #endregion
+
+        #region 入力
 
         [Header("入力")]
         [Tooltip("BuiltIn = マウス / タッチを自前で読む。External = スクリプトからの API 呼び出しだけを受ける")]
@@ -156,7 +164,9 @@ namespace ToolPosture.Gizmo
         [Tooltip("工具モデルのローカル軸のうち、スピン基準に一致させる軸 (シャフト軸と直交)")]
         public Vector3 toolReferenceAxis = Vector3.forward;
 
-        // ------------------------------------------------------------------ 状態
+        #endregion
+
+        #region 状態
 
         private PathFrame _frame;
         private IPathFrameSource _explicitSource;
@@ -173,7 +183,9 @@ namespace ToolPosture.Gizmo
         private Material _matBehind;
         private readonly GizmoMeshBuilder _builder = new GizmoMeshBuilder();
 
-        // ------------------------------------------------------------------ 公開プロパティ
+        #endregion
+
+        #region 公開プロパティ
 
         /// <summary>
         /// コードからフレーム供給元を差し替える。null なら インスペクタの WeldPath を使う。
@@ -197,7 +209,9 @@ namespace ToolPosture.Gizmo
             set => angles = value;
         }
 
-        // ------------------------------------------------- 球面表現 (theta / phi) での入出力
+        #endregion
+
+        #region 球面表現 (theta / phi) での入出力
 
         /// <summary>
         /// 旋回角 theta [deg]。L 軸正方向が 0 度。
@@ -299,7 +313,9 @@ namespace ToolPosture.Gizmo
         public float ClampProjected(float deg)
             => Mathf.Clamp(deg, -ToolPostureAngles.MaxProjectedAngleDeg, ToolPostureAngles.MaxProjectedAngleDeg);
 
-        // ------------------------------------------------------------------ ライフサイクル
+        #endregion
+
+        #region ライフサイクル
 
         private void OnEnable()
         {
@@ -361,7 +377,9 @@ namespace ToolPosture.Gizmo
             Render();
         }
 
-        // ------------------------------------------------------------------ 入力
+        #endregion
+
+        #region 入力
 
         private void HandlePointer()
         {
@@ -404,7 +422,9 @@ namespace ToolPosture.Gizmo
             _hovered = (p.isTouch || overUI) ? null : PickHandle(p.position);
         }
 
-        // ------------------------------------------------------- 外部ドライブ API (2D ビュー等)
+        #endregion
+
+        #region 外部ドライブ API (2D ビュー等)
 
         /// <summary>
         /// スクリーン座標にあるハンドルを探す。座標は Viewport のピクセル空間で与える。
@@ -578,7 +598,9 @@ namespace ToolPosture.Gizmo
             toolVisual.SetPositionAndRotation(_frame.Origin, ToolRotation);
         }
 
-        // ------------------------------------------------------------------ 描画
+        #endregion
+
+        #region 描画
 
         private bool EnsureResources()
         {
@@ -713,5 +735,7 @@ namespace ToolPosture.Gizmo
                 b.AddBillboardDisc(p, cam, PixelToWorld(3f), pathColor);
             }
         }
+
+        #endregion
     }
 }

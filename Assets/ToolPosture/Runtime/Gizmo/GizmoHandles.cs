@@ -3,6 +3,9 @@ using ToolPosture.Core;
 
 namespace ToolPosture.Gizmo
 {
+
+    #region 共通定義
+
     public enum GizmoHandleId
     {
         AxisTip = 0,
@@ -101,7 +104,9 @@ namespace ToolPosture.Gizmo
         public abstract void Draw(GizmoMeshBuilder b, bool hover, bool active);
     }
 
-    // ------------------------------------------------------------------------ 円弧ハンドル
+    #endregion
+
+    #region 円弧ハンドル
 
     /// <summary>
     /// 固定平面上の円弧ハンドル。狙い角 (LN 平面) と前進後退角 (MN 平面) で共用する。
@@ -221,7 +226,9 @@ namespace ToolPosture.Gizmo
         }
     }
 
-    // ------------------------------------------------------------------ 傾きハンドル (追従平面)
+    #endregion
+
+    #region 傾きハンドル (追従平面)
 
     /// <summary>
     /// N と現在の工具軸が張る平面に置く円弧ハンドル。狙い角ハンドルの
@@ -377,7 +384,9 @@ namespace ToolPosture.Gizmo
         }
     }
 
-    // ---------------------------------------------------------------------- 軸先端ハンドル
+    #endregion
+
+    #region 軸先端ハンドル
 
     /// <summary>
     /// 工具軸 X の先端をドラッグして狙い角と前進後退角を同時に編集する球面ハンドル。
@@ -435,7 +444,9 @@ namespace ToolPosture.Gizmo
         }
     }
 
-    // -------------------------------------------------------------------- 回転リングハンドル
+    #endregion
+
+    #region 回転リングハンドル
 
     /// <summary>
     /// 工具軸まわりの回転 (トーチ回転角) を編集するリングハンドル。
@@ -520,7 +531,9 @@ namespace ToolPosture.Gizmo
         }
     }
 
-    // ------------------------------------------------------------------ 旋回リングハンドル
+    #endregion
+
+    #region 旋回リングハンドル
 
     /// <summary>
     /// LM 平面 (母材面) 上に寝かせた回転ハンドル。工具軸を「どちら向きに倒すか」を
@@ -636,4 +649,6 @@ namespace ToolPosture.Gizmo
                                GizmoMeshBuilder.Fade(line, held));
         }
     }
+
+    #endregion
 }

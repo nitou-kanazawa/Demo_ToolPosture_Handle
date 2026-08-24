@@ -13,10 +13,16 @@ namespace ToolPosture.EditorTools
     [CustomEditor(typeof(ToolPostureGizmo))]
     public class ToolPostureGizmoEditor : Editor
     {
+        #region 定数
+
         private const float WorkArcRadiusScale = 0.74f;
         private const float TravelArcRadiusScale = 1.0f;
         private const float SpinRingRadiusScale = 0.50f;
         private const float AzimuthRingRadiusScale = 1.42f;
+
+        #endregion
+
+        #region インスペクタ
 
         public override void OnInspectorGUI()
         {
@@ -64,6 +70,10 @@ namespace ToolPosture.EditorTools
                 }
             }
         }
+
+        #endregion
+
+        #region シーンビュー
 
         private void OnSceneGUI()
         {
@@ -157,6 +167,10 @@ namespace ToolPosture.EditorTools
             DrawLabel(g, f, angles, scale);
         }
 
+        #endregion
+
+        #region 描画ヘルパ
+
         private static void DrawFrameAxes(ToolPostureGizmo g, PathFrame f, float scale)
         {
             DrawAxis(f.Origin, f.CrossFeed, scale * 0.95f, g.frameColorL, "L");
@@ -222,6 +236,9 @@ namespace ToolPosture.EditorTools
                 $"spin {g.spinConvention.ToDisplay(a.spinAngleDeg):F1}°";
 
             Handles.Label(f.Origin + f.Normal * scale * 1.45f, text, style);
+
+        #endregion
+
         }
     }
 }

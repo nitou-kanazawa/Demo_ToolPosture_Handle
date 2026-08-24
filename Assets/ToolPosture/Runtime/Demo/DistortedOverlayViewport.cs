@@ -19,6 +19,9 @@ namespace ToolPosture.Demo
     /// </summary>
     public class DistortedOverlayViewport : IGizmoViewport
     {
+
+        #region フィールドと構築
+
         private const int UndistortIterations = 8;
 
         public Camera Camera;
@@ -46,7 +49,9 @@ namespace ToolPosture.Demo
 
         public Vector2 PixelSize => ImageSize;
 
-        // ------------------------------------------------------------------ 正規化
+        #endregion
+
+        #region 正規化
 
         private Vector2 ToNormalized(Vector2 pixel)
         {
@@ -113,7 +118,9 @@ namespace ToolPosture.Demo
             return distorted * (r / rd);
         }
 
-        // ------------------------------------------------------------------ IGizmoViewport
+        #endregion
+
+        #region IGizmoViewport
 
         /// <summary>
         /// 歪んだ画像上のピクセル座標から、ワールドの光線へ。
@@ -142,5 +149,7 @@ namespace ToolPosture.Demo
         }
 
         public float WorldPerPixel(Vector3 worldPos) => GizmoPicker.WorldPerPixel(Camera, worldPos);
+
+        #endregion
     }
 }

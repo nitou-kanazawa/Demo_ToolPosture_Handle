@@ -35,6 +35,8 @@ namespace ToolPosture.Gizmo
         /// </summary>
         private const int MousePointerId = -1;
 
+        #region ポインタ取得
+
         /// <summary>
         /// 現在のポインタを 1 つ返す。接触中のタッチがあればタッチを優先し、
         /// 無ければマウス、さらに無ければペンを使う。
@@ -93,6 +95,10 @@ namespace ToolPosture.Gizmo
             return false;
         }
 
+        #endregion
+
+        #region タッチ
+
         /// <summary>
         /// 接触中のタッチ数。
         /// </summary>
@@ -143,6 +149,9 @@ namespace ToolPosture.Gizmo
             return phase == UnityEngine.InputSystem.TouchPhase.Began
                 || phase == UnityEngine.InputSystem.TouchPhase.Moved
                 || phase == UnityEngine.InputSystem.TouchPhase.Stationary;
+
+        #endregion
+
         }
     }
 }

@@ -16,6 +16,9 @@ namespace ToolPosture.Demo
     [AddComponentMenu("Tool Posture/Posture Readout UI")]
     public class PostureReadoutUI : MonoBehaviour
     {
+
+        #region 設定とライフサイクル
+
         public ToolPostureGizmo gizmo;
 
         [Header("レイアウト")]
@@ -45,7 +48,9 @@ namespace ToolPosture.Demo
             UpdateToggleVisuals();
         }
 
-        // ------------------------------------------------------------------ テキスト
+        #endregion
+
+        #region テキスト
 
         private string BuildText()
         {
@@ -112,7 +117,9 @@ namespace ToolPosture.Demo
                              string.IsNullOrEmpty(key) ? "   " : "[" + key + "]");
         }
 
-        // ------------------------------------------------------------------ 構築
+        #endregion
+
+        #region 構築
 
         /// <summary>
         /// EventSystem を用意する。既存のものが旧 StandaloneInputModule を持っている場合、
@@ -265,5 +272,7 @@ namespace ToolPosture.Demo
                     _toggleLabels[i].color = states[i] ? Color.white : new Color(0.55f, 0.58f, 0.62f);
             }
         }
+
+        #endregion
     }
 }

@@ -19,6 +19,9 @@ namespace ToolPosture.Demo
     [AddComponentMenu("Tool Posture/Overlay View Demo")]
     public class OverlayViewDemo : MonoBehaviour
     {
+
+        #region 設定とライフサイクル
+
         public ToolPostureGizmo gizmo;
 
         [Tooltip("外部パラから配置した重畳用カメラ")]
@@ -76,7 +79,9 @@ namespace ToolPosture.Demo
             UpdateLabel();
         }
 
-        // ------------------------------------------------------------------ モード切替
+        #endregion
+
+        #region モード切替
 
         private void ApplyMode(bool from2D, bool force)
         {
@@ -103,7 +108,9 @@ namespace ToolPosture.Demo
             }
         }
 
-        // ------------------------------------------------------------------ 2D からの操作
+        #endregion
+
+        #region 2D からの操作
 
         private void DriveFrom2D()
         {
@@ -155,7 +162,9 @@ namespace ToolPosture.Demo
             return u >= 0f && u <= 1f && v >= 0f && v <= 1f;
         }
 
-        // ------------------------------------------------------------------ 構築
+        #endregion
+
+        #region 構築
 
         private void BuildOverlay()
         {
@@ -247,5 +256,7 @@ namespace ToolPosture.Demo
             _label.color = new Color(0.85f, 0.88f, 0.92f);
             _label.supportRichText = true;
         }
+
+        #endregion
     }
 }

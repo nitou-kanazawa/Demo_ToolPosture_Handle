@@ -14,6 +14,9 @@ namespace ToolPosture.Demo
     [AddComponentMenu("Tool Posture/Orbit Camera")]
     public class OrbitCamera : MonoBehaviour
     {
+
+        #region 設定とライフサイクル
+
         public Transform target;
         public float distance = 4.5f;
         public float minDistance = 0.5f;
@@ -49,7 +52,9 @@ namespace ToolPosture.Demo
             Apply();
         }
 
-        // ------------------------------------------------------------------ タッチ
+        #endregion
+
+        #region タッチ
 
         /// <summary>
         /// タッチで操作したなら true。マウス処理はスキップする。
@@ -100,7 +105,9 @@ namespace ToolPosture.Demo
             _pinchPrevDistance = spread;
         }
 
-        // ------------------------------------------------------------------ マウス
+        #endregion
+
+        #region マウス
 
         private void HandleMouse()
         {
@@ -137,5 +144,7 @@ namespace ToolPosture.Demo
             _panOffset = Vector3.zero;
             Apply();
         }
+
+        #endregion
     }
 }

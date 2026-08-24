@@ -33,6 +33,9 @@ namespace ToolPosture.Core
     [Serializable]
     public struct ToolPostureAngles
     {
+
+        #region フィールドと構築
+
         /// <summary>
         /// 投影角 (w / t) として設定できる絶対値の上限。tan の発散を避ける。
         /// </summary>
@@ -80,7 +83,9 @@ namespace ToolPosture.Core
         /// </summary>
         public static ToolPostureAngles Vertical => new ToolPostureAngles(0f, 90f, 0f);
 
-        // ------------------------------------------------------------------ 工具軸
+        #endregion
+
+        #region 工具軸
 
         /// <summary>
         /// 工具軸 X の LMN 成分 (x = L, y = M, z = N)。定義から常に単位ベクトル。
@@ -117,7 +122,9 @@ namespace ToolPosture.Core
         public void SetAxisWorld(in PathFrame frame, Vector3 worldDir)
             => SetAxisLmn(frame.WorldDirectionToLmn(worldDir.normalized));
 
-        // ------------------------------------------------------------ 投影角 (導出値)
+        #endregion
+
+        #region 投影角 (導出値)
 
         /// <summary>
         /// 狙い角 w [deg]。LN 平面上で N から L 方向へ測った角 (AWS work angle)。
@@ -167,7 +174,9 @@ namespace ToolPosture.Core
             travelDeg = Mathf.Atan2(lmn.y, n) * Mathf.Rad2Deg;
         }
 
-        // ------------------------------------------------------------------ 傾き
+        #endregion
+
+        #region 傾き
 
         /// <summary>
         /// 面法線 N から工具軸までの傾き角 alpha [deg] (= 90 - phi)。
@@ -214,7 +223,9 @@ namespace ToolPosture.Core
             azimuthDeg = Mathf.Repeat(theta + 180f, 360f) - 180f;
         }
 
-        // ------------------------------------------------------------------ スピン
+        #endregion
+
+        #region スピン
 
         /// <summary>
         /// スピン 0 度の基準ベクトル (工具軸に直交)。既定は進行方向 M を工具軸直交面へ投影したもの。
@@ -242,7 +253,9 @@ namespace ToolPosture.Core
             return Quaternion.AngleAxis(spinAngleDeg, x) * SpinZeroReference(frame, x);
         }
 
-        // ------------------------------------------------------------------ 工具姿勢
+        #endregion
+
+        #region 工具姿勢
 
         /// <summary>
         /// 工具の完全な姿勢。工具モデルのローカル軸 toolShaftAxis がワールドの工具軸 X に、
@@ -261,5 +274,7 @@ namespace ToolPosture.Core
 
         public override string ToString()
             => string.Format("theta={0:F2} phi={1:F2} spin={2:F2}", azimuthDeg, elevationDeg, spinAngleDeg);
+
+        #endregion
     }
 }
