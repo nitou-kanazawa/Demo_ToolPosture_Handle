@@ -13,12 +13,16 @@ namespace ToolPosture.Demo
     /// と変換して (ここがアプリ側の独自ロジックに相当)、ギズモの外部ドライブ API
     /// TryPick / BeginDrag / UpdateDrag / EndDrag に流す。
     ///
-    /// ギズモ側は IGizmoViewport (DistortedOverlayViewport) だけを見るので、
-    /// 当たり判定も回転操作も定スクリーンサイズも歪み込みのマッピングに従う。
+    /// 画像ピクセルからワールドのレイへの変換は DistortedOverlayViewport が持つ。
+    /// ギズモの当たり判定はワールド上のコライダーなので、レイさえ正しく作れれば
+    /// 投影がどうであっても掴める。ギズモ側に投影を教える必要は無い。
     /// </summary>
     [AddComponentMenu("Tool Posture/Overlay View Demo")]
     public class OverlayViewDemo : MonoBehaviour
     {
+
+        #region 設定とライフサイクル
+
         public ToolPostureGizmo gizmo;
 
         [Tooltip("外部パラから配置した重畳用カメラ")]
@@ -38,29 +42,29 @@ namespace ToolPosture.Demo
         [Tooltip("true のとき 2D 画面からギズモを操作する (3D ビュー側の操作は止まる)")]
         public bool controlFrom2D;
 
-        RenderTexture _renderTexture;
-        RawImage _image;
-        RectTransform _imageRect;
-        Material _material;
-        Text _label;
-        DistortedOverlayViewport _viewport;
-        bool _dragging;
-        bool _appliedMode;
+        private RenderTexture _renderTexture;
+        private RawImage _image;
+        private RectTransform _imageRect;
+        private Material _material;
+        private Text _label;
+        private DistortedOverlayViewport _viewport;
+        private bool _dragging;
+        private bool _appliedMode;
 
-        void Awake()
+        private void Awake()
         {
             if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             BuildOverlay();
             ApplyMode(controlFrom2D, force: true);
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             if (overlayCamera != null) overlayCamera.targetTexture = null;
             if (_renderTexture != null) _renderTexture.Release();
         }
 
-        void Update()
+        private void Update()
         {
             if (gizmo == null || _viewport == null) return;
 
@@ -76,9 +80,11 @@ namespace ToolPosture.Demo
             UpdateLabel();
         }
 
-        // ------------------------------------------------------------------ モード切替
+        #endregion
 
-        void ApplyMode(bool from2D, bool force)
+        #region モード切替
+
+        private void ApplyMode(bool from2D, bool force)
         {
             _appliedMode = from2D;
             if (gizmo == null) return;
@@ -86,37 +92,31 @@ namespace ToolPosture.Demo
             gizmo.EndDrag();
             _dragging = false;
 
-            if (from2D)
-            {
-                // ギズモの投影を丸ごと差し替える。以降、当たり判定も接線投影も
-                // 定スクリーンサイズもすべてこのビューポート基準になる。
-                gizmo.Viewport = _viewport;
-                gizmo.inputMode = GizmoInputMode.External;
-                gizmo.restrictToViewportCamera = true;
-            }
-            else
-            {
-                gizmo.Viewport = null;   // 既定 (targetCamera) へ戻す
-                gizmo.inputMode = GizmoInputMode.BuiltIn;
-                gizmo.restrictToViewportCamera = false;
-                gizmo.SetHover(null);
-            }
+            // 当たり判定はワールド上のコライダーなので、投影を差し替える必要は無い。
+            // 2D 側で作ったレイをそのまま渡すだけでよい。
+            gizmo.inputMode = from2D ? GizmoInputMode.External : GizmoInputMode.BuiltIn;
+            if (!from2D) gizmo.SetHover(null);
         }
 
-        // ------------------------------------------------------------------ 2D からの操作
+        #endregion
 
-        void DriveFrom2D()
+        #region 2D からの操作
+
+        private void DriveFrom2D()
         {
             if (!GizmoPointer.TryRead(out PointerSample p)) return;
 
             bool inside = TryScreenToImagePixel(p.position, out Vector2 imagePixel);
+
+            // ここがアプリ側の「2D のタッチ位置 -> 3D のレイ」に相当する部分
+            Ray ray = _viewport.ScreenPointToRay(imagePixel);
 
             var kb = UnityEngine.InputSystem.Keyboard.current;
             bool snap = kb != null && kb.ctrlKey.isPressed;
 
             if (_dragging)
             {
-                if (p.isDown && !p.releasedThisFrame) gizmo.UpdateDrag(imagePixel, snap);
+                if (p.isDown && !p.releasedThisFrame) gizmo.UpdateDrag(ray, snap);
                 else { gizmo.EndDrag(); _dragging = false; }
                 return;
             }
@@ -124,14 +124,14 @@ namespace ToolPosture.Demo
             if (!inside) { gizmo.SetHover(null); return; }
 
             if (p.pressedThisFrame &&
-                gizmo.TryPick(imagePixel, out GizmoHandleId id) &&
-                gizmo.BeginDrag(id, imagePixel))
+                gizmo.TryPick(ray, out GizmoHandleId id, out Vector3 point) &&
+                gizmo.BeginDrag(id, ray, point))
             {
                 _dragging = true;
                 return;
             }
 
-            if (!p.isTouch) gizmo.UpdateHover(imagePixel);
+            if (!p.isTouch) gizmo.UpdateHover(ray);
         }
 
         /// <summary>
@@ -155,9 +155,11 @@ namespace ToolPosture.Demo
             return u >= 0f && u <= 1f && v >= 0f && v <= 1f;
         }
 
-        // ------------------------------------------------------------------ 構築
+        #endregion
 
-        void BuildOverlay()
+        #region 構築
+
+        private void BuildOverlay()
         {
             if (overlayCamera == null)
             {
@@ -227,7 +229,7 @@ namespace ToolPosture.Demo
             _label.verticalOverflow = VerticalWrapMode.Overflow;
         }
 
-        static Font ResolveFont()
+        private static Font ResolveFont()
         {
             Font f = null;
             try { f = Font.CreateDynamicFontFromOSFont("Consolas", 12); }
@@ -235,7 +237,7 @@ namespace ToolPosture.Demo
             return f != null ? f : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
-        void UpdateLabel()
+        private void UpdateLabel()
         {
             if (_label == null) return;
 
@@ -247,5 +249,7 @@ namespace ToolPosture.Demo
             _label.color = new Color(0.85f, 0.88f, 0.92f);
             _label.supportRichText = true;
         }
+
+        #endregion
     }
 }

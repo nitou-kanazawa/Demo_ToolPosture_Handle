@@ -2,6 +2,7 @@
     "name": "ToolPosture.Editor",
     "rootNamespace": "ToolPosture.EditorTools",
     "references": [
+        "ToolPosture.Core",
         "ToolPosture.Runtime"
     ],
     "includePlatforms": [

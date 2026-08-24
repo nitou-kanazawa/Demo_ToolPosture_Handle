@@ -16,69 +16,76 @@ namespace ToolPosture.Demo
     [AddComponentMenu("Tool Posture/Posture Readout UI")]
     public class PostureReadoutUI : MonoBehaviour
     {
+
+        #region 設定とライフサイクル
+
         public ToolPostureGizmo gizmo;
+
+        [Tooltip("区間の表示に使う経路。未設定ならシーンから探す")]
+        public WeldPath path;
 
         [Header("レイアウト")]
         public Vector2 panelSize = new Vector2(418f, 466f);
         public int fontSize = 14;
 
-        Text _body;
-        Button[] _toggleButtons;
-        Text[] _toggleLabels;
-        readonly StringBuilder _sb = new StringBuilder(1024);
+        private Text _body;
+        private Button[] _toggleButtons;
+        private Text[] _toggleLabels;
+        private readonly StringBuilder _sb = new StringBuilder(1024);
 
-        static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.08f, 0.82f);
-        static readonly Color OnColor = new Color(0.20f, 0.42f, 0.62f, 0.95f);
-        static readonly Color OffColor = new Color(0.16f, 0.17f, 0.20f, 0.90f);
+        private static readonly Color PanelColor = new Color(0.05f, 0.06f, 0.08f, 0.82f);
+        private static readonly Color OnColor = new Color(0.20f, 0.42f, 0.62f, 0.95f);
+        private static readonly Color OffColor = new Color(0.16f, 0.17f, 0.20f, 0.90f);
 
-        void Awake()
+        private void Awake()
         {
             if (gizmo == null) gizmo = FindAnyObjectByType<ToolPostureGizmo>();
             EnsureEventSystem();
             BuildUI();
         }
 
-        void Update()
+        private void Update()
         {
             if (gizmo == null || _body == null) return;
             _body.text = BuildText();
             UpdateToggleVisuals();
         }
 
-        // ------------------------------------------------------------------ テキスト
+        #endregion
 
-        string BuildText()
+        #region テキスト
+
+        private string BuildText()
         {
             var a = gizmo.Angles;
             Vector3 lmn = a.GetAxisLmn();
             Vector3 world = gizmo.ToolAxisWorld;
-            var src = gizmo.FrameSource;
+            WeldPath src = path != null ? path : FindAnyObjectByType<WeldPath>();
             int segCount = src != null ? src.SegmentCount : 0;
+            int segIndex = src != null ? src.segmentIndex : 0;
+            float segU = src != null ? src.segmentU : 0f;
 
             float tiltDeg = a.TiltFromNormalDeg;
 
             _sb.Clear();
-            _sb.AppendLine("<b>工具姿勢  (内部表現 = 投影角)</b>");
+            _sb.AppendLine("<b>工具姿勢  (内部表現 = 球面 θ / φ / spin)</b>");
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendFormat("区間          {0} / {1}      u = {2:F2}\n",
-                             gizmo.segmentIndex + 1, Mathf.Max(segCount, 1), gizmo.segmentU);
-            bool followsTool = gizmo.workArcPlane == WorkArcPlaneMode.FollowToolAxis;
-
+                             segIndex + 1, Mathf.Max(segCount, 1), segU);
             _sb.AppendLine("────────────────────────────────");
-            AppendAngle("狙い角      w   ", a.WorkAngleDeg, gizmo.workConvention, followsTool ? "" : "1");
-            AppendAngle("前進後退角  t   ", a.TravelAngleDeg, gizmo.travelConvention, "2");
-            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.spinConvention, "4");
-            _sb.AppendLine("────────────────────────────────");
-            _sb.AppendLine(followsTool
-                ? "<color=#9aa4b0>極座標 (旋回リング + 追従円弧で編集)</color>"
-                : "<color=#9aa4b0>派生量 (LM 平面の旋回リングで編集)</color>");
+            AppendAngle("仰角        φ   ", tiltDeg, gizmo.Profile.tiltConvention, "1");
+            _sb.AppendFormat("<color=#6b7480>  (N からの傾き α {0:F1}°)</color>\n", tiltDeg);
 
-            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.azimuthConvention, "5");
+            AppendAngle("旋回角      θ   ", gizmo.AzimuthDeg, gizmo.Profile.azimuthConvention, "2");
             if (!gizmo.AzimuthAffectsToolAxis)
                 _sb.AppendFormat("<color=#ffb86b>  傾き {0:F2}° -> θ は保持値を使用中</color>\n", tiltDeg);
 
-            AppendAngle("仰角        φ   ", tiltDeg, gizmo.tiltConvention, followsTool ? "1" : "");
-            _sb.AppendFormat("<color=#6b7480>  (N からの傾き α {0:F1}°)</color>\n", tiltDeg);
+            AppendAngle("トーチ回転  spin", a.spinAngleDeg, gizmo.Profile.spinConvention, "4");
+
+            _sb.AppendLine("────────────────────────────────");
+            _sb.AppendLine("<color=#9aa4b0>投影角 (θ と φ からの導出値。ハンドルは持たない)</color>");
+            AppendRaw("狙い角      w   ", a.WorkAngleDeg);
+            AppendRaw("進行角      t   ", a.TravelAngleDeg);
 
             _sb.AppendLine("────────────────────────────────");
             _sb.AppendLine("工具軸 X (LMN)");
@@ -100,26 +107,34 @@ namespace ToolPosture.Demo
             return _sb.ToString();
         }
 
-        void AppendAngle(string label, float internalDeg, AngleConvention conv, string key)
+        /// <summary>
+        /// 規約を持たない導出値をそのまま出す。
+        /// </summary>
+        private void AppendRaw(string label, float deg)
+            => _sb.AppendFormat("{0} {1,9:+0.0;-0.0}°      \n", label, deg);
+
+        private void AppendAngle(string label, float internalDeg, AngleConvention conv, string key)
         {
             float display = conv.ToDisplay(internalDeg);
             bool limited = conv.useLimits &&
-                           (Mathf.Abs(internalDeg - conv.minDeg) < 0.05f ||
-                            Mathf.Abs(internalDeg - conv.maxDeg) < 0.05f);
+                           (Mathf.Abs(internalDeg - conv.MinInternal) < 0.05f ||
+                            Mathf.Abs(internalDeg - conv.MaxInternal) < 0.05f);
             string value = string.Format("{0,9:+0.0;-0.0}°", display);
             if (limited) value = "<color=#ff6b5e>" + value + "</color>";
             _sb.AppendFormat("{0} {1}   {2}\n", label, value,
                              string.IsNullOrEmpty(key) ? "   " : "[" + key + "]");
         }
 
-        // ------------------------------------------------------------------ 構築
+        #endregion
+
+        #region 構築
 
         /// <summary>
         /// EventSystem を用意する。既存のものが旧 StandaloneInputModule を持っている場合、
         /// Input System 専用設定 (Active Input Handling = Input System Package) では
         /// 一切入力を拾えないので InputSystemUIInputModule に差し替える。
         /// </summary>
-        static void EnsureEventSystem()
+        private static void EnsureEventSystem()
         {
             EventSystem es = EventSystem.current;
             if (es == null)
@@ -141,7 +156,7 @@ namespace ToolPosture.Demo
                 module.AssignDefaultActions();
         }
 
-        static Font ResolveFont()
+        private static Font ResolveFont()
         {
             Font f = null;
             try { f = Font.CreateDynamicFontFromOSFont("Consolas", 14); }
@@ -149,7 +164,7 @@ namespace ToolPosture.Demo
             return f != null ? f : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
-        void BuildUI()
+        private void BuildUI()
         {
             Font font = ResolveFont();
 
@@ -188,7 +203,7 @@ namespace ToolPosture.Demo
             _body.verticalOverflow = VerticalWrapMode.Overflow;
             _body.lineSpacing = 1.05f;
 
-            string[] labels = { "1 狙い角弧", "2 前進後退弧", "3 軸先端", "4 トーチ回転", "5 旋回リング" };
+            string[] labels = { "1 傾斜角弧", "2 旋回リング", "3 軸先端", "4 トーチ回転" };
             _toggleButtons = new Button[labels.Length];
             _toggleLabels = new Text[labels.Length];
 
@@ -227,7 +242,7 @@ namespace ToolPosture.Demo
             }
         }
 
-        static RectTransform CreateRect(string name, Transform parent, Color color)
+        private static RectTransform CreateRect(string name, Transform parent, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             var rect = go.GetComponent<RectTransform>();
@@ -236,26 +251,26 @@ namespace ToolPosture.Demo
             return rect;
         }
 
-        void ToggleHandle(int index)
+        private void ToggleHandle(int index)
         {
             if (gizmo == null) return;
             switch (index)
             {
-                case 0: gizmo.showWorkArc = !gizmo.showWorkArc; break;
-                case 1: gizmo.showTravelArc = !gizmo.showTravelArc; break;
+                case 0: gizmo.showTiltArc = !gizmo.showTiltArc; break;
+                case 1: gizmo.showAzimuthRing = !gizmo.showAzimuthRing; break;
                 case 2: gizmo.showAxisTip = !gizmo.showAxisTip; break;
                 case 3: gizmo.showSpinRing = !gizmo.showSpinRing; break;
-                case 4: gizmo.showAzimuthRing = !gizmo.showAzimuthRing; break;
+
             }
         }
 
-        void UpdateToggleVisuals()
+        private void UpdateToggleVisuals()
         {
             if (_toggleButtons == null || gizmo == null) return;
             bool[] states =
             {
-                gizmo.showWorkArc, gizmo.showTravelArc, gizmo.showAxisTip,
-                gizmo.showSpinRing, gizmo.showAzimuthRing
+                gizmo.showTiltArc, gizmo.showAzimuthRing, gizmo.showAxisTip, gizmo.showSpinRing
+
             };
             for (int i = 0; i < _toggleButtons.Length && i < states.Length; i++)
             {
@@ -265,5 +280,7 @@ namespace ToolPosture.Demo
                     _toggleLabels[i].color = states[i] ? Color.white : new Color(0.55f, 0.58f, 0.62f);
             }
         }
+
+        #endregion
     }
 }

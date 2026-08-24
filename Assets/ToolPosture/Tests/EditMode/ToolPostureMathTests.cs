@@ -6,7 +6,7 @@ namespace ToolPosture.Tests
 {
     public class PathFrameTests
     {
-        const float Tol = 1e-4f;
+        private const float Tol = 1e-4f;
 
         [Test]
         public void 生の法線が進行方向と直交していなくても正規直交フレームになる()
@@ -74,12 +74,13 @@ namespace ToolPosture.Tests
 
     public class ProjectedAngleTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
-        static PathFrame UnitFrame()
+        private static PathFrame UnitFrame()
         {
             // L = +X, M = +Y, N = +Z となる人工フレーム (LMN 成分とワールド成分が一致する)
-            return new PathFrame(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward);
+            PathFrame.TryFromBasis(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward, out var f);
+            return f;
         }
 
         [Test]
@@ -311,7 +312,7 @@ namespace ToolPosture.Tests
 
     public class ToolRotationTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
         [Test]
         public void 工具姿勢はシャフト軸を工具軸に一致させる()
@@ -366,7 +367,7 @@ namespace ToolPosture.Tests
 
     public class AngleConventionTests
     {
-        const float Tol = 1e-3f;
+        private const float Tol = 1e-3f;
 
         [Test]
         public void 表示値と内部値は往復できる()
@@ -420,6 +421,63 @@ namespace ToolPosture.Tests
 
             Assert.AreEqual(-75f, lo, Tol);
             Assert.AreEqual(75f, hi, Tol);
+        }
+
+        [Test]
+        public void 可動範囲は表示値で与える()
+        {
+            // 仰角 60 - 90 度 = N からの傾き 0 - 30 度
+            var c = AngleConvention.Elevation(0f, 30f);
+
+            Assert.AreEqual(60f, c.minDeg, Tol, "表示値で保持される");
+            Assert.AreEqual(90f, c.maxDeg, Tol);
+            Assert.AreEqual(0f, c.MinInternal, Tol, "内部値では傾き 0");
+            Assert.AreEqual(30f, c.MaxInternal, Tol);
+        }
+
+        [Test]
+        public void 反転していても可動範囲の大小は内部値で整列される()
+        {
+            // invertDirection があると表示の下限が内部の上限になる
+            var c = new AngleConvention
+            {
+                zeroOffsetDeg = 90f, invertDirection = true,
+                useLimits = true, minDeg = 60f, maxDeg = 90f,
+            };
+
+            Assert.Less(c.MinInternal, c.MaxInternal);
+            Assert.AreEqual(0f, c.ClampInternal(-10f), Tol);
+            Assert.AreEqual(30f, c.ClampInternal(50f), Tol);
+        }
+
+        [Test]
+        public void 下限が上限を超えていてもクランプが逆側へ張り付かない()
+        {
+            // Mathf.Clamp は min > max を渡すと逆側の端を返す。
+            // 整列してから渡していないと、範囲内の値まで端へ飛ばされる。
+            var c = new AngleConvention { useLimits = true, minDeg = 136.6f, maxDeg = -23.26f };
+
+            Assert.AreEqual(-23.26f, c.MinInternal, Tol);
+            Assert.AreEqual(136.6f, c.MaxInternal, Tol);
+
+            Assert.AreEqual(0f, c.ClampInternal(0f), Tol, "範囲内なのでそのまま");
+            Assert.AreEqual(136.6f, c.ClampInternal(200f), Tol);
+            Assert.AreEqual(-23.26f, c.ClampInternal(-90f), Tol);
+
+            // 描画範囲とクランプが食い違わないこと
+            c.GetArcRange(75f, out float lo, out float hi);
+            Assert.AreEqual(c.MinInternal, lo, Tol);
+            Assert.AreEqual(c.MaxInternal, hi, Tol);
+        }
+
+        [Test]
+        public void 逆転した可動範囲は詰められる()
+        {
+            var c = new AngleConvention { minDeg = 40f, maxDeg = 10f };
+            c.Validate();
+
+            Assert.AreEqual(10f, c.minDeg, Tol);
+            Assert.AreEqual(10f, c.maxDeg, Tol);
         }
     }
 }

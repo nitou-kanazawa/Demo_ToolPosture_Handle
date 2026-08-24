@@ -119,6 +119,65 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &4578947
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4578949}
+  - component: {fileID: 4578948}
+  m_Layer: 0
+  m_Name: ToolPositionGizmo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &4578948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4578947}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caeab61cdd200bd4094f62ca6fcf7d15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPositionGizmo
+  theme: {fileID: 0}
+  targetCamera: {fileID: 158694776}
+  restrictToTargetCamera: 0
+  colliderGizmo: 0
+  hideOthersWhileDragging: 1
+  inputMode: 0
+  useKeyboardShortcuts: 1
+  gizmoShader: {fileID: 0}
+  position: {x: -1.4, y: 0.35, z: 0.9}
+  target: {fileID: 0}
+  axisSpace: 0
+  showAxisX: 1
+  showAxisY: 1
+  showAxisZ: 1
+  snapStep: 0.05
+--- !u!4 &4578949
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4578947}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &158694775
 GameObject:
   m_ObjectHideFlags: 0
@@ -131,6 +190,7 @@ GameObject:
   - component: {fileID: 158694776}
   - component: {fileID: 158694778}
   - component: {fileID: 158694777}
+  - component: {fileID: 158694780}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -230,6 +290,101 @@ Transform:
   m_GameObject: {fileID: 158694775}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.414, z: -0.668}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &158694780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158694775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
+--- !u!1 &194055456
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 194055458}
+  - component: {fileID: 194055457}
+  m_Layer: 0
+  m_Name: RobotPostureBridge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &194055457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 194055456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66a3d90fe215e2a4b8c9d8864e6de714, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.RobotPostureBridge
+  gizmo: {fileID: 389373110}
+  robotShaftAxis: {x: 0, y: 0, z: 1}
+  robotReferenceAxis: {x: 0, y: 1, z: 0}
+  robotSpinWorldAxis: {x: 0, y: 0, z: 1}
+  robotSpinFallback: {x: 0, y: 1, z: 0}
+  nudgeDeg: 5
+  panelSize: {x: 300, y: 214}
+--- !u!4 &194055458
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 194055456}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -245,6 +400,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 205593997}
+  - component: {fileID: 205593998}
   m_Layer: 0
   m_Name: Torch
   m_TagString: Untagged
@@ -260,8 +416,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 205593996}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.21089722, y: 0.86174506, z: -0.02152483, w: 0.46092793}
-  m_LocalPosition: {x: 0.5, y: 0.22500001, z: 0.425}
+  m_LocalRotation: {x: 0.20845203, y: 0.9760816, z: 0.012895551, w: 0.060383722}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -270,6 +426,23 @@ Transform:
   - {fileID: 1764687363}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &205593998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 205593996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 861be65ea65018946ac56d8a455bde27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Tool.ToolPostureFollower
+  gizmo: {fileID: 389373110}
+  target: {fileID: 205593997}
+  shaftAxis: {x: 0, y: 1, z: 0}
+  referenceAxis: {x: 0, y: 0, z: 1}
+  followPosition: 1
 --- !u!1 &235882966
 GameObject:
   m_ObjectHideFlags: 0
@@ -312,8 +485,16 @@ MonoBehaviour:
   - {x: 0.32825166, y: 0.93786186, z: -0.11254342}
   - {x: 0.40370518, y: 0.8971226, z: -0.17942452}
   crossFeedSide: 0
+  gizmo: {fileID: 389373110}
+  segmentIndex: 2
+  segmentU: 0.5
+  useKeyboardShortcuts: 1
+  uStep: 0.1
   drawPathGizmo: 1
   normalGizmoLength: 0.16
+  drawPathAtRuntime: 1
+  pathColor: {r: 0.85, g: 0.87, b: 0.92, a: 0.7}
+  pathNormalColor: {r: 0.36, g: 0.64, b: 1, a: 0.45}
 --- !u!4 &235882968
 Transform:
   m_ObjectHideFlags: 0
@@ -575,85 +756,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891b86ee7ebc379488ebdc34c7b71ce7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPostureGizmo
-  path: {fileID: 235882967}
-  segmentIndex: 2
-  segmentU: 0.5
+  theme: {fileID: 11400000, guid: f4fa88d428c4bb347b09eb66bb037af9, type: 2}
+  targetCamera: {fileID: 158694776}
+  restrictToTargetCamera: 0
+  colliderGizmo: 0
+  hideOthersWhileDragging: 1
+  inputMode: 0
+  useKeyboardShortcuts: 1
+  gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
+  profile: {fileID: 11400000, guid: 7071e03c3ac4a624ea3a8ed78e202dd4, type: 2}
   angles:
-    azimuthDeg: -35.27
-    elevationDeg: 73.02
-    spinAngleDeg: 25
-  workConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  travelConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  spinConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -180
-    maxDeg: 180
-    snapDeg: 5
-  azimuthConvention:
-    zeroOffsetDeg: 0
-    invertDirection: 0
-    useLimits: 0
-    minDeg: -180
-    maxDeg: 180
-    snapDeg: 5
-  tiltConvention:
-    zeroOffsetDeg: 90
-    invertDirection: 1
-    useLimits: 1
-    minDeg: -60
-    maxDeg: 60
-    snapDeg: 5
-  workArcPlane: 1
-  showWorkArc: 1
-  showTravelArc: 1
+    azimuthDeg: 7.08
+    elevationDeg: 65.89
+    spinAngleDeg: 0
+  showTiltArc: 1
+  showAzimuthRing: 1
   showAxisTip: 1
   showSpinRing: 1
-  showAzimuthRing: 1
   showFrameAxes: 1
-  hideOthersWhileDragging: 1
-  showPath: 1
-  targetCamera: {fileID: 158694776}
-  gizmoPixelSize: 215
-  arcPixelWidth: 9
-  hitPixelWidth: 13
-  touchHitPixelWidth: 28
-  tipPixelRadius: 9
-  fallbackArcHalfWidthDeg: 75
-  maxDegreesPerPixel: 2
-  inputMode: 0
-  frameColorL: {r: 1, g: 0.48, b: 0.32, a: 0.95}
-  frameColorM: {r: 0.42, g: 0.9, b: 0.48, a: 0.95}
-  frameColorN: {r: 0.36, g: 0.64, b: 1, a: 0.95}
-  workColor: {r: 1, g: 0.45, b: 0.74, a: 0.95}
-  travelColor: {r: 0.32, g: 0.86, b: 0.92, a: 0.95}
-  axisColor: {r: 1, g: 0.83, b: 0.26, a: 0.95}
-  spinColor: {r: 0.74, g: 0.62, b: 1, a: 0.95}
-  azimuthColor: {r: 0.55, g: 0.95, b: 0.6, a: 0.95}
-  highlightColor: {r: 1, g: 1, b: 0.72, a: 1}
-  zeroTickColor: {r: 1, g: 1, b: 1, a: 0.9}
-  limitColor: {r: 1, g: 0.38, b: 0.32, a: 0.95}
-  pathColor: {r: 0.82, g: 0.85, b: 0.92, a: 0.22}
-  pathNormalColor: {r: 0.36, g: 0.64, b: 1, a: 0.18}
-  occludedAlpha: 0.22
-  restrictToViewportCamera: 0
-  gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
-  toolVisual: {fileID: 205593997}
-  toolShaftAxis: {x: 0, y: 1, z: 0}
-  toolReferenceAxis: {x: 0, y: 0, z: 1}
 --- !u!4 &389373111
 Transform:
   m_ObjectHideFlags: 0
@@ -968,6 +1088,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Demo.PostureReadoutUI
   gizmo: {fileID: 389373110}
+  path: {fileID: 235882967}
   panelSize: {x: 392, y: 408}
   fontSize: 14
 --- !u!4 &1680846886
@@ -1195,3 +1316,5 @@ SceneRoots:
   - {fileID: 1895789808}
   - {fileID: 1414937764}
   - {fileID: 394415508}
+  - {fileID: 194055458}
+  - {fileID: 4578949}

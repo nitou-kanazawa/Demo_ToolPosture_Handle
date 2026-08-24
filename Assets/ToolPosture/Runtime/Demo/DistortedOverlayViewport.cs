@@ -1,14 +1,14 @@
 using UnityEngine;
-using ToolPosture.Gizmo;
 
 namespace ToolPosture.Demo
 {
     /// <summary>
-    /// 実写重畳ビュー用の IGizmoViewport 実装のサンプル。
+    /// 実写重畳ビューの投影。2D の画面座標とワールドの光線を相互変換する。
     ///
     /// 重畳カメラ (外部パラから配置したピンホールカメラ) の投影に、
     /// 半径方向のレンズ歪み (Brown-Conrady の k1 のみ) を重ねたもの。
-    /// アプリ側が Unity の Camera では表せない投影を持つ場合の典型例。
+    /// アプリが Unity の Camera では表せない投影を持つ場合の典型例で、
+    /// ギズモにはここで作った Ray をそのまま渡す。
     ///
     ///   歪み付与 : n_d = n_u * (1 + k1 * |n_u|^2)
     ///   歪み除去 : n_u = n_d / (1 + k1 * |n_u|^2)   を反復で解く
@@ -17,16 +17,22 @@ namespace ToolPosture.Demo
     /// 表示側のシェーダ ToolPosture/OverlayDistort と同じ式なので、
     /// 画面に見えている位置とギズモの当たり判定が一致する。
     /// </summary>
-    public class DistortedOverlayViewport : IGizmoViewport
+    public class DistortedOverlayViewport
     {
-        const int UndistortIterations = 8;
+        #region フィールドと構築
+
+        private const int UndistortIterations = 8;
 
         public Camera Camera;
 
-        /// <summary>半径方向歪み係数。負で樽型、正で糸巻き型。</summary>
+        /// <summary>
+        /// 半径方向歪み係数。負で樽型、正で糸巻き型。
+        /// </summary>
         public float K1;
 
-        /// <summary>画像の解像度 [px]。</summary>
+        /// <summary>
+        /// 画像の解像度 [px]。
+        /// </summary>
         public Vector2 ImageSize;
 
         public DistortedOverlayViewport(Camera camera, Vector2 imageSize, float k1)
@@ -36,22 +42,20 @@ namespace ToolPosture.Demo
             K1 = k1;
         }
 
-        public Camera RenderCamera => Camera;
-
         public Vector3 EyePosition => Camera != null ? Camera.transform.position : Vector3.zero;
 
-        public Vector2 PixelSize => ImageSize;
+        #endregion
 
-        // ------------------------------------------------------------------ 正規化
+        #region 正規化
 
-        Vector2 ToNormalized(Vector2 pixel)
+        private Vector2 ToNormalized(Vector2 pixel)
         {
             float halfHeight = ImageSize.y * 0.5f;
             return new Vector2((pixel.x - ImageSize.x * 0.5f) / halfHeight,
                                (pixel.y - halfHeight) / halfHeight);
         }
 
-        Vector2 FromNormalized(Vector2 n)
+        private Vector2 FromNormalized(Vector2 n)
         {
             float halfHeight = ImageSize.y * 0.5f;
             return new Vector2(n.x * halfHeight + ImageSize.x * 0.5f,
@@ -109,9 +113,14 @@ namespace ToolPosture.Demo
             return distorted * (r / rd);
         }
 
-        // ------------------------------------------------------------------ IGizmoViewport
+        #endregion
 
-        /// <summary>歪んだ画像上のピクセル座標から、ワールドの光線へ。</summary>
+        #region 2D と 3D の相互変換
+
+        /// <summary>
+        /// 歪んだ画像上のピクセル座標から、ワールドの光線へ。
+        /// ギズモの TryPick / BeginDrag / UpdateDrag へはこの Ray を渡す。
+        /// </summary>
         public Ray ScreenPointToRay(Vector2 screenPos)
         {
             if (Camera == null) return new Ray(Vector3.zero, Vector3.forward);
@@ -120,7 +129,9 @@ namespace ToolPosture.Demo
             return Camera.ScreenPointToRay(FromNormalized(undistorted));
         }
 
-        /// <summary>ワールド座標から、歪んだ画像上のピクセル座標へ。</summary>
+        /// <summary>
+        /// ワールド座標から、歪んだ画像上のピクセル座標へ。
+        /// </summary>
         public bool TryWorldToScreenPoint(Vector3 worldPos, out Vector2 screenPos)
         {
             screenPos = default;
@@ -133,6 +144,6 @@ namespace ToolPosture.Demo
             return true;
         }
 
-        public float WorldPerPixel(Vector3 worldPos) => GizmoPicker.WorldPerPixel(Camera, worldPos);
+        #endregion
     }
 }

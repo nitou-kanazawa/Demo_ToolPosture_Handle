@@ -14,7 +14,7 @@ Shader "ToolPosture/OverlayDistort"
 
         Pass
         {
-            Tags { "LightMode" = "SRPDefaultUnlit" }
+            // LightMode タグを付けない (URP / Built-in の両方で描画対象になる)
 
             Cull Off
             ZWrite Off
