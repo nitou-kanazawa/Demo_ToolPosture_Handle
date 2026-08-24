@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// 工具軸まわりの回転 (スピン) をどこから測るか。

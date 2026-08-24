@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f209187e13aa2954fa62a8dea23e8b76, type: 3}
   m_Name: ToolPostureProfile_NarrowGroove
-  m_EditorClassIdentifier: ToolPosture.Core::ToolPosture.Core.ToolPostureProfile
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Core::ToolRuntimeGizmos.Core.ToolPostureProfile
   azimuthConvention:
     zeroOffsetDeg: 0
     invertDirection: 0

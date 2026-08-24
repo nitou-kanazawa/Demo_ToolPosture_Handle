@@ -1,9 +1,9 @@
 {
-    "name": "ToolPosture.Tests",
-    "rootNamespace": "ToolPosture.Tests",
+    "name": "ToolRuntimeGizmos.Tests",
+    "rootNamespace": "ToolRuntimeGizmos.Tests",
     "references": [
-        "ToolPosture.Core",
-        "ToolPosture.Runtime",
+        "ToolRuntimeGizmos.Core",
+        "ToolRuntimeGizmos.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

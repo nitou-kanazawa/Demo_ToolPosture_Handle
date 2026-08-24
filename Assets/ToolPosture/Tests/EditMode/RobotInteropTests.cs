@@ -1,8 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.Tests
+namespace ToolRuntimeGizmos.Tests
 {
     /// <summary>
     /// ロボット制御側の ToolPosture (ZYX オイラー) との相互変換。

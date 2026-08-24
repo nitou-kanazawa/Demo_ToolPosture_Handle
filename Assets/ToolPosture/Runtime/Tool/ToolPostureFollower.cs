@@ -1,8 +1,8 @@
 using UnityEngine;
-using ToolPosture.Core;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Tool
+namespace ToolRuntimeGizmos.Tool
 {
     /// <summary>
     /// ギズモが定めた姿勢に工具モデルを追従させる。

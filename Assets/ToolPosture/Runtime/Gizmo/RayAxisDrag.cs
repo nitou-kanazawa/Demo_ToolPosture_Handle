@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// 軸方向の平行移動ドラッグ。

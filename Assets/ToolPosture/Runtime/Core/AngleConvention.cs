@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// 1 つの角度に対する表示・操作の規約。

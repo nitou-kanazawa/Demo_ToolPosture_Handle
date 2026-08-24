@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ランタイム用の工具姿勢ギズモ。

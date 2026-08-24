@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// ZYX オイラー角 (yaw-pitch-roll)。ロボットのツール姿勢表現でよく使われる形式。

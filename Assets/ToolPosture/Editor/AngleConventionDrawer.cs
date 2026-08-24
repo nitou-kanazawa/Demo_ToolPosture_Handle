@@ -1,8 +1,8 @@
 using UnityEditor;
 using UnityEngine;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.EditorTools
+namespace ToolRuntimeGizmos.EditorTools
 {
     /// <summary>
     /// AngleConvention の描画。

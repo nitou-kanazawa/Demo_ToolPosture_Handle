@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// 軸の向きをどこから取るか。

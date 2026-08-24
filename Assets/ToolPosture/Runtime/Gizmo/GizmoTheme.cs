@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Gizmo
+namespace ToolRuntimeGizmos.Gizmo
 {
     /// <summary>
     /// ギズモの見た目と当たりの太さ。アセットにして使い回す。

@@ -1,8 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
-using ToolPosture.Core;
+using ToolRuntimeGizmos.Core;
 
-namespace ToolPosture.Tests
+namespace ToolRuntimeGizmos.Tests
 {
     public class PathFrameTests
     {

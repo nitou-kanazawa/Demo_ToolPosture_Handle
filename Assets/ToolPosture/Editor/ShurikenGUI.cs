@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace ToolPosture.EditorTools
+namespace ToolRuntimeGizmos.EditorTools
 {
     /// <summary>
     /// ParticleSystem のモジュール一覧と同じ見た目の見出しを描くためのヘルパ。

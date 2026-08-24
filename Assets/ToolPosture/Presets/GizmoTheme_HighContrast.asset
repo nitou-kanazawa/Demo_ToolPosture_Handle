@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51d15ab426dd29c46a339b1f28cba081, type: 3}
   m_Name: GizmoTheme_HighContrast
-  m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.GizmoTheme
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.GizmoTheme
   gizmoPixelSize: 130
   arcPixelWidth: 10
   thinPixelWidth: 1.2
@@ -28,6 +28,13 @@ MonoBehaviour:
   limitTickPixelLength: 10
   tickPixelWidth: 2
   dashPixelLength: 9
+  toolAxisLengthRatio: 1.25
+  frameAxisLengthRatio: 1.25
+  crossFeedAxisLengthRatio: 0.95
+  tiltArcRadiusRatio: 0.74
+  azimuthRingRadiusRatio: 1.42
+  spinRingOffsetRatio: 0.86
+  spinRingRadiusRatio: 0.5
   hitPixelWidth: 20
   touchHitPixelWidth: 40
   tipHitPixelRadius: 14

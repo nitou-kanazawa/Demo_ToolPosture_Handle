@@ -1,9 +1,9 @@
 {
-    "name": "ToolPosture.Editor",
-    "rootNamespace": "ToolPosture.EditorTools",
+    "name": "ToolRuntimeGizmos.Editor",
+    "rootNamespace": "ToolRuntimeGizmos.EditorTools",
     "references": [
-        "ToolPosture.Core",
-        "ToolPosture.Runtime"
+        "ToolRuntimeGizmos.Core",
+        "ToolRuntimeGizmos.Runtime"
     ],
     "includePlatforms": [
         "Editor"

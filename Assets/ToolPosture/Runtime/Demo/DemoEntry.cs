@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using ToolPosture.Gizmo;
+using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// アプリへ組み込むときの入口。位置ギズモと姿勢ギズモを 1 つずつ持ち、

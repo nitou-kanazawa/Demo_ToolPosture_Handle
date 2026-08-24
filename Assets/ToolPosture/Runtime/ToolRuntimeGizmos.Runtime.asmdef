@@ -1,7 +1,11 @@
 {
-    "name": "ToolPosture.Core",
-    "rootNamespace": "ToolPosture.Core",
-    "references": [],
+    "name": "ToolRuntimeGizmos.Runtime",
+    "rootNamespace": "ToolRuntimeGizmos",
+    "references": [
+        "ToolRuntimeGizmos.Core",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Core
+namespace ToolRuntimeGizmos.Core
 {
     /// <summary>
     /// 工具姿勢の角度規約と可動範囲。アセットにして使い回す。

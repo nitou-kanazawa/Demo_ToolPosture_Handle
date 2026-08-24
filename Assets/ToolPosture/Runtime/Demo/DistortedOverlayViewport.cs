@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ToolPosture.Demo
+namespace ToolRuntimeGizmos.Demo
 {
     /// <summary>
     /// 実写重畳ビューの投影。2D の画面座標とワールドの光線を相互変換する。
