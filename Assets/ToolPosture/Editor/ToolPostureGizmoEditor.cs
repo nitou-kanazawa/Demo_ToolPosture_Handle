@@ -26,10 +26,19 @@ namespace ToolPosture.EditorTools
 
         private static readonly string[] PostureProps = { "angles" };
 
+        /// <summary>
+        /// ParticleSystem のモジュール一覧と同じ形で並べるハンドルの表示切替。
+        /// 添字は HandleLabels と対応させること。
+        /// </summary>
         private static readonly string[] HandleProps =
         {
-            "showTiltArc", "showAzimuthRing", "showAxisTip", "showSpinRing",
-            "showFrameAxes", "hideOthersWhileDragging",
+            "showTiltArc", "showAzimuthRing", "showAxisTip", "showSpinRing", "showFrameAxes",
+        };
+
+        private static readonly string[] HandleLabels =
+        {
+            "傾斜角の円弧   φ", "旋回リング   θ", "軸先端ボール", "スピンリング   spin",
+            "LMN フレームの軸",
         };
 
         private static readonly string[] ViewProps =
@@ -59,10 +68,8 @@ namespace ToolPosture.EditorTools
             serializedObject.Update();
 
             DrawPresets();
-
-            EditorGUILayout.Space(4f);
-            DrawGroup("姿勢  (保持は球面表現 θ / φ / spin)", PostureProps);
-            DrawGroup("ハンドル表示  (実行中は 1 - 4 キーで切替)", HandleProps);
+            DrawGroup("姿勢   θ / φ / spin", PostureProps);
+            DrawHandleModules();
             DrawGroup("表示", ViewProps);
             DrawGroup("入力", InputProps, defaultOpen: false);
             DrawGroup("シェーダ", ToolProps, defaultOpen: false);
@@ -76,23 +83,51 @@ namespace ToolPosture.EditorTools
 
         private void DrawPresets()
         {
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            if (!Section("プリセット", true)) return;
+
+            using (ShurikenGUI.Body())
             {
-                EditorGUILayout.LabelField("プリセット", EditorStyles.miniBoldLabel);
                 DrawPresetSlot<GizmoTheme>("theme", "見た目", ref _themeEditor);
                 DrawPresetSlot<ToolPostureProfile>("profile", "規約", ref _profileEditor);
             }
         }
 
+        /// <summary>
+        /// ハンドルの表示切替を ParticleSystem のモジュール一覧と同じ形で並べる。
+        /// </summary>
+        private void DrawHandleModules()
+        {
+            if (!Section("ハンドル   実行中は 1 - 4 キーで切替", true)) return;
+
+            using (ShurikenGUI.Body())
+            {
+                for (int i = 0; i < HandleProps.Length; i++)
+                {
+                    SerializedProperty p = serializedObject.FindProperty(HandleProps[i]);
+                    if (p == null) continue;
+
+                    EditorGUI.BeginChangeCheck();
+                    bool on = ShurikenGUI.ToggleRow(HandleLabels[i], p.boolValue);
+                    if (EditorGUI.EndChangeCheck()) p.boolValue = on;
+                }
+
+                EditorGUILayout.Space(4f);
+
+                float saved = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = GroupLabelWidth;
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("hideOthersWhileDragging"),
+                                              new GUIContent("ドラッグ中は他を隠す"));
+                EditorGUIUtility.labelWidth = saved;
+            }
+        }
+
         private static void DrawReadout(ToolPostureGizmo g)
         {
-            EditorGUILayout.Space(4f);
+            if (!Section("出力", true)) return;
+
             var a = g.Angles;
-
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            using (ShurikenGUI.Body())
             {
-                EditorGUILayout.LabelField("出力", EditorStyles.miniBoldLabel);
-
                 float saved = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 132f;
 
@@ -106,7 +141,7 @@ namespace ToolPosture.EditorTools
                 Row("N からの傾き α",
                     a.TiltIsSignificant()
                         ? $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°"
-                        : $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°   θ は工具軸に効いていない");
+                        : $"{a.TiltFromNormalDeg,7:+0.0;-0.0}°   θ は効いていない");
 
                 EditorGUIUtility.labelWidth = saved;
             }
@@ -155,35 +190,41 @@ namespace ToolPosture.EditorTools
         #region インスペクタのヘルパ
 
         /// <summary>
-        /// 見出し付きの折りたたみ。開閉状態は EditorPrefs に残す。
+        /// 中身の欄が細ってラベルが切れないよう、ビュー幅から決めたラベル幅。
         /// </summary>
-        private void DrawGroup(string title, string[] props, bool defaultOpen = true)
+        private static float GroupLabelWidth
+            => Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.48f, 150f, 240f);
+
+        /// <summary>
+        /// モジュール見出しを描き、開いているかを返す。開閉状態は EditorPrefs に残す。
+        /// </summary>
+        private static bool Section(string title, bool defaultOpen)
         {
             string key = "ToolPostureGizmo.fold." + title;
             bool open = EditorPrefs.GetBool(key, defaultOpen);
 
-            bool now = EditorGUILayout.BeginFoldoutHeaderGroup(open, title);
+            bool now = ShurikenGUI.Header(title, open);
             if (now != open) EditorPrefs.SetBool(key, now);
+            return now;
+        }
 
-            if (now)
+        private void DrawGroup(string title, string[] props, bool defaultOpen = true)
+        {
+            if (!Section(title, defaultOpen)) return;
+
+            using (ShurikenGUI.Body())
             {
                 float saved = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.5f, 160f, 240f);
+                EditorGUIUtility.labelWidth = GroupLabelWidth;
 
-                using (new EditorGUI.IndentLevelScope())
+                foreach (string name in props)
                 {
-                    foreach (string name in props)
-                    {
-                        SerializedProperty p = serializedObject.FindProperty(name);
-                        if (p != null) EditorGUILayout.PropertyField(p, true);
-                    }
+                    SerializedProperty p = serializedObject.FindProperty(name);
+                    if (p != null) EditorGUILayout.PropertyField(p, true);
                 }
 
                 EditorGUIUtility.labelWidth = saved;
-                EditorGUILayout.Space(2f);
             }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
         /// <summary>

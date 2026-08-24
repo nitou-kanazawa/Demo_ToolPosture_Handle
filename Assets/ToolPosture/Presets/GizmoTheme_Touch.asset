@@ -36,7 +36,7 @@ MonoBehaviour:
   frameColorM: {r: 0, g: 0, b: 0, a: 0.95}
   frameColorN: {r: 0, g: 0, b: 0, a: 0.95}
   tiltColor: {r: 0.12374437, g: 1, b: 0, a: 0.95}
-  spinColor: {r: 0.9547169, g: 0.47143042, b: 0.012609419, a: 0.95}
+  spinColor: {r: 0.98490566, g: 0.6554793, b: 0.34007114, a: 0.95}
   azimuthColor: {r: 0, g: 0.011764706, b: 1, a: 0.95}
   axisColor: {r: 1, g: 0.5490196, b: 0, a: 1}
   highlightColor: {r: 1, g: 1, b: 0.72, a: 1}

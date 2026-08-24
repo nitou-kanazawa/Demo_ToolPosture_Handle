@@ -697,8 +697,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891b86ee7ebc379488ebdc34c7b71ce7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolPosture.Runtime::ToolPosture.Gizmo.ToolPostureGizmo
-  theme: {fileID: 0}
-  profile: {fileID: 0}
+  theme: {fileID: 11400000, guid: f4fa88d428c4bb347b09eb66bb037af9, type: 2}
+  profile: {fileID: 11400000, guid: 7071e03c3ac4a624ea3a8ed78e202dd4, type: 2}
   angles:
     azimuthDeg: -35.27
     elevationDeg: 73.02
