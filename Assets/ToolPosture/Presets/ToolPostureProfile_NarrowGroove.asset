@@ -23,8 +23,8 @@ MonoBehaviour:
     zeroOffsetDeg: 90
     invertDirection: 1
     useLimits: 1
-    minDeg: 0
-    maxDeg: 30
+    minDeg: 60
+    maxDeg: 90
     snapDeg: 1
   spinConvention:
     zeroOffsetDeg: 0
@@ -48,6 +48,6 @@ MonoBehaviour:
     maxDeg: 20
     snapDeg: 5
   spinReference:
-    mode: 0
+    mode: 1
     worldAxis: {x: 0, y: 0, z: 0}
     degenerateFallback: {x: 0, y: 0, z: 0}

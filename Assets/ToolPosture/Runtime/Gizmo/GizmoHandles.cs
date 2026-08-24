@@ -41,7 +41,7 @@ namespace ToolPosture.Gizmo
         private static float LimitFor(float component, AngleConvention conv)
         {
             if (!conv.useLimits || Mathf.Abs(component) < 1e-4f) return float.MaxValue;
-            float limitDeg = component > 0f ? conv.maxDeg : conv.minDeg;
+            float limitDeg = component > 0f ? conv.MaxInternal : conv.MinInternal;
             return Mathf.Tan(limitDeg * Mathf.Deg2Rad) / component;
         }
     }
@@ -195,8 +195,8 @@ namespace ToolPosture.Gizmo
             float projectedHi = Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg)) * Mathf.Rad2Deg;
             float projectedLo = -Mathf.Atan(TiltLimits.MaxTanTilt(G, azimuthDeg + 180f)) * Mathf.Rad2Deg;
 
-            hi = conv.useLimits ? Mathf.Min(conv.maxDeg, projectedHi) : projectedHi;
-            lo = conv.useLimits ? Mathf.Max(conv.minDeg, projectedLo) : projectedLo;
+            hi = conv.useLimits ? Mathf.Min(conv.MaxInternal, projectedHi) : projectedHi;
+            lo = conv.useLimits ? Mathf.Max(conv.MinInternal, projectedLo) : projectedLo;
         }
 
         private float ClampAlpha(float value, float azimuthDeg)

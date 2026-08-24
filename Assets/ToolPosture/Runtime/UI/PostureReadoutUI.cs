@@ -111,8 +111,8 @@ namespace ToolPosture.Demo
         {
             float display = conv.ToDisplay(internalDeg);
             bool limited = conv.useLimits &&
-                           (Mathf.Abs(internalDeg - conv.minDeg) < 0.05f ||
-                            Mathf.Abs(internalDeg - conv.maxDeg) < 0.05f);
+                           (Mathf.Abs(internalDeg - conv.MinInternal) < 0.05f ||
+                            Mathf.Abs(internalDeg - conv.MaxInternal) < 0.05f);
             string value = string.Format("{0,9:+0.0;-0.0}°", display);
             if (limited) value = "<color=#ff6b5e>" + value + "</color>";
             _sb.AppendFormat("{0} {1}   {2}\n", label, value,

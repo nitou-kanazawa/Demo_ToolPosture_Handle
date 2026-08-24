@@ -70,5 +70,22 @@ namespace ToolPosture.Core
         public SpinReference spinReference = SpinReference.FeedProjected;
 
         #endregion
+
+        #region 検証
+
+        /// <summary>
+        /// 下限が上限を超えた状態で残らないようにする。
+        /// 逆転したままだと円弧の描画と実際のクランプが食い違う。
+        /// </summary>
+        private void OnValidate()
+        {
+            azimuthConvention?.Validate();
+            tiltConvention?.Validate();
+            spinConvention?.Validate();
+            workConvention?.Validate();
+            travelConvention?.Validate();
+        }
+
+        #endregion
     }
 }
