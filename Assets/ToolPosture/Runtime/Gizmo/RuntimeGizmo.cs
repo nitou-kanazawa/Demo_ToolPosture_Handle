@@ -26,6 +26,18 @@ namespace ToolRuntimeGizmos.Gizmo
     }
 
     /// <summary>
+    /// ドラッグの終わり方。
+    /// </summary>
+    public enum GizmoDragResult
+    {
+        /// <summary>操作を確定して終えた。</summary>
+        Committed = 0,
+
+        /// <summary>取り消して開始時の値へ戻した。</summary>
+        Cancelled = 1,
+    }
+
+    /// <summary>
     /// ランタイムギズモの共通部分。
     ///
     /// 姿勢ギズモと位置ギズモで、描画・当たり判定・入力・スケールの扱いは同じなので
@@ -118,6 +130,22 @@ namespace ToolRuntimeGizmos.Gizmo
         /// 再描画のたびに必ず呼ばれる。
         /// </summary>
         public event Action<RuntimeGizmo> Preparing;
+
+        /// <summary>
+        /// ドラッグを開始したときに呼ばれる。1 ドラッグにつき一度だけやる仕事
+        /// (Undo を積む、IK のセッションを開始する) に使う。
+        ///
+        /// カメラの抑止のような「掴んでいる間だけ止める」用途にはこれを使わないこと。
+        /// 購読側でフラグを持つと、ドラッグ中に無効化された場合に終了が届かず
+        /// 止まったままになる。<see cref="AnyDragging"/> を見ればズレようがない。
+        /// </summary>
+        public event Action<RuntimeGizmo, GizmoHandleId> DragBegan;
+
+        /// <summary>
+        /// ドラッグを終えたときに呼ばれる。操作中のハンドルを解除した後に発火するので、
+        /// このハンドラの中から値を書き戻してよい。
+        /// </summary>
+        public event Action<RuntimeGizmo, GizmoHandleId, GizmoDragResult> DragEnded;
 
         /// <summary>
         /// ギズモのメッシュを組み立てるときに呼ばれる。経路の可視化など、
@@ -401,22 +429,60 @@ namespace ToolRuntimeGizmos.Gizmo
                 return;
             }
 
-            bool overUI = EventSystem.current != null &&
-                          EventSystem.current.IsPointerOverGameObject(pointer.pointerId);
+            // 先に自分の当たりを見る。当たっていなければ手前に何があろうと関係ないので、
+            // EventSystem へ問い合わせる必要すらない。
+            bool hit = TryPick(ray.Value, out GizmoHandleId id, out Vector3 point, out float distance);
+            bool blocked = hit && IsOccludedByOthers(pointer.position, distance);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
-            if (pointer.pressedThisFrame && !overUI)
+            if (pointer.pressedThisFrame && hit && !blocked && BeginDrag(id, ray.Value, point))
             {
-                if (TryPick(ray.Value, out GizmoHandleId id, out Vector3 point) &&
-                    BeginDrag(id, ray.Value, point))
-                {
-                    _hovered = _active;
-                    return;
-                }
+                _hovered = _active;
+                return;
             }
 
             // ホバー表示はマウス / ペンのときだけ
-            _hovered = (pointer.isTouch || overUI) ? null : PickHandle(ray.Value);
+            _hovered = (pointer.isTouch || !hit || blocked) ? null : FindHandle(id);
+        }
+
+        private PointerEventData _probe;
+        private readonly List<RaycastResult> _probeResults = new List<RaycastResult>();
+
+        /// <summary>
+        /// ポインタの下で、ハンドルより手前に他のものがあるか。
+        ///
+        /// IsPointerOverGameObject は使えない。あれはスクリーン上で重なっているかしか
+        /// 見ておらず、深度を一切考えない。しかもカメラに PhysicsRaycaster が付いていると
+        /// UI でない普通のメッシュまで true を返すので、ハンドルの何メートルも奥にある
+        /// 母材や点群でハンドルが掴めなくなる (実測)。
+        ///
+        /// 代わりに自分でレイキャストして最前面を見る。距離で比べるだけでよい。
+        /// ScreenSpaceOverlay の UI は距離 0 を返すので、常に手前として扱われる (HUD なので正しい)。
+        /// </summary>
+        private bool IsOccludedByOthers(Vector2 screenPosition, float handleDistance)
+        {
+            EventSystem es = EventSystem.current;
+            if (es == null) return false;
+
+            if (_probe == null) _probe = new PointerEventData(es);
+            _probe.Reset();
+            _probe.position = screenPosition;
+
+            _probeResults.Clear();
+            es.RaycastAll(_probe, _probeResults);
+
+            for (int i = 0; i < _probeResults.Count; i++)
+            {
+                RaycastResult r = _probeResults[i];
+                if (r.gameObject == null) continue;
+
+                // 自分たちのコライダーは数えない。自分で自分を塞がないため
+                if (GizmoHandleColliders.IsHandleCollider(r.gameObject)) continue;
+
+                // 結果は手前から並んでいるので、最初の他人で決まる
+                return r.distance < handleDistance;
+            }
+            return false;
         }
 
         #endregion
@@ -434,9 +500,17 @@ namespace ToolRuntimeGizmos.Gizmo
         /// 当たった点を BeginDrag へ渡すと、掴んだ位置が正確に反映される。
         /// </summary>
         public bool TryPick(Ray ray, out GizmoHandleId id, out Vector3 point)
+            => TryPick(ray, out id, out point, out _);
+
+        /// <summary>
+        /// 当たった点までの距離も返す。
+        /// アプリが自前の選択処理と優先順位を比べる場合に使う。
+        /// </summary>
+        public bool TryPick(Ray ray, out GizmoHandleId id, out Vector3 point, out float distance)
         {
             id = default;
-            if (!_colliders.TryPick(ray, Mathf.Infinity, out GizmoHandleBase h, out point)) return false;
+            if (!_colliders.TryPick(ray, Mathf.Infinity, out GizmoHandleBase h, out point, out distance))
+                return false;
 
             id = h.Id;
             return true;
@@ -481,6 +555,7 @@ namespace ToolRuntimeGizmos.Gizmo
             Active = h;
             OnDragBegan(h);
             h.BeginDrag(ray, grabPoint);
+            DragBegan?.Invoke(this, h.Id);
             return true;
         }
 
@@ -499,8 +574,13 @@ namespace ToolRuntimeGizmos.Gizmo
         public void EndDrag()
         {
             if (_active == null) return;
-            _active.EndDrag();
+
+            GizmoHandleBase h = _active;
+            h.EndDrag();
+
+            // 解除してから知らせる。ハンドラの中で値を書き戻せるようにするため。
             Active = null;
+            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Committed);
         }
 
         /// <summary>
@@ -513,7 +593,10 @@ namespace ToolRuntimeGizmos.Gizmo
             GizmoHandleBase h = _active;
             h.EndDrag();
             Active = null;
+
+            // 値を戻してから知らせる。購読側が見るのは戻した後の値。
             OnDragCancelled(h);
+            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Cancelled);
         }
 
         /// <summary>
@@ -535,7 +618,7 @@ namespace ToolRuntimeGizmos.Gizmo
         }
 
         private GizmoHandleBase PickHandle(Ray ray)
-            => _colliders.TryPick(ray, Mathf.Infinity, out GizmoHandleBase h, out _) ? h : null;
+            => _colliders.TryPick(ray, Mathf.Infinity, out GizmoHandleBase h, out _, out _) ? h : null;
 
         #endregion
 

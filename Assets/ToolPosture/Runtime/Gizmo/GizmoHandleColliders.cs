@@ -173,7 +173,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// 重なったハンドル同士でも手前が正しく勝つ。
         /// </summary>
         public bool TryPick(Ray ray, float maxDistance,
-                            out GizmoHandleBase handle, out Vector3 point)
+                            out GizmoHandleBase handle, out Vector3 point, out float distance)
         {
             handle = null;
             point = default;
@@ -194,7 +194,27 @@ namespace ToolRuntimeGizmos.Gizmo
                 point = hit.point;
             }
 
+            distance = handle != null ? best : 0f;
             return handle != null;
+        }
+
+        /// <summary>
+        /// その GameObject がどれかのギズモの当たり判定用コライダーか。
+        ///
+        /// カメラに PhysicsRaycaster が付いていると、このコライダーも EventSystem の
+        /// レイキャストに出てくる。「手前に何かあるか」を調べるときに自分自身を
+        /// 数えてしまうと、ハンドルの上にポインタを置いた瞬間に自分で自分を塞ぐ。
+        /// </summary>
+        public static bool IsHandleCollider(GameObject go)
+        {
+            if (go == null) return false;
+
+            for (int i = 0; i < _allRoots.Count; i++)
+            {
+                Transform root = _allRoots[i];
+                if (root != null && go.transform.IsChildOf(root)) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -214,6 +234,11 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #region 構築と破棄
 
+        /// <summary>
+        /// 生成済みのコライダー置き場すべて。IsHandleCollider の判定に使う。
+        /// </summary>
+        private static readonly List<Transform> _allRoots = new List<Transform>();
+
         private void EnsureRoot(RuntimeGizmo gizmo)
         {
             if (_root != null) return;
@@ -225,6 +250,7 @@ namespace ToolRuntimeGizmos.Gizmo
             go.layer = 2;
             go.hideFlags = HideFlags.DontSave;
             _root = go.transform;
+            _allRoots.Add(_root);
         }
 
         private void Rebuild(IList<GizmoHandleBase> handles)
@@ -285,7 +311,11 @@ namespace ToolRuntimeGizmos.Gizmo
         public void Dispose()
         {
             Clear();
-            if (_root != null) Destroy(_root.gameObject);
+            if (_root != null)
+            {
+                _allRoots.Remove(_root);
+                Destroy(_root.gameObject);
+            }
             _root = null;
         }
 
