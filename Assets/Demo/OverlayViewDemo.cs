@@ -43,7 +43,7 @@ namespace ToolRuntimeGizmos.Demo
         public bool controlFrom2D;
 
         [Tooltip("false にすると 2D -> レイの変換だけを提供し、ギズモには触らない。" +
-                 "DemoEntry のような入口が駆動する場合はこちら")]
+                 "ToolPoseHandle のような入口が駆動する場合はこちら")]
         public bool driveGizmo = true;
 
         private RenderTexture _renderTexture;
@@ -76,7 +76,7 @@ namespace ToolRuntimeGizmos.Demo
             if (_material != null) _material.SetFloat("_K1", distortionK1);
 
             // 駆動しない設定のときは重畳画像と座標変換だけを提供する。
-            // 入力を誰が読むかは呼び出し側 (DemoEntry など) が決める。
+            // 入力を誰が読むかは呼び出し側 (ToolPoseHandle など) が決める。
             if (!driveGizmo || gizmo == null)
             {
                 UpdateLabel();

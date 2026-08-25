@@ -3,4 +3,6 @@
   <Project Path="ToolRuntimeGizmos.Core.csproj" />
   <Project Path="ToolRuntimeGizmos.Tests.csproj" />
   <Project Path="ToolRuntimeGizmos.Editor.csproj" />
+  <Project Path="ToolRuntimeGizmos.Demo.csproj" />
+  <Project Path="ToolRuntimeGizmos.Demo.Tests.csproj" />
 </Solution>

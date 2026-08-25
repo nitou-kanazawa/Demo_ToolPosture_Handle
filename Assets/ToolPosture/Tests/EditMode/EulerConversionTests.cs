@@ -219,16 +219,6 @@ namespace ToolRuntimeGizmos.Tests
             Assert.IsFalse(PathFrame.TryFromBasis(Vector3.zero, Vector3.up, Vector3.zero, Vector3.up, out _));
         }
 
-        [Test]
-        public void 単一フレーム供給元は常に同じフレームを返す()
-        {
-            PathFrame.TryCreate(Vector3.one, Vector3.right, Vector3.up, CrossFeedSide.RightOfTravel, out var f);
-            var source = new SingleFrameSource(f);
-
-            Assert.AreEqual(1, source.SegmentCount);
-            Assert.AreEqual(0f, Vector3.Distance(f.Normal, source.GetFrame(0, 0f).Normal), Tol);
-            Assert.AreEqual(0f, Vector3.Distance(f.Normal, source.GetFrame(5, 0.7f).Normal), Tol);
-        }
 
         [Test]
         public void ギズモにフレームを直接与えられる()
