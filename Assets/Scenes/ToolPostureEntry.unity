@@ -149,13 +149,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.ToolPositionGizmo
   theme: {fileID: 0}
+  gizmoShader: {fileID: 0}
   targetCamera: {fileID: 158694776}
   restrictToTargetCamera: 0
   colliderGizmo: 0
   hideOthersWhileDragging: 1
   inputMode: 0
   useKeyboardShortcuts: 1
-  gizmoShader: {fileID: 0}
+  yieldToUI: 1
   position: {x: 0.5, y: 0.22500001, z: 0.425}
   target: {fileID: 1226767785}
   axisSpace: 0
@@ -705,13 +706,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.ToolPostureGizmo
   theme: {fileID: 11400000, guid: f4fa88d428c4bb347b09eb66bb037af9, type: 2}
+  gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
   targetCamera: {fileID: 158694776}
   restrictToTargetCamera: 0
   colliderGizmo: 0
   hideOthersWhileDragging: 1
   inputMode: 0
   useKeyboardShortcuts: 1
-  gizmoShader: {fileID: 4800000, guid: bb5c1534f23940349a88476a0cff3b46, type: 3}
+  yieldToUI: 1
   profile: {fileID: 11400000, guid: 7071e03c3ac4a624ea3a8ed78e202dd4, type: 2}
   angles:
     azimuthDeg: 7.08
@@ -1298,7 +1300,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.DemoEntry
   positionGizmo: {fileID: 4578948}
   postureGizmo: {fileID: 389373110}
-  mode: 1
+  follower: {fileID: 0}
+  mode: 0
   active: 1
   view: 0
   rayProvider: {fileID: 394415507}
