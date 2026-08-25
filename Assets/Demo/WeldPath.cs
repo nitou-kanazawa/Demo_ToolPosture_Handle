@@ -17,7 +17,7 @@ namespace ToolRuntimeGizmos.Demo
     [ExecuteAlways]
     [DefaultExecutionOrder(-100)]     // ギズモより先にフレームを確定させる
     [AddComponentMenu("Tool Posture/Weld Path")]
-    public class WeldPath : MonoBehaviour, IPathFrameSource
+    public class WeldPath : MonoBehaviour
     {
         #region 経路データ
 

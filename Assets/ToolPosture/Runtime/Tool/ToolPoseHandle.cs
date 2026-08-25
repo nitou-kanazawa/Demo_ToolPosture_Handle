@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using ToolRuntimeGizmos.Gizmo;
 
-namespace ToolRuntimeGizmos.Demo
+namespace ToolRuntimeGizmos.Tool
 {
     /// <summary>
     /// アプリへ組み込むときの入口。位置ギズモと姿勢ギズモを 1 つずつ持ち、
@@ -27,14 +27,14 @@ namespace ToolRuntimeGizmos.Demo
     /// 切り替えても場所がずれない。経路など別の供給元は向き (LMN) だけを与える形になる。
     ///
     /// <code>
-    /// entry.ScreenToRay = pos => camera.TryScreenToRay(pos, out Ray r) ? r : (Ray?)null;
-    /// entry.Mode = DemoEntry.HandleMode.Posture;
-    /// entry.View = DemoEntry.ViewMode.View2D;
-    /// entry.Active = true;
+    /// handle.ScreenToRay = pos => camera.TryScreenToRay(pos, out Ray r) ? r : (Ray?)null;
+    /// handle.Mode = ToolPoseHandle.HandleMode.Posture;
+    /// handle.View = ToolPoseHandle.ViewMode.View2D;
+    /// handle.Active = true;
     /// </code>
     /// </summary>
-    [AddComponentMenu("Tool Posture/Demo Entry")]
-    public class DemoEntry : MonoBehaviour
+    [AddComponentMenu("Tool Posture/Tool Pose Handle")]
+    public class ToolPoseHandle : MonoBehaviour
     {
         public enum HandleMode
         {
@@ -126,7 +126,7 @@ namespace ToolRuntimeGizmos.Demo
         {
             _provider = rayProvider as IGizmoRayProvider;
             if (rayProvider != null && _provider == null)
-                Debug.LogWarning("DemoEntry: rayProvider が IGizmoRayProvider を実装していない", this);
+                Debug.LogWarning("ToolPoseHandle: rayProvider が IGizmoRayProvider を実装していない", this);
 
             Apply();
         }
@@ -178,7 +178,7 @@ namespace ToolRuntimeGizmos.Demo
             {
                 if (_warnedNoRay) return;
                 _warnedNoRay = true;
-                Debug.LogWarning("DemoEntry: View2D だが 2D → レイ の変換が未設定のため操作できない", this);
+                Debug.LogWarning("ToolPoseHandle: View2D だが 2D → レイ の変換が未設定のため操作できない", this);
                 return;
             }
 

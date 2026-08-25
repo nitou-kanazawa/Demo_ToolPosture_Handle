@@ -339,57 +339,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!1 &194055456
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 194055458}
-  - component: {fileID: 194055457}
-  m_Layer: 0
-  m_Name: RobotPostureBridge
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &194055457
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 194055456}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66a3d90fe215e2a4b8c9d8864e6de714, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.RobotPostureBridge
-  gizmo: {fileID: 389373110}
-  robotShaftAxis: {x: 0, y: 0, z: 1}
-  robotReferenceAxis: {x: 0, y: 1, z: 0}
-  robotSpinWorldAxis: {x: 0, y: 0, z: 1}
-  robotSpinFallback: {x: 0, y: 1, z: 0}
-  nudgeDeg: 5
-  panelSize: {x: 300, y: 214}
---- !u!4 &194055458
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 194055456}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &205593996
 GameObject:
   m_ObjectHideFlags: 0
@@ -1121,54 +1070,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1590211827}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &1680846884
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1680846886}
-  - component: {fileID: 1680846885}
-  m_Layer: 0
-  m_Name: PostureReadoutUI
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1680846885
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1680846884}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 554c9f6b76345c2448ef4f3ce1202961, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Demo.PostureReadoutUI
-  gizmo: {fileID: 389373110}
-  path: {fileID: 235882967}
-  panelSize: {x: 392, y: 408}
-  fontSize: 14
---- !u!4 &1680846886
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1680846884}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1764687362
 GameObject:
   m_ObjectHideFlags: 0
@@ -1425,11 +1326,9 @@ SceneRoots:
   - {fileID: 205593997}
   - {fileID: 389373111}
   - {fileID: 158694779}
-  - {fileID: 1680846886}
   - {fileID: 1895789808}
   - {fileID: 1414937764}
   - {fileID: 394415508}
-  - {fileID: 194055458}
   - {fileID: 4578949}
   - {fileID: 1911305944}
   - {fileID: 1226767785}
