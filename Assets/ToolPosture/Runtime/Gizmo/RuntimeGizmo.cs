@@ -83,10 +83,10 @@ namespace ToolRuntimeGizmos.Gizmo
         [Tooltip("実行中にキーでハンドル表示を切り替える")]
         public bool useKeyboardShortcuts = true;
 
-        [Tooltip("ポインタの下でハンドルより手前に他のものがあるとき、掴めなくする。" +
+        [Tooltip("手前にある UI の上ではハンドルを掴めなくする。シーンのメッシュは遮らない。" +
                  "切るとハンドルが常に最優先になる。掴めない原因の切り分けに使う。" +
                  "External では元から見ていないので影響しない")]
-        public bool respectOcclusion = true;
+        public bool yieldToUI = true;
 
         #endregion
 
@@ -447,9 +447,9 @@ namespace ToolRuntimeGizmos.Gizmo
             // 2D 重畳ビューではビューを映すパネル自身が距離 0 の Overlay UI として
             // 常に手前に出るので、ここで判定すると永久に掴めなくなる (実測)。
             bool blocked = hit
-                        && respectOcclusion
+                        && yieldToUI
                         && inputMode == GizmoInputMode.BuiltIn
-                        && IsOccludedByOthers(pointer.position, distance);
+                        && IsOccludedByUI(pointer.position, distance);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
             if (pointer.pressedThisFrame && hit && !blocked && BeginDrag(id, ray.Value, point))
@@ -466,17 +466,21 @@ namespace ToolRuntimeGizmos.Gizmo
         private readonly List<RaycastResult> _probeResults = new List<RaycastResult>();
 
         /// <summary>
-        /// ポインタの下で、ハンドルより手前に他のものがあるか。
+        /// ポインタの下で、ハンドルより手前に UI があるか。
+        ///
+        /// シーンのメッシュは遮らない。ギズモは手前に描いていて (隠れている部分も
+        /// occludedAlpha で見える)、見えているものは掴めるべきだからである。
+        /// 母材やロボットの上でハンドルが死ぬのは避ける。
+        ///
+        /// 遮るのは UI だけ。ボタンやパネルは操作面なので、その上でハンドルを
+        /// 掴めてしまう方がおかしい。ScreenSpaceOverlay は距離 0 を返すので常に手前、
+        /// WorldSpace / ScreenSpaceCamera は距離で比べる (ハンドルの奥にあるパネルは遮らない)。
         ///
         /// IsPointerOverGameObject は使えない。あれはスクリーン上で重なっているかしか
-        /// 見ておらず、深度を一切考えない。しかもカメラに PhysicsRaycaster が付いていると
-        /// UI でない普通のメッシュまで true を返すので、ハンドルの何メートルも奥にある
-        /// 母材や点群でハンドルが掴めなくなる (実測)。
-        ///
-        /// 代わりに自分でレイキャストして最前面を見る。距離で比べるだけでよい。
-        /// ScreenSpaceOverlay の UI は距離 0 を返すので、常に手前として扱われる (HUD なので正しい)。
+        /// 見ておらず深度を考えない。しかもカメラに PhysicsRaycaster が付いていると
+        /// UI でない普通のメッシュまで true を返す (実測)。
         /// </summary>
-        private bool IsOccludedByOthers(Vector2 screenPosition, float handleDistance)
+        private bool IsOccludedByUI(Vector2 screenPosition, float handleDistance)
         {
             EventSystem es = EventSystem.current;
             if (es == null) return false;
@@ -496,7 +500,10 @@ namespace ToolRuntimeGizmos.Gizmo
                 // 自分たちのコライダーは数えない。自分で自分を塞がないため
                 if (GizmoHandleColliders.IsHandleCollider(r.gameObject)) continue;
 
-                // 結果は手前から並んでいるので、最初の他人で決まる
+                // シーンのメッシュ (PhysicsRaycaster のヒット) は無視する
+                if (!(r.module is UnityEngine.UI.GraphicRaycaster)) continue;
+
+                // 結果は手前から並んでいるので、最初に見つけた UI で決まる
                 return r.distance < handleDistance;
             }
             return false;
