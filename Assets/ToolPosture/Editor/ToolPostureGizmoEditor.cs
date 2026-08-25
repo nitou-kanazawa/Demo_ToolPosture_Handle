@@ -38,7 +38,7 @@ namespace ToolRuntimeGizmos.EditorTools
             "targetCamera", "restrictToTargetCamera", "colliderGizmo",
         };
 
-        private static readonly string[] InputProps = { "inputMode", "useKeyboardShortcuts" };
+        private static readonly string[] InputProps = { "inputMode", "useKeyboardShortcuts", "respectOcclusion" };
 
         private static readonly string[] ToolProps =
         {

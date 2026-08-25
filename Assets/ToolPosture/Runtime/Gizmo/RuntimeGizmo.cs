@@ -83,6 +83,11 @@ namespace ToolRuntimeGizmos.Gizmo
         [Tooltip("実行中にキーでハンドル表示を切り替える")]
         public bool useKeyboardShortcuts = true;
 
+        [Tooltip("ポインタの下でハンドルより手前に他のものがあるとき、掴めなくする。" +
+                 "切るとハンドルが常に最優先になる。掴めない原因の切り分けに使う。" +
+                 "External では元から見ていないので影響しない")]
+        public bool respectOcclusion = true;
+
         #endregion
 
         #region シェーダ
@@ -442,6 +447,7 @@ namespace ToolRuntimeGizmos.Gizmo
             // 2D 重畳ビューではビューを映すパネル自身が距離 0 の Overlay UI として
             // 常に手前に出るので、ここで判定すると永久に掴めなくなる (実測)。
             bool blocked = hit
+                        && respectOcclusion
                         && inputMode == GizmoInputMode.BuiltIn
                         && IsOccludedByOthers(pointer.position, distance);
 
