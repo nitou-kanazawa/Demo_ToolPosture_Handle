@@ -403,6 +403,10 @@ namespace ToolRuntimeGizmos.Gizmo
         /// ray はポインタ位置からアプリが作ったワールドのレイ。画像の外などで
         /// レイを作れないときは null を渡すと、新しく掴むのは止まるが、
         /// 進行中のドラッグは指を離すまで続く。
+        ///
+        /// External のときは手前に何があるかを見ない。投影も入力もアプリが持っている以上、
+        /// 渡されたスクリーン座標がこちらの画面で何を指すか判断できないためである。
+        /// 遮蔽を効かせたい場合は、アプリが TryPick の距離と自前の当たり判定を比べること。
         /// </summary>
         public void DrivePointer(PointerSample pointer, Ray? ray, bool snap = false)
         {
@@ -432,7 +436,14 @@ namespace ToolRuntimeGizmos.Gizmo
             // 先に自分の当たりを見る。当たっていなければ手前に何があろうと関係ないので、
             // EventSystem へ問い合わせる必要すらない。
             bool hit = TryPick(ray.Value, out GizmoHandleId id, out Vector3 point, out float distance);
-            bool blocked = hit && IsOccludedByOthers(pointer.position, distance);
+
+            // 遮蔽を見るのは BuiltIn のときだけ。External では投影も入力もアプリが持っており、
+            // 渡されるスクリーン座標がこちらの画面上で何を指すかは分からない。
+            // 2D 重畳ビューではビューを映すパネル自身が距離 0 の Overlay UI として
+            // 常に手前に出るので、ここで判定すると永久に掴めなくなる (実測)。
+            bool blocked = hit
+                        && inputMode == GizmoInputMode.BuiltIn
+                        && IsOccludedByOthers(pointer.position, distance);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
             if (pointer.pressedThisFrame && hit && !blocked && BeginDrag(id, ray.Value, point))
