@@ -26,6 +26,18 @@ namespace ToolRuntimeGizmos.Gizmo
     }
 
     /// <summary>
+    /// ドラッグの終わり方。
+    /// </summary>
+    public enum GizmoDragResult
+    {
+        /// <summary>操作を確定して終えた。</summary>
+        Committed = 0,
+
+        /// <summary>取り消して開始時の値へ戻した。</summary>
+        Cancelled = 1,
+    }
+
+    /// <summary>
     /// ランタイムギズモの共通部分。
     ///
     /// 姿勢ギズモと位置ギズモで、描画・当たり判定・入力・スケールの扱いは同じなので
@@ -118,6 +130,22 @@ namespace ToolRuntimeGizmos.Gizmo
         /// 再描画のたびに必ず呼ばれる。
         /// </summary>
         public event Action<RuntimeGizmo> Preparing;
+
+        /// <summary>
+        /// ドラッグを開始したときに呼ばれる。1 ドラッグにつき一度だけやる仕事
+        /// (Undo を積む、IK のセッションを開始する) に使う。
+        ///
+        /// カメラの抑止のような「掴んでいる間だけ止める」用途にはこれを使わないこと。
+        /// 購読側でフラグを持つと、ドラッグ中に無効化された場合に終了が届かず
+        /// 止まったままになる。<see cref="AnyDragging"/> を見ればズレようがない。
+        /// </summary>
+        public event Action<RuntimeGizmo, GizmoHandleId> DragBegan;
+
+        /// <summary>
+        /// ドラッグを終えたときに呼ばれる。操作中のハンドルを解除した後に発火するので、
+        /// このハンドラの中から値を書き戻してよい。
+        /// </summary>
+        public event Action<RuntimeGizmo, GizmoHandleId, GizmoDragResult> DragEnded;
 
         /// <summary>
         /// ギズモのメッシュを組み立てるときに呼ばれる。経路の可視化など、
@@ -481,6 +509,7 @@ namespace ToolRuntimeGizmos.Gizmo
             Active = h;
             OnDragBegan(h);
             h.BeginDrag(ray, grabPoint);
+            DragBegan?.Invoke(this, h.Id);
             return true;
         }
 
@@ -499,8 +528,13 @@ namespace ToolRuntimeGizmos.Gizmo
         public void EndDrag()
         {
             if (_active == null) return;
-            _active.EndDrag();
+
+            GizmoHandleBase h = _active;
+            h.EndDrag();
+
+            // 解除してから知らせる。ハンドラの中で値を書き戻せるようにするため。
             Active = null;
+            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Committed);
         }
 
         /// <summary>
@@ -513,7 +547,10 @@ namespace ToolRuntimeGizmos.Gizmo
             GizmoHandleBase h = _active;
             h.EndDrag();
             Active = null;
+
+            // 値を戻してから知らせる。購読側が見るのは戻した後の値。
             OnDragCancelled(h);
+            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Cancelled);
         }
 
         /// <summary>

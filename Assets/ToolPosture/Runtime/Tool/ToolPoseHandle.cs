@@ -9,17 +9,17 @@ namespace ToolRuntimeGizmos.Tool
     /// アプリへ組み込むときの入口。位置ギズモと姿勢ギズモを 1 つずつ持ち、
     /// 外からは 3 つだけ切り替える。
     ///
-    ///   Mode   … 位置 / 姿勢 のどちらのハンドルを出すか
-    ///   Active … 出すか出さないか
-    ///   View   … 3D ビューから触るか、2D 重畳ビューから触るか
+    ///   Mode    … 位置 / 姿勢 のどちらのハンドルを出すか
+    ///   Visible … 出すか出さないか
+    ///   View    … 3D ビューから触るか、2D 重畳ビューから触るか
     ///
     /// 3D のときはギズモが自分でポインタを読む。2D のときは読まず、
     /// <see cref="ScreenToRay"/> に差した「画面座標 → ワールドのレイ」で動かす。
     /// 当たり判定はワールド上のコライダーなので、投影が歪んでいても掴める
     /// (ギズモ側に投影を教える必要は無い)。
     ///
-    /// 操作結果は各ギズモの PositionChanged / PostureChanged を直接購読すること。
-    /// ここでは中継しない。
+    /// 姿勢の受け渡しは <see cref="IToolPoseHandle"/> として公開する。利用側は
+    /// ハンドルの詳細を知らずに、Pose / SetPose と 3 つのイベントだけを見ればよい。
     ///
     /// 2 つのギズモを同じ場所に出すには、共通の Transform を 1 つ用意して
     /// ToolPositionGizmo.target と ToolPostureGizmo.originSource の両方へ差す。
@@ -30,11 +30,11 @@ namespace ToolRuntimeGizmos.Tool
     /// handle.ScreenToRay = pos => camera.TryScreenToRay(pos, out Ray r) ? r : (Ray?)null;
     /// handle.Mode = ToolPoseHandle.HandleMode.Posture;
     /// handle.View = ToolPoseHandle.ViewMode.View2D;
-    /// handle.Active = true;
+    /// handle.Visible = true;
     /// </code>
     /// </summary>
     [AddComponentMenu("Tool Posture/Tool Pose Handle")]
-    public class ToolPoseHandle : MonoBehaviour
+    public class ToolPoseHandle : MonoBehaviour, IToolPoseHandle
     {
         public enum HandleMode
         {
@@ -58,6 +58,9 @@ namespace ToolRuntimeGizmos.Tool
 
         [SerializeField] private ToolPositionGizmo positionGizmo;
         [SerializeField] private ToolPostureGizmo postureGizmo;
+
+        [Tooltip("世界回転の受け渡しに使う軸割当。未設定ならシーンから探す")]
+        [SerializeField] private ToolPostureFollower follower;
 
         [SerializeField] private HandleMode mode = HandleMode.Posture;
         [SerializeField] private bool active = true;
@@ -94,7 +97,7 @@ namespace ToolRuntimeGizmos.Tool
         }
 
         /// <summary>ギズモを出すかどうか。false でどちらも消える。</summary>
-        public bool Active
+        public bool Visible
         {
             get => active;
             set { active = value; Apply(); }
@@ -111,12 +114,145 @@ namespace ToolRuntimeGizmos.Tool
 
         #region 状態
 
-        /// <summary>今出ているギズモ。Active が false でも「どちらか」は返す。</summary>
+        /// <summary>今出ているギズモ。Visible が false でも「どちらか」は返す。</summary>
         public RuntimeGizmo Current
             => mode == HandleMode.Position ? (RuntimeGizmo)positionGizmo : postureGizmo;
 
         /// <summary>何かを掴んで動かしている間 true。カメラ操作を止めるのに使う。</summary>
-        public bool IsDragging => Active && Current != null && Current.IsDragging;
+        public bool IsDragging => Visible && Current != null && Current.IsDragging;
+
+        #endregion
+
+        #region 姿勢の受け渡し
+
+        public event Action<ToolPoseEvent> DragBegan;
+        public event Action<ToolPoseEvent> PoseChanged;
+        public event Action<ToolPoseEvent> DragEnded;
+
+        // 書き戻しの最中は PoseChanged を止める。戻した値がそのまま次の計算を呼ぶループを防ぐ。
+        private bool _applying;
+        private bool _warnedNoFollower;
+
+        private ToolPostureFollower Follower
+            => follower != null ? follower : (follower = FindAnyObjectByType<ToolPostureFollower>());
+
+        /// <summary>
+        /// 今の姿勢。位置はフレームの原点で、originSource を差してあれば
+        /// 位置ハンドルが動かした先に追従している。
+        /// </summary>
+        public ToolPose Pose
+            => postureGizmo != null
+                ? new ToolPose(postureGizmo.Frame, postureGizmo.Angles)
+                : default;
+
+        public Quaternion WorldRotation
+        {
+            get
+            {
+                ToolPostureFollower f = Follower;
+                return f != null ? f.Rotation : Quaternion.identity;
+            }
+        }
+
+        /// <summary>
+        /// 姿勢を与える。フレームと角度を同時に差し替えるので中間状態を作らない。
+        /// イベントは発火しない。
+        /// </summary>
+        public void SetPose(ToolPose pose)
+        {
+            if (postureGizmo == null || !pose.IsValid) return;
+
+            _applying = true;
+            try
+            {
+                // 原点は EnsureState が originSource から毎フレーム上書きするので、
+                // フレームだけ差し替えても戻される。実体の方も動かす。
+                if (postureGizmo.originSource != null)
+                    postureGizmo.originSource.position = pose.Position;
+                if (positionGizmo != null) positionGizmo.Position = pose.Position;
+
+                postureGizmo.Frame = pose.Frame;
+                postureGizmo.Angles = pose.Angles;
+            }
+            finally { _applying = false; }
+        }
+
+        /// <summary>
+        /// 世界回転から姿勢を逆算する。垂直姿勢でも旋回角が失われない経路を通る。
+        /// </summary>
+        public void SetWorldRotation(Quaternion rotation)
+        {
+            ToolPostureFollower f = Follower;
+            if (f == null)
+            {
+                if (_warnedNoFollower) return;
+                _warnedNoFollower = true;
+                Debug.LogWarning("ToolPoseHandle: 軸割当を持つ ToolPostureFollower が無いので世界回転を戻せない", this);
+                return;
+            }
+
+            _applying = true;
+            try { f.ApplyRotation(rotation); }
+            finally { _applying = false; }
+        }
+
+        private ToolHandleKind KindOf(RuntimeGizmo gizmo)
+        {
+            if (gizmo == (RuntimeGizmo)positionGizmo) return ToolHandleKind.Position;
+            if (gizmo == (RuntimeGizmo)postureGizmo) return ToolHandleKind.Posture;
+            return ToolHandleKind.None;
+        }
+
+        private void RaiseChanged(ToolHandleKind kind)
+        {
+            if (_applying) return;
+            PoseChanged?.Invoke(new ToolPoseEvent(Pose, kind));
+        }
+
+        private void OnPositionChanged(ToolPositionGizmo _) => RaiseChanged(ToolHandleKind.Position);
+
+        private void OnPostureChanged(ToolPostureGizmo _) => RaiseChanged(ToolHandleKind.Posture);
+
+        private void OnDragBegan(RuntimeGizmo gizmo, GizmoHandleId _)
+            => DragBegan?.Invoke(new ToolPoseEvent(Pose, KindOf(gizmo)));
+
+        private void OnDragEnded(RuntimeGizmo gizmo, GizmoHandleId _, GizmoDragResult result)
+            => DragEnded?.Invoke(new ToolPoseEvent(Pose, KindOf(gizmo),
+                                                   result == GizmoDragResult.Cancelled));
+
+        private void Subscribe(bool on)
+        {
+            if (positionGizmo != null)
+            {
+                if (on)
+                {
+                    positionGizmo.PositionChanged += OnPositionChanged;
+                    positionGizmo.DragBegan += OnDragBegan;
+                    positionGizmo.DragEnded += OnDragEnded;
+                }
+                else
+                {
+                    positionGizmo.PositionChanged -= OnPositionChanged;
+                    positionGizmo.DragBegan -= OnDragBegan;
+                    positionGizmo.DragEnded -= OnDragEnded;
+                }
+            }
+
+            if (postureGizmo == null) return;
+
+            if (on)
+            {
+                postureGizmo.PostureChanged += OnPostureChanged;
+                postureGizmo.DragBegan += OnDragBegan;
+                postureGizmo.DragEnded += OnDragEnded;
+            }
+            else
+            {
+                postureGizmo.PostureChanged -= OnPostureChanged;
+                postureGizmo.DragBegan -= OnDragBegan;
+                postureGizmo.DragEnded -= OnDragEnded;
+            }
+        }
 
         #endregion
 
@@ -128,8 +264,11 @@ namespace ToolRuntimeGizmos.Tool
             if (rayProvider != null && _provider == null)
                 Debug.LogWarning("ToolPoseHandle: rayProvider が IGizmoRayProvider を実装していない", this);
 
+            Subscribe(true);
             Apply();
         }
+
+        private void OnDisable() => Subscribe(false);
 
         private void Update()
         {
