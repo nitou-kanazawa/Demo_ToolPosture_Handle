@@ -196,6 +196,19 @@ namespace ToolRuntimeGizmos.Tool
             finally { _applying = false; }
         }
 
+        /// <summary>
+        /// レイが今出ているハンドルに当たるか。アプリ側の選択処理より先に見ること。
+        /// </summary>
+        public bool Raycast(Ray ray, out float distance)
+        {
+            distance = 0f;
+
+            RuntimeGizmo gizmo = Current;
+            if (!Visible || gizmo == null || !gizmo.enabled) return false;
+
+            return gizmo.TryPick(ray, out GizmoHandleId _, out Vector3 _, out distance);
+        }
+
         private ToolHandleKind KindOf(RuntimeGizmo gizmo)
         {
             if (gizmo == (RuntimeGizmo)positionGizmo) return ToolHandleKind.Position;

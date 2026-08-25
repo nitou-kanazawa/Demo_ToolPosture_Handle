@@ -54,6 +54,16 @@ namespace ToolRuntimeGizmos.Tool
         bool Visible { get; set; }
 
         /// <summary>
+        /// レイがハンドルに当たるか。当たった点までの距離も返す。
+        ///
+        /// ハンドルのコライダーは Ignore Raycast レイヤーに居て
+        /// <see cref="Physics.Raycast"/> には出てこない。アプリが自前の raycast で
+        /// 掴む対象を決めているなら、その前にこれを見て、当たっていて手前なら
+        /// 自分の処理を飛ばすこと。そうしないとハンドルが候補にすら入らない。
+        /// </summary>
+        bool Raycast(Ray ray, out float distance);
+
+        /// <summary>
         /// 掴んだとき。1 ドラッグにつき一度だけやる仕事に使う。
         ///
         /// カメラの抑止には使わないこと。購読側でフラグを持つと、ドラッグ中に

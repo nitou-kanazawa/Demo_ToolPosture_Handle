@@ -195,6 +195,44 @@ namespace ToolRuntimeGizmos.Tests
         }
 
         [Test]
+        public void 当たり判定は距離を返す()
+        {
+            _handle.Mode = ToolPoseHandle.HandleMode.Position;
+            _position.SyncColliders();
+
+            var origin = _position.Position + Vector3.up * 3f;
+            Assert.IsTrue(_handle.Raycast(new Ray(origin, Vector3.down), out float distance));
+
+            // アプリが自前の raycast と優先順位を比べられるよう、意味の揃った距離であること
+            Assert.Greater(distance, 0f);
+            Assert.Less(distance, 3f);
+        }
+
+        [Test]
+        public void 出していないときは当たり判定を返さない()
+        {
+            _handle.Visible = false;
+
+            Assert.IsFalse(_handle.Raycast(new Ray(_position.Position + Vector3.up * 3f, Vector3.down),
+                                           out _));
+        }
+
+        [Test]
+        public void ハンドルのコライダーは自分のものと分かる()
+        {
+            _handle.Mode = ToolPoseHandle.HandleMode.Position;
+            _position.SyncColliders();
+
+            var root = _position.transform.Find("ToolPostureHandleColliders");
+            Assert.IsNotNull(root, "コライダー置き場が見つからない");
+            Assert.Greater(root.childCount, 0);
+
+            // PhysicsRaycaster 越しに自分のコライダーを他人と数えると、自分で自分を塞ぐ
+            Assert.IsTrue(GizmoHandleColliders.IsHandleCollider(root.GetChild(0).gameObject));
+            Assert.IsFalse(GizmoHandleColliders.IsHandleCollider(_anchorGo));
+        }
+
+        [Test]
         public void 取り消しは開始前の値へ戻り取り消しとして届く()
         {
             _handle.Mode = ToolPoseHandle.HandleMode.Position;
