@@ -221,7 +221,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
             Color col = (hover || active) ? th.highlightColor : _g.AxisColor(_axis);
 
-            b.AddArrow(_g.Position, Direction, _g.AxisLength, _g.EyePosition,
+            b.AddArrow(_g.Position, Direction, _g.AxisLength,
                        _g.PixelToWorld(th.toolAxisPixelWidth) * 0.5f,
                        _g.PixelToWorld(th.toolArrowHeadPixelRadius),
                        _g.PixelToWorld(th.arrowHeadPixelLength),

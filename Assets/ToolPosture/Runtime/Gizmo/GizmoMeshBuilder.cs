@@ -153,6 +153,44 @@ namespace ToolRuntimeGizmos.Gizmo
         #region 立体とビルボード
 
         /// <summary>
+        /// 2 点を結ぶ円筒。
+        /// </summary>
+        /// <remarks>
+        /// 軸はこれで描く。カメラに正対する板だと、描いているカメラと違う投影で
+        /// 見たとき (2D 重畳ビューなど) に向きが合わず、視線と軸が平行に近いところで
+        /// 板が潰れて消える。円筒はどの方向から見ても同じ形なのでその問題が無い。
+        /// 当たり判定にチューブを使っているのと同じ理由。
+        /// </remarks>
+        public void AddTube(Vector3 a, Vector3 b, float radius, Color32 col, int segments = 12)
+        {
+            Vector3 dir = b - a;
+            float len = dir.magnitude;
+            if (len < 1e-6f || radius <= 0f) return;
+            dir /= len;
+
+            Vector3 seed = Mathf.Abs(dir.y) > 0.9f ? Vector3.right : Vector3.up;
+            Vector3 u = Vector3.Cross(dir, seed).normalized;
+            Vector3 v = Vector3.Cross(dir, u);
+
+            int prevA = 0, prevB = 0;
+            for (int s = 0; s <= segments; s++)
+            {
+                float ang = 2f * Mathf.PI * s / segments;
+                Vector3 off = (u * Mathf.Cos(ang) + v * Mathf.Sin(ang)) * radius;
+
+                int ia = Push(a + off, col);
+                int ib = Push(b + off, col);
+                if (s > 0)
+                {
+                    Tri(prevA, ia, ib);
+                    Tri(prevA, ib, prevB);
+                }
+                prevA = ia;
+                prevB = ib;
+            }
+        }
+
+        /// <summary>
         /// 円錐 (矢印の頭)。
         /// </summary>
         public void AddCone(Vector3 baseCenter, Vector3 dir, float radius, float height, Color32 col, int segments = 16)
@@ -236,15 +274,15 @@ namespace ToolRuntimeGizmos.Gizmo
         }
 
         /// <summary>
-        /// 矢印付きの軸。
+        /// 矢印付きの軸。軸は円筒、頭は円錐で、どちらも立体。
         /// </summary>
-        public void AddArrow(Vector3 origin, Vector3 dir, float length, Vector3 camPos,
-                             float lineHalfWidth, float headRadius, float headLength, Color32 col)
+        public void AddArrow(Vector3 origin, Vector3 dir, float length,
+                             float lineRadius, float headRadius, float headLength, Color32 col)
         {
             dir = dir.normalized;
             Vector3 tip = origin + dir * length;
             Vector3 headBase = tip - dir * headLength;
-            AddScreenLine(origin, headBase, camPos, lineHalfWidth, col);
+            AddTube(origin, headBase, lineRadius, col);
             AddCone(headBase, dir, headRadius, headLength, col);
         }
 

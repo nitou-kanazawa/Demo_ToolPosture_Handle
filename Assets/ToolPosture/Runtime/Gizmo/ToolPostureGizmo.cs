@@ -261,7 +261,6 @@ namespace ToolRuntimeGizmos.Gizmo
 
             GizmoTheme th = Theme;
             Vector3 o = _frame.Origin;
-            Vector3 camPos = EyePosition;
             float s = Scale;
 
             float lineHalf = PixelToWorld(th.frameAxisPixelWidth) * 0.5f;
@@ -270,17 +269,17 @@ namespace ToolRuntimeGizmos.Gizmo
 
             if (showFrameAxes)
             {
-                b.AddArrow(o, _frame.CrossFeed, s * th.crossFeedAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.CrossFeed, s * th.crossFeedAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorL);
-                b.AddArrow(o, _frame.Feed, s * th.frameAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.Feed, s * th.frameAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorM);
-                b.AddArrow(o, _frame.Normal, s * th.frameAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.Normal, s * th.frameAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorN);
             }
 
             // 工具軸 X は常に描く (軸先端ハンドルの表示に依存しない)
             Vector3 axis = angles.GetAxisWorld(_frame);
-            b.AddArrow(o, axis, s * th.toolAxisLengthRatio, camPos,
+            b.AddArrow(o, axis, s * th.toolAxisLengthRatio,
                        PixelToWorld(th.toolAxisPixelWidth) * 0.5f,
                        PixelToWorld(th.toolArrowHeadPixelRadius), headL, th.axisColor);
 
