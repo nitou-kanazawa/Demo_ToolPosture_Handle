@@ -35,39 +35,27 @@ namespace ToolRuntimeGizmos.Gizmo
     [AddComponentMenu("Tool Posture/Tool Position Gizmo")]
     public class ToolPositionGizmo : RuntimeGizmo
     {
-        #region 位置
-
+        // 位置
         [Tooltip("このギズモが指す位置")]
         [SerializeField] private Vector3 position;
 
         [Tooltip("設定すると、この Transform の位置を読み書きする。未設定なら値だけを持つ")]
         public Transform target;
 
-        #endregion
-
-        #region 軸
-
+        // 軸
         [Tooltip("軸の向きをどこから取るか")]
         [SerializeField] private GizmoAxisSpace axisSpace = GizmoAxisSpace.World;
-
-        [Tooltip("X 軸のハンドルを出す")]
         public bool showAxisX = true;
-
-        [Tooltip("Y 軸のハンドルを出す")]
         public bool showAxisY = true;
-
-        [Tooltip("Z 軸のハンドルを出す")]
         public bool showAxisZ = true;
-
         [Tooltip("Ctrl を押しながらのドラッグで丸める幅 [world]。0 以下でスナップ無効")]
         public float snapStep = 0.01f;
 
         private Quaternion _explicitRotation = Quaternion.identity;
         private Vector3 _positionAtDragStart;
 
-        #endregion
 
-        #region 公開プロパティ
+        #region Properties
 
         /// <summary>
         /// このギズモが指す位置。target を設定している場合はそちらと同期する。
@@ -109,6 +97,13 @@ namespace ToolRuntimeGizmos.Gizmo
         public override Vector3 Origin => position;
 
         /// <summary>
+        /// 軸ハンドルの長さ。
+        /// </summary>
+        public float AxisLength => Scale * Theme.toolAxisLengthRatio;
+
+        #endregion
+
+        /// <summary>
         /// 軸方向 (0 = X, 1 = Y, 2 = Z)。
         /// </summary>
         public Vector3 AxisDirection(int index)
@@ -136,14 +131,8 @@ namespace ToolRuntimeGizmos.Gizmo
             return showAxisZ;
         }
 
-        /// <summary>
-        /// 軸ハンドルの長さ。
-        /// </summary>
-        public float AxisLength => Scale * Theme.toolAxisLengthRatio;
 
-        #endregion
-
-        #region ライフサイクル
+        #region Lifecycle
 
         protected override void BuildHandles()
         {
@@ -177,8 +166,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region 描画
-
+        // 描画
         protected override void BuildBaseGeometry(GizmoMeshBuilder b)
         {
             Camera cam = Cam;
@@ -187,8 +175,6 @@ namespace ToolRuntimeGizmos.Gizmo
             GizmoTheme th = Theme;
             b.AddBillboardDisc(position, cam, PixelToWorld(th.originDotPixelRadius), th.zeroTickColor);
         }
-
-        #endregion
     }
 
     /// <summary>
@@ -235,7 +221,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
             Color col = (hover || active) ? th.highlightColor : _g.AxisColor(_axis);
 
-            b.AddArrow(_g.Position, Direction, _g.AxisLength, _g.EyePosition,
+            b.AddArrow(_g.Position, Direction, _g.AxisLength,
                        _g.PixelToWorld(th.toolAxisPixelWidth) * 0.5f,
                        _g.PixelToWorld(th.toolArrowHeadPixelRadius),
                        _g.PixelToWorld(th.arrowHeadPixelLength),

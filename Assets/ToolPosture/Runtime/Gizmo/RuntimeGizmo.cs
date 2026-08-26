@@ -52,55 +52,34 @@ namespace ToolRuntimeGizmos.Gizmo
     [ExecuteAlways]
     public abstract class RuntimeGizmo : MonoBehaviour
     {
-        #region プリセット
-
+        // プリセット
         [Tooltip("見た目と当たりの太さ")]
         [SerializeField] private GizmoTheme theme;
+        [Tooltip("未設定なら ToolPosture/GizmoVertexColor を探す")]
+        public Shader gizmoShader;
 
-        #endregion
-
-        #region 表示
-
+        // 表示
         [Tooltip("描画とレイ生成に使うカメラ。未設定なら Camera.main")]
         public Camera targetCamera;
-
         [Tooltip("targetCamera にだけ描く")]
         public bool restrictToTargetCamera = false;
-
         [Tooltip("コライダーの形を Gizmos で描く。Game View で見るには Gizmos の表示を有効にすること")]
         public ColliderGizmoMode colliderGizmo = ColliderGizmoMode.Off;
-
         [Tooltip("ドラッグ中は操作していないハンドルを隠す")]
         public bool hideOthersWhileDragging = true;
 
-        #endregion
-
-        #region 入力
-
+        // 入力
         [Tooltip("BuiltIn なら自前でポインタを読む。External ならレイを外から渡す")]
         public GizmoInputMode inputMode = GizmoInputMode.BuiltIn;
-
         [Tooltip("実行中にキーでハンドル表示を切り替える")]
         public bool useKeyboardShortcuts = true;
-
         [Tooltip("手前にある UI の上ではハンドルを掴めなくする。シーンのメッシュは遮らない。" +
                  "切るとハンドルが常に最優先になる。掴めない原因の切り分けに使う。" +
                  "External では元から見ていないので影響しない")]
         public bool yieldToUI = true;
 
-        #endregion
-
-        #region シェーダ
-
-        [Tooltip("未設定なら ToolPosture/GizmoVertexColor を探す")]
-        public Shader gizmoShader;
-
-        #endregion
-
-        #region 状態
-
+        // 状態
         protected readonly List<GizmoHandleBase> Handles = new List<GizmoHandleBase>();
-
         private readonly GizmoHandleColliders _colliders = new GizmoHandleColliders();
         private readonly GizmoMeshBuilder _builder = new GizmoMeshBuilder();
 
@@ -110,13 +89,13 @@ namespace ToolRuntimeGizmos.Gizmo
         private bool _pointerIsTouch;
         private IGizmoPointerSource _pointerSource;
 
+        // 描画資源
         private Mesh _mesh;
         private Material _matFront;
         private Material _matBehind;
 
-        #endregion
 
-        #region 公開プロパティ
+        #region Properties
 
         /// <summary>
         /// 見た目と当たりの太さ。未設定なら組み込み既定を返すので null にならない。
@@ -262,7 +241,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region 派生側が実装するもの
+        #region 派生側の実装点
 
         /// <summary>
         /// このギズモが持つハンドルを <see cref="Handles"/> へ並べる。
@@ -294,7 +273,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region ライフサイクル
+        #region Lifecycle
 
         protected virtual void OnEnable()
         {
@@ -382,7 +361,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region 入力
+        #region ポインタ入力
 
         private void HandlePointer()
         {
@@ -442,13 +421,9 @@ namespace ToolRuntimeGizmos.Gizmo
             // EventSystem へ問い合わせる必要すらない。
             bool hit = TryPick(ray.Value, out GizmoHandleId id, out Vector3 point, out float distance);
 
-            // 遮蔽を見るのは BuiltIn のときだけ。External では投影も入力もアプリが持っており、
-            // 渡されるスクリーン座標がこちらの画面上で何を指すかは分からない。
-            // 2D 重畳ビューではビューを映すパネル自身が距離 0 の Overlay UI として
-            // 常に手前に出るので、ここで判定すると永久に掴めなくなる (実測)。
             bool blocked = hit
                         && yieldToUI
-                        && inputMode == GizmoInputMode.BuiltIn
+                        && inputMode == GizmoInputMode.BuiltIn   // External の理由は上の説明を参照
                         && IsOccludedByUI(pointer.position, distance);
 
             // タッチにはホバー段階が無いので、押した瞬間の位置で拾い直す。
@@ -467,19 +442,19 @@ namespace ToolRuntimeGizmos.Gizmo
 
         /// <summary>
         /// ポインタの下で、ハンドルより手前に UI があるか。
-        ///
-        /// シーンのメッシュは遮らない。ギズモは手前に描いていて (隠れている部分も
-        /// occludedAlpha で見える)、見えているものは掴めるべきだからである。
-        /// 母材やロボットの上でハンドルが死ぬのは避ける。
-        ///
-        /// 遮るのは UI だけ。ボタンやパネルは操作面なので、その上でハンドルを
-        /// 掴めてしまう方がおかしい。ScreenSpaceOverlay は距離 0 を返すので常に手前、
-        /// WorldSpace / ScreenSpaceCamera は距離で比べる (ハンドルの奥にあるパネルは遮らない)。
-        ///
-        /// IsPointerOverGameObject は使えない。あれはスクリーン上で重なっているかしか
-        /// 見ておらず深度を考えない。しかもカメラに PhysicsRaycaster が付いていると
-        /// UI でない普通のメッシュまで true を返す (実測)。
         /// </summary>
+        /// <remarks>
+        /// 遮るのは UI だけで、シーンのメッシュは遮らない。ギズモは手前に描いていて
+        /// (隠れている部分も occludedAlpha で見える) 見えているものは掴めるべきであり、
+        /// 一方でボタンやパネルは操作面なのでその上で掴めてしまう方がおかしい、という線引き。
+        ///
+        /// ScreenSpaceOverlay は距離 0 を返すので常に手前になり、
+        /// WorldSpace / ScreenSpaceCamera は距離で比べる (奥にあるパネルは遮らない)。
+        ///
+        /// IsPointerOverGameObject は使えない。スクリーン上で重なっているかしか見ておらず
+        /// 深度を考えないうえ、カメラに PhysicsRaycaster が付いていると UI でない
+        /// 普通のメッシュにまで true を返す (実測)。
+        /// </remarks>
         private bool IsOccludedByUI(Vector2 screenPosition, float handleDistance)
         {
             EventSystem es = EventSystem.current;
@@ -560,7 +535,7 @@ namespace ToolRuntimeGizmos.Gizmo
         public bool BeginDrag(GizmoHandleId id, Ray ray)
         {
             GizmoHandleBase h = FindHandle(id);
-            return h != null && BeginDragInternal(h, ray, h.GetShape().Center);
+            return h != null && BeginDrag(id, ray, h.GetShape().Center);
         }
 
         /// <summary>
@@ -569,12 +544,7 @@ namespace ToolRuntimeGizmos.Gizmo
         public bool BeginDrag(GizmoHandleId id, Ray ray, Vector3 grabPoint)
         {
             GizmoHandleBase h = FindHandle(id);
-            return h != null && BeginDragInternal(h, ray, grabPoint);
-        }
-
-        private bool BeginDragInternal(GizmoHandleBase h, Ray ray, Vector3 grabPoint)
-        {
-            if (!h.Visible) return false;
+            if (h == null || !h.Visible) return false;
 
             Active = h;
             OnDragBegan(h);
@@ -595,32 +565,25 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// ドラッグを確定して終了する。
         /// </summary>
-        public void EndDrag()
-        {
-            if (_active == null) return;
-
-            GizmoHandleBase h = _active;
-            h.EndDrag();
-
-            // 解除してから知らせる。ハンドラの中で値を書き戻せるようにするため。
-            Active = null;
-            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Committed);
-        }
+        public void EndDrag() => Finish(GizmoDragResult.Committed);
 
         /// <summary>
         /// ドラッグを取り消して開始時の値へ戻す。
         /// </summary>
-        public void CancelDrag()
+        public void CancelDrag() => Finish(GizmoDragResult.Cancelled);
+
+        private void Finish(GizmoDragResult result)
         {
             if (_active == null) return;
 
             GizmoHandleBase h = _active;
             h.EndDrag();
-            Active = null;
 
-            // 値を戻してから知らせる。購読側が見るのは戻した後の値。
-            OnDragCancelled(h);
-            DragEnded?.Invoke(this, h.Id, GizmoDragResult.Cancelled);
+            // 知らせる前に解除しておく。購読側がハンドラの中で値を書き戻せるようにするため。
+            Active = null;
+            if (result == GizmoDragResult.Cancelled) OnDragCancelled(h);
+
+            DragEnded?.Invoke(this, h.Id, result);
         }
 
         /// <summary>
@@ -632,7 +595,8 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// ホバー判定をレイから行う。
         /// </summary>
-        public void UpdateHover(Ray ray) => _hovered = PickHandle(ray);
+        public void UpdateHover(Ray ray)
+            => _hovered = TryPick(ray, out GizmoHandleId id, out _, out _) ? FindHandle(id) : null;
 
         protected GizmoHandleBase FindHandle(GizmoHandleId id)
         {
@@ -640,9 +604,6 @@ namespace ToolRuntimeGizmos.Gizmo
                 if (h.Id == id) return h;
             return null;
         }
-
-        private GizmoHandleBase PickHandle(Ray ray)
-            => _colliders.TryPick(ray, Mathf.Infinity, out GizmoHandleBase h, out _, out _) ? h : null;
 
         #endregion
 

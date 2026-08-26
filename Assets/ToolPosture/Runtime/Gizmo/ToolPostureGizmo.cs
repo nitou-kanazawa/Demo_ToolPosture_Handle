@@ -19,50 +19,36 @@ namespace ToolRuntimeGizmos.Gizmo
     [AddComponentMenu("Tool Posture/Tool Posture Gizmo")]
     public class ToolPostureGizmo : RuntimeGizmo
     {
-        #region プリセット
-
+        // プリセット
         [Tooltip("角度規約と可動範囲")]
         [SerializeField] private ToolPostureProfile profile;
-
-        #endregion
-
-        #region 姿勢
-
+        
+        // 姿勢
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
-
         [Tooltip("設定すると、フレームの向きはそのままに原点だけこの Transform に合わせる。" +
                  "姿勢の基準は経路から、位置は工具側から、と供給元が分かれている場合に使う")]
         public Transform originSource;
 
-        #endregion
-
-        #region ハンドル表示
-
+        // ハンドル表示
         [Tooltip("傾斜角 alpha の円弧。N と工具軸が張る平面に乗る")]
         public bool showTiltArc = true;
-
         [Tooltip("旋回角 theta のリング。LM 平面 (母材面) に乗る")]
         public bool showAzimuthRing = true;
-
         public bool showAxisTip = true;
         public bool showSpinRing = true;
-
         [Tooltip("LMN フレームの矢印を描く")]
         public bool showFrameAxes = true;
 
-        #endregion
-
-        #region 状態
-
+        // 状態
         private PathFrame _frame;
         private ToolPostureAngles _anglesAtDragStart;
 
-        #endregion
 
-        #region 公開プロパティ
+        #region Properties
 
         /// <summary>
-        /// 角度規約と可動範囲。未設定なら組み込み既定を返すので null にならない。
+        /// 角度規約と可動範囲。
+        /// 未設定なら組み込み既定を返すので null にはならない。
         /// </summary>
         public ToolPostureProfile Profile
         {
@@ -72,11 +58,12 @@ namespace ToolRuntimeGizmos.Gizmo
 
         /// <summary>
         /// 工具姿勢が乗る LMN フレーム。
-        ///
+        /// </summary>
+        /// <remarks>
         /// このコンポーネントはフレームを計算しない。経路から補間する、カメラの外部パラ
         /// から求める、固定値を使う、いずれの場合も求めた結果をここへ代入する。
         /// 代入が無い間は transform の位置に置いたフォールバックを使う。
-        /// </summary>
+        /// </remarks>
         public PathFrame Frame
         {
             get
@@ -178,7 +165,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region ライフサイクル
+        #region Lifecycle
 
         protected override void BuildHandles()
         {
@@ -223,7 +210,6 @@ namespace ToolRuntimeGizmos.Gizmo
 
         #endregion
 
-        #region 姿勢を直接与える
 
         /// <summary>
         /// 角度を直接与える。値は AngleConvention を通した表示値。
@@ -267,10 +253,7 @@ namespace ToolRuntimeGizmos.Gizmo
             Angles = a;
         }
 
-        #endregion
-
-        #region 描画
-
+        // 描画
         protected override void BuildBaseGeometry(GizmoMeshBuilder b)
         {
             Camera cam = Cam;
@@ -278,7 +261,6 @@ namespace ToolRuntimeGizmos.Gizmo
 
             GizmoTheme th = Theme;
             Vector3 o = _frame.Origin;
-            Vector3 camPos = EyePosition;
             float s = Scale;
 
             float lineHalf = PixelToWorld(th.frameAxisPixelWidth) * 0.5f;
@@ -287,23 +269,21 @@ namespace ToolRuntimeGizmos.Gizmo
 
             if (showFrameAxes)
             {
-                b.AddArrow(o, _frame.CrossFeed, s * th.crossFeedAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.CrossFeed, s * th.crossFeedAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorL);
-                b.AddArrow(o, _frame.Feed, s * th.frameAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.Feed, s * th.frameAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorM);
-                b.AddArrow(o, _frame.Normal, s * th.frameAxisLengthRatio, camPos,
+                b.AddArrow(o, _frame.Normal, s * th.frameAxisLengthRatio,
                            lineHalf, headR, headL, th.frameColorN);
             }
 
             // 工具軸 X は常に描く (軸先端ハンドルの表示に依存しない)
             Vector3 axis = angles.GetAxisWorld(_frame);
-            b.AddArrow(o, axis, s * th.toolAxisLengthRatio, camPos,
+            b.AddArrow(o, axis, s * th.toolAxisLengthRatio,
                        PixelToWorld(th.toolAxisPixelWidth) * 0.5f,
                        PixelToWorld(th.toolArrowHeadPixelRadius), headL, th.axisColor);
 
             b.AddBillboardDisc(o, cam, PixelToWorld(th.originDotPixelRadius), th.zeroTickColor);
         }
-
-        #endregion
     }
 }

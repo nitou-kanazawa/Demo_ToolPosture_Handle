@@ -54,7 +54,8 @@ namespace ToolRuntimeGizmos.Tool
             View2D = 1,
         }
 
-        #region 設定
+
+        // 設定 (インスペクタ)
 
         [SerializeField] private ToolPositionGizmo positionGizmo;
         [SerializeField] private ToolPostureGizmo postureGizmo;
@@ -85,34 +86,37 @@ namespace ToolRuntimeGizmos.Tool
         private ViewMode _appliedView;
         private bool _warnedNoRay;
 
-        #endregion
 
-        #region 3 つのつまみ
 
-        /// <summary>どちらのハンドルを出すか。</summary>
-        public HandleMode Mode
-        {
-            get => mode;
-            set { mode = value; Apply(); }
-        }
-
-        /// <summary>ギズモを出すかどうか。false でどちらも消える。</summary>
+        /// <summary>
+        /// ギズモを出すかどうか。false でどちらも消える。
+        /// </summary>
         public bool Visible
         {
             get => active;
             set { active = value; Apply(); }
         }
 
-        /// <summary>3D ビューから触るか、2D 重畳ビューから触るか。</summary>
+        /// <summary>
+        /// どちらのハンドルを出すか。
+        /// </summary>
+        public HandleMode Mode
+        {
+            get => mode;
+            set { mode = value; Apply(); }
+        }
+
+        /// <summary>
+        /// 3D ビューから触るか、2D 重畳ビューから触るか。
+        /// </summary>
         public ViewMode View
         {
             get => view;
             set { view = value; Apply(); }
         }
 
-        #endregion
 
-        #region 状態
+        // 状態
 
         /// <summary>今出ているギズモ。Visible が false でも「どちらか」は返す。</summary>
         public RuntimeGizmo Current
@@ -121,7 +125,6 @@ namespace ToolRuntimeGizmos.Tool
         /// <summary>何かを掴んで動かしている間 true。カメラ操作を止めるのに使う。</summary>
         public bool IsDragging => Visible && Current != null && Current.IsDragging;
 
-        #endregion
 
         #region 姿勢の受け渡し
 
@@ -235,41 +238,43 @@ namespace ToolRuntimeGizmos.Tool
 
         private void Subscribe(bool on)
         {
+            // 値の変化イベントはギズモごとに型が違うのでここで個別に、
+            // ドラッグの開始と終了は RuntimeGizmo 共通なのでまとめて扱う。
             if (positionGizmo != null)
             {
-                if (on)
-                {
-                    positionGizmo.PositionChanged += OnPositionChanged;
-                    positionGizmo.DragBegan += OnDragBegan;
-                    positionGizmo.DragEnded += OnDragEnded;
-                }
-                else
-                {
-                    positionGizmo.PositionChanged -= OnPositionChanged;
-                    positionGizmo.DragBegan -= OnDragBegan;
-                    positionGizmo.DragEnded -= OnDragEnded;
-                }
+                if (on) positionGizmo.PositionChanged += OnPositionChanged;
+                else positionGizmo.PositionChanged -= OnPositionChanged;
             }
 
-            if (postureGizmo == null) return;
+            if (postureGizmo != null)
+            {
+                if (on) postureGizmo.PostureChanged += OnPostureChanged;
+                else postureGizmo.PostureChanged -= OnPostureChanged;
+            }
+
+            SubscribeDrag(positionGizmo, on);
+            SubscribeDrag(postureGizmo, on);
+        }
+
+        private void SubscribeDrag(RuntimeGizmo gizmo, bool on)
+        {
+            if (gizmo == null) return;
 
             if (on)
             {
-                postureGizmo.PostureChanged += OnPostureChanged;
-                postureGizmo.DragBegan += OnDragBegan;
-                postureGizmo.DragEnded += OnDragEnded;
+                gizmo.DragBegan += OnDragBegan;
+                gizmo.DragEnded += OnDragEnded;
             }
             else
             {
-                postureGizmo.PostureChanged -= OnPostureChanged;
-                postureGizmo.DragBegan -= OnDragBegan;
-                postureGizmo.DragEnded -= OnDragEnded;
+                gizmo.DragBegan -= OnDragBegan;
+                gizmo.DragEnded -= OnDragEnded;
             }
         }
 
         #endregion
 
-        #region ライフサイクル
+        #region Lifecycle
 
         private void OnEnable()
         {
@@ -293,7 +298,7 @@ namespace ToolRuntimeGizmos.Tool
 
         #endregion
 
-        #region 切り替え
+        #region モード切り替え
 
         private void Apply()
         {
