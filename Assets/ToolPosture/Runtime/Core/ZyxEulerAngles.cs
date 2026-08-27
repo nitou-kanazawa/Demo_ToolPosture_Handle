@@ -145,7 +145,31 @@ namespace ToolRuntimeGizmos.Core
         public static ZyxEulerAngles FromToolAxis(Vector3 axis, float spinDeg,
                                                   Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
                                                   Vector3 spinZeroReference)
-            => FromMatrix(BuildMatrix(axis, spinDeg, toolShaftAxis, toolReferenceAxis, spinZeroReference));
+        {
+            Vector3 zero = Orthogonalize(spinZeroReference, axis);
+            float rad = spinDeg * Mathf.Deg2Rad;
+            Vector3 reference = zero * Mathf.Cos(rad)
+                              + Vector3.Cross(axis.normalized, zero) * Mathf.Sin(rad);
+
+            return FromToolAxes(axis, reference, toolShaftAxis, toolReferenceAxis);
+        }
+
+        /// <summary>
+        /// 工具軸と、スピンを適用したあとの基準方向から組み立てる。
+        /// </summary>
+        /// <remarks>
+        /// 2 本のベクトルで姿勢が決まるので、スピンをスカラーで渡す版と違い
+        /// spinZeroReference の規約が要らない。座標系をまたぐときはこちらが一番安全で、
+        /// ベクトルを軸の対応で入れ替えるだけで済む (符号の反転も要らない)。
+        ///
+        /// toolShaftAxis / toolReferenceAxis はこの座標系の規約で与えること。
+        /// Unity の規約のまま渡すとちょうど 180 度ずれる。
+        /// </remarks>
+        /// <param name="axis">工具軸。<paramref name="toolShaftAxis"/> が向く方向。</param>
+        /// <param name="reference"><paramref name="toolReferenceAxis"/> が向く方向。軸に直交していること。</param>
+        public static ZyxEulerAngles FromToolAxes(Vector3 axis, Vector3 reference,
+                                                  Vector3 toolShaftAxis, Vector3 toolReferenceAxis)
+            => FromMatrix(BuildMatrix(axis, reference, toolShaftAxis, toolReferenceAxis));
 
         /// <summary>
         /// 工具軸ベクトルと、その軸まわりの回転量へ分解する。<see cref="FromToolAxis"/> の逆。
@@ -164,16 +188,11 @@ namespace ToolRuntimeGizmos.Core
                                   Vector3.Dot(zero, u)) * Mathf.Rad2Deg;
         }
 
-        private static Matrix4x4 BuildMatrix(Vector3 axis, float spinDeg,
-                                             Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
-                                             Vector3 spinZeroReference)
+        private static Matrix4x4 BuildMatrix(Vector3 axis, Vector3 reference,
+                                             Vector3 toolShaftAxis, Vector3 toolReferenceAxis)
         {
             Vector3 x = axis.normalized;
-            Vector3 zero = Orthogonalize(spinZeroReference, x);
-
-            // 右ねじで spinDeg 回す (軸に直交しているので Rodrigues の第 3 項は消える)
-            float rad = spinDeg * Mathf.Deg2Rad;
-            Vector3 u = zero * Mathf.Cos(rad) + Vector3.Cross(x, zero) * Mathf.Sin(rad);
+            Vector3 u = Orthogonalize(reference, x);
 
             Vector3 s1 = toolShaftAxis.normalized;
             Vector3 s2 = Orthogonalize(toolReferenceAxis, s1);
