@@ -25,11 +25,19 @@ namespace ToolRuntimeGizmos.Demo
         // 参照
         [SerializeField] private ToolPoseHandle handle;
 
-        // 擬似 IK の設定
-        [Tooltip("この点から届く範囲を可動域とみなす。実アプリでは本物の IK に差し替える")]
+        // 擬似 IK の設定 (実アプリでは本物の IK に差し替える)
+        [Tooltip("この点から届く範囲を可動域とみなす")]
         public Transform reachCenter;
-        [Tooltip("可動域の半径 [m]")]
+        [Tooltip("可動域の半径 [m]。併進を制限する")]
         public float reachRadius = 0.35f;
+
+        [Tooltip("工具軸がこの向きから離れられる角度 [deg]。手首の可動限界を模し、回転を制限する。" +
+                 "0 以下で制限なし")]
+        public float maxAxisTiltDeg = 30f;
+        [Tooltip("工具軸の基準向き。未設定なら開始時の工具軸を使う")]
+        public Transform axisReference;
+
+        private Vector3 _axisAtStart;
 
         /// <summary>Unity とロボットの座標系の対応。</summary>
         public HandednessConversion Conversion = HandednessConversion.SwapYZ;
@@ -47,6 +55,20 @@ namespace ToolRuntimeGizmos.Demo
         private void Awake()
         {
             if (handle == null) handle = FindAnyObjectByType<ToolPoseHandle>();
+        }
+
+        /// <summary>
+        /// 工具軸の基準向き。Awake ではまだフレームが供給されておらずフォールバックの軸しか
+        /// 取れないので、最初に必要になった時点で覚える。
+        /// </summary>
+        private Vector3 AxisReference
+        {
+            get
+            {
+                if (axisReference != null) return axisReference.up;
+                if (_axisAtStart == Vector3.zero) _axisAtStart = handle.ToolAxisWorld;
+                return _axisAtStart;
+            }
         }
 
         private void OnEnable()
@@ -151,13 +173,24 @@ namespace ToolRuntimeGizmos.Demo
 
         /// <summary>
         /// 実アプリではここを本物の IK にする。届かない姿勢では false を返す。
+        ///
+        /// ここでは 2 つの制限を模している。位置は可動域の球、姿勢は工具軸の円錐。
+        /// 位置だけを見ていると、回転ドラッグでは判定が動かず必ず成功してしまい、
+        /// 姿勢側のスナップバックを確かめられない。
         /// </summary>
         private bool TrySolve(Vector3 tcpExternal, ZyxEulerAngles rpy)
         {
-            if (reachCenter == null) return true;
+            if (reachCenter != null)
+            {
+                Vector3 center = Conversion.ToExternal(reachCenter.position);
+                if (Vector3.Distance(tcpExternal, center) > reachRadius) return false;
+            }
 
-            Vector3 center = Conversion.ToExternal(reachCenter.position);
-            return Vector3.Distance(tcpExternal, center) <= reachRadius;
+            if (maxAxisTiltDeg > 0f
+                && Vector3.Angle(handle.ToolAxisWorld, AxisReference) > maxAxisTiltDeg)
+                return false;
+
+            return true;
         }
 
         /// <summary>実アプリでは解いた関節角をロボットへ送る。</summary>
