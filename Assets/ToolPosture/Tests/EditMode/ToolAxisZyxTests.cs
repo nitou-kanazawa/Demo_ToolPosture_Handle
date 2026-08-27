@@ -114,6 +114,44 @@ namespace ToolRuntimeGizmos.Tests
         }
 
         [Test]
+        public void ベクトル二本の経路はクォータニオン経路と一致する()
+        {
+            var conv = HandednessConversion.SwapYZ;
+
+            for (int i = 0; i < 64; i++)
+            {
+                Quaternion qUnity = Random.rotation;
+
+                // 工具軸と基準方向。どちらもベクトルなので入れ替えるだけで移る
+                ZyxEulerAngles viaVectors = ZyxEulerAngles.FromToolAxes(
+                    conv.ToExternal((qUnity * Shaft).normalized),
+                    conv.ToExternal((qUnity * Reference).normalized),
+                    conv.ToExternal(Shaft), conv.ToExternal(Reference));
+
+                ZyxEulerAngles viaQuaternion = ZyxEulerAngles.FromRotation(conv.ToExternal(qUnity));
+
+                Assert.Less(Quaternion.Angle(viaVectors.ToRotation(), viaQuaternion.ToRotation()), 0.1f);
+            }
+        }
+
+        [TestCase(89f)]
+        [TestCase(89.99f)]
+        [TestCase(90f)]
+        [TestCase(90.5f)]
+        public void ロック帯でもベクトル二本なら姿勢が保たれる(float pitch)
+        {
+            var truth = new ZyxEulerAngles(40f, pitch, 25f);
+            Matrix4x4 m = Matrix4x4.Rotate(truth.ToRotation());
+
+            ZyxEulerAngles rebuilt = ZyxEulerAngles.FromToolAxes(
+                m.MultiplyVector(Shaft).normalized, m.MultiplyVector(Reference).normalized,
+                Shaft, Reference);
+
+            // z と x の分け方は変わってよいが、姿勢そのものは一致すること
+            Assert.Less(Quaternion.Angle(rebuilt.ToRotation(), truth.ToRotation()), 0.1f);
+        }
+
+        [Test]
         public void ジンバルロックでも工具軸は連続に取り出せる()
         {
             // ZYX が壊れる姿勢 (ピッチ +90) を作る

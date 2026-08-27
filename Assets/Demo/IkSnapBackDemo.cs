@@ -85,7 +85,7 @@ namespace ToolRuntimeGizmos.Demo
         {
             // ハンドルの値が変わっただけで、ロボットはまだ動いていない
             Vector3 tcp = Conversion.ToExternal(e.Pose.Position);
-            ZyxEulerAngles rpy = ZyxEulerAngles.FromRotation(Conversion.ToExternal(handle.WorldRotation));
+            ZyxEulerAngles rpy = ToRobotZyx();
 
             if (!TrySolve(tcp, rpy))
             {
@@ -124,6 +124,28 @@ namespace ToolRuntimeGizmos.Demo
         }
 
         #endregion
+
+        /// <summary>
+        /// 今の姿勢をロボット系の ZYX オイラーで返す。
+        ///
+        /// クォータニオンを座標変換せず、工具軸と基準方向の 2 本のベクトルで渡す。
+        /// ベクトルは軸の対応で入れ替えるだけで移るので、符号の取り違えが起きない。
+        /// (クォータニオンは成分を入れ替えるだけだと全く別の回転になる)
+        ///
+        /// 工具のローカル軸割当も同じ座標系の規約に揃えること。忘れると 180 度ずれる。
+        /// </summary>
+        private ZyxEulerAngles ToRobotZyx()
+        {
+            ToolPostureFollower f = handle.Follower;
+            Vector3 shaft = f != null ? f.shaftAxis : Vector3.up;
+            Vector3 reference = f != null ? f.referenceAxis : Vector3.forward;
+
+            return ZyxEulerAngles.FromToolAxes(
+                Conversion.ToExternal(handle.ToolAxisWorld),
+                Conversion.ToExternal(handle.ToolReferenceWorld),
+                Conversion.ToExternal(shaft),
+                Conversion.ToExternal(reference));
+        }
 
         #region 差し替える部分 (擬似 IK)
 

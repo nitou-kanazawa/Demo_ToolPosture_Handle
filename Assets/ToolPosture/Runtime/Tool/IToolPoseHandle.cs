@@ -39,8 +39,24 @@ namespace ToolRuntimeGizmos.Tool
         /// <summary>
         /// 工具の世界回転。ロボットとの受け渡しに使う。
         /// 軸の割当は <see cref="ToolPostureFollower"/> が持つ。
+        ///
+        /// 座標系をまたぐ場合は、これを変換するより
+        /// <see cref="ToolAxisWorld"/> と <see cref="ToolReferenceWorld"/> を渡す方が安全。
+        /// クォータニオンは成分を入れ替えるだけでは別の回転になるが、
+        /// ベクトルは軸の対応で入れ替えるだけで済む。
         /// </summary>
         Quaternion WorldRotation { get; }
+
+        /// <summary>
+        /// 工具軸のワールド方向。<see cref="ToolPostureFollower.shaftAxis"/> が向く先。
+        /// </summary>
+        Vector3 ToolAxisWorld { get; }
+
+        /// <summary>
+        /// スピンを適用したあとの工具基準方向。工具軸に直交する。
+        /// <see cref="ToolPostureFollower.referenceAxis"/> が向く先。
+        /// </summary>
+        Vector3 ToolReferenceWorld { get; }
 
         /// <summary>
         /// 世界回転を与えて姿勢を逆算する。

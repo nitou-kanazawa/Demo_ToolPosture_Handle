@@ -149,7 +149,10 @@ namespace ToolRuntimeGizmos.Tool
         private bool _applying;
         private bool _warnedNoFollower;
 
-        private ToolPostureFollower Follower
+        /// <summary>
+        /// 世界回転の軸割当。工具のローカル軸を知りたい利用側にも見せる。
+        /// </summary>
+        public ToolPostureFollower Follower
             => follower != null ? follower : (follower = FindAnyObjectByType<ToolPostureFollower>());
 
         /// <summary>
@@ -169,6 +172,21 @@ namespace ToolRuntimeGizmos.Tool
                 return f != null ? f.Rotation : Quaternion.identity;
             }
         }
+
+        /// <summary>
+        /// 工具軸のワールド方向。クォータニオンを経由しないので、座標系をまたぐ受け渡しに使える。
+        /// </summary>
+        public Vector3 ToolAxisWorld
+            => postureGizmo != null ? postureGizmo.ToolAxisWorld : Vector3.up;
+
+        /// <summary>
+        /// スピン適用後の工具基準方向 (工具軸に直交)。これも同じくベクトルのまま渡せる。
+        /// </summary>
+        public Vector3 ToolReferenceWorld
+            => postureGizmo != null
+                ? postureGizmo.Angles.GetToolReferenceWorld(postureGizmo.Frame,
+                                                            postureGizmo.Profile.spinReference)
+                : Vector3.forward;
 
         /// <summary>
         /// 姿勢を与える。フレームと角度を同時に差し替えるので中間状態を作らない。
