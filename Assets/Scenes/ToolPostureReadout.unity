@@ -148,12 +148,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caeab61cdd200bd4094f62ca6fcf7d15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ToolRuntimeGizmos.Runtime::ToolRuntimeGizmos.Gizmo.ToolPositionGizmo
-  theme: {fileID: 0}
+  theme: {fileID: 11400000, guid: d0aea8cbbbf442a4ab9abdf896c962a7, type: 2}
   gizmoShader: {fileID: 0}
   targetCamera: {fileID: 158694776}
   restrictToTargetCamera: 0
   colliderGizmo: 0
   hideOthersWhileDragging: 1
+  sizeScale: 1
   inputMode: 0
   useKeyboardShortcuts: 1
   yieldToUI: 1
@@ -759,6 +760,7 @@ MonoBehaviour:
   restrictToTargetCamera: 0
   colliderGizmo: 0
   hideOthersWhileDragging: 1
+  sizeScale: 1
   inputMode: 0
   useKeyboardShortcuts: 1
   yieldToUI: 1
@@ -1251,6 +1253,7 @@ MonoBehaviour:
   mode: 0
   active: 1
   view: 0
+  sizeScale: 1
   rayProvider: {fileID: 0}
 --- !u!4 &1911305944
 Transform:

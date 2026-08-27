@@ -67,6 +67,9 @@ namespace ToolRuntimeGizmos.Tool
         [SerializeField] private bool active = true;
         [SerializeField] private ViewMode view = ViewMode.View3D;
 
+        [Tooltip("ハンドル全体の倍率。2D ビューの拡大率に合わせるなど、見せ方に応じて動かす")]
+        [SerializeField] private float sizeScale = 1f;
+
         [Tooltip("2D のとき使う「画面座標 → ワールドのレイ」。IGizmoRayProvider を実装したコンポーネント。" +
                  "コードから差す場合は ScreenToRay を使う (そちらが優先)")]
         [SerializeField] private MonoBehaviour rayProvider;
@@ -84,6 +87,7 @@ namespace ToolRuntimeGizmos.Tool
         private HandleMode _appliedMode;
         private bool _appliedActive;
         private ViewMode _appliedView;
+        private float _appliedSizeScale;
         private bool _warnedNoRay;
 
 
@@ -113,6 +117,15 @@ namespace ToolRuntimeGizmos.Tool
         {
             get => view;
             set { view = value; Apply(); }
+        }
+
+        /// <summary>
+        /// ハンドル全体の倍率。2 つのギズモへまとめて当てる。
+        /// </summary>
+        public float SizeScale
+        {
+            get => sizeScale;
+            set { sizeScale = value; Apply(); }
         }
 
 
@@ -291,7 +304,8 @@ namespace ToolRuntimeGizmos.Tool
         private void Update()
         {
             // インスペクタでの直接編集に追従する。プロパティ経由なら空振りする。
-            if (mode != _appliedMode || active != _appliedActive || view != _appliedView) Apply();
+            if (mode != _appliedMode || active != _appliedActive || view != _appliedView
+                || !Mathf.Approximately(sizeScale, _appliedSizeScale)) Apply();
 
             if (active && view == ViewMode.View2D) DriveFrom2D();
         }
@@ -305,6 +319,7 @@ namespace ToolRuntimeGizmos.Tool
             _appliedMode = mode;
             _appliedActive = active;
             _appliedView = view;
+            _appliedSizeScale = sizeScale;
 
             Setup(positionGizmo, active && mode == HandleMode.Position);
             Setup(postureGizmo, active && mode == HandleMode.Posture);
@@ -318,6 +333,7 @@ namespace ToolRuntimeGizmos.Tool
             if (!on && gizmo.IsDragging) gizmo.CancelDrag();
 
             gizmo.inputMode = view == ViewMode.View2D ? GizmoInputMode.External : GizmoInputMode.BuiltIn;
+            gizmo.sizeScale = sizeScale;
             gizmo.enabled = on;
             if (!on) gizmo.SetHover(null);
         }
