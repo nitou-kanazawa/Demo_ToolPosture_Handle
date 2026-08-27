@@ -68,6 +68,36 @@ namespace ToolRuntimeGizmos.Demo
             return true;
         }
 
+        /// <summary>
+        /// 今のハンドルの姿勢をロボット座標系で取り出す。<see cref="ApplyFromRobot"/> の対。
+        /// </summary>
+        /// <remarks>
+        /// クォータニオンを座標変換せず、工具軸と基準方向の 2 本のベクトルで渡す。
+        /// ベクトルは軸の対応で入れ替えるだけで移るので符号の取り違えが起きない
+        /// (クォータニオンは成分を入れ替えるだけだと全く別の回転になる)。
+        ///
+        /// 工具のローカル軸割当も同じ座標系の規約に揃えること。忘れると 180 度ずれる。
+        ///
+        /// ZYX はピッチ ±90 度で z と x が分離できず値が飛ぶ。姿勢そのものは正しいが、
+        /// 数値の連続性が要る用途では <see cref="GetLocal"/> の方を併用すること。
+        /// </remarks>
+        /// <param name="tcpRobot">工具位置 (ロボット座標)。</param>
+        /// <param name="rpyRobot">工具姿勢の ZYX オイラー (ロボット座標)。</param>
+        public void GetRobotPose(out Vector3 tcpRobot, out ZyxEulerAngles rpyRobot)
+        {
+            tcpRobot = Conversion.ToExternal(handle.Pose.Position);
+
+            ToolPostureFollower f = handle.Follower;
+            Vector3 shaft = f != null ? f.shaftAxis : Vector3.up;
+            Vector3 reference = f != null ? f.referenceAxis : Vector3.forward;
+
+            rpyRobot = ZyxEulerAngles.FromToolAxes(
+                Conversion.ToExternal(handle.ToolAxisWorld),
+                Conversion.ToExternal(handle.ToolReferenceWorld),
+                Conversion.ToExternal(shaft),
+                Conversion.ToExternal(reference));
+        }
+
         #endregion
 
         #region 2. ハンドルから LMN とトーチ姿勢を取得
