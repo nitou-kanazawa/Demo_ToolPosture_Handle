@@ -54,6 +54,14 @@ namespace ToolRuntimeGizmos.Tool
         bool Visible { get; set; }
 
         /// <summary>
+        /// ハンドル全体の倍率。大きさだけでなく線の太さや当たり判定にも一様に効く。
+        ///
+        /// 2D 重畳ビューの拡大率に合わせるなど、見せ方に応じて動かす。見た目のプリセットは
+        /// 共有アセットなので実行中に書き換えず、こちらを使うこと。
+        /// </summary>
+        float SizeScale { get; set; }
+
+        /// <summary>
         /// レイがハンドルに当たるか。当たった点までの距離も返す。
         ///
         /// ハンドルのコライダーは Ignore Raycast レイヤーに居て

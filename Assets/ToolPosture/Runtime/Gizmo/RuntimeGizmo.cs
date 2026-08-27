@@ -68,6 +68,11 @@ namespace ToolRuntimeGizmos.Gizmo
         [Tooltip("ドラッグ中は操作していないハンドルを隠す")]
         public bool hideOthersWhileDragging = true;
 
+        [Tooltip("ギズモ全体の倍率。大きさだけでなく線の太さや当たり判定にも一様に効く。" +
+                 "2D 重畳ビューの拡大率に合わせるなど、インスタンスごとに変えたいときに使う。" +
+                 "テーマは共有アセットなので、実行中に書き換えず こちらを動かすこと")]
+        public float sizeScale = 1f;
+
         // 入力
         [Tooltip("BuiltIn なら自前でポインタを読む。External ならレイを外から渡す")]
         public GizmoInputMode inputMode = GizmoInputMode.BuiltIn;
@@ -162,12 +167,21 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// ギズモのワールド上の大きさ。画面上で Theme.gizmoPixelSize [px] になるよう保つ。
         /// </summary>
-        public float Scale => Mathf.Max(1e-4f, Theme.gizmoPixelSize * WorldPerPixel(Cam, Origin));
+        public float Scale => Mathf.Max(1e-4f, Theme.gizmoPixelSize * PixelScale);
+
+        /// <summary>
+        /// ギズモ原点における 1 px 分のワールド長。<see cref="sizeScale"/> を掛けたもの。
+        ///
+        /// テーマの寸法はすべてここを通るので、この値を変えると大きさ・太さ・当たり判定が
+        /// 一様に変わる。テーマ側の gizmoPixelSize を変えると全体の大きさだけが変わり、
+        /// 線の太さは据え置かれるので比率が変わる点が違う。
+        /// </summary>
+        public float PixelScale => Mathf.Max(1e-4f, sizeScale) * WorldPerPixel(Cam, Origin);
 
         /// <summary>
         /// ギズモ原点における px からワールド長への換算。
         /// </summary>
-        public float PixelToWorld(float pixels) => pixels * WorldPerPixel(Cam, Origin);
+        public float PixelToWorld(float pixels) => pixels * PixelScale;
 
         /// <summary>
         /// ポインタ入力の供給元。既定はデバイス直読み。
