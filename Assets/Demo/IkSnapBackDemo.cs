@@ -1,0 +1,156 @@
+using UnityEngine;
+using ToolRuntimeGizmos.Core;
+using ToolRuntimeGizmos.Tool;
+
+namespace ToolRuntimeGizmos.Demo
+{
+    /// <summary>
+    /// ハンドルの動きを毎フレーム IK に流し、成功したときだけロボットを更新する。
+    /// ドラッグが終わったら、最後に成功した姿勢へハンドルを戻す。
+    ///
+    /// アプリ側に書くことになるコードの雛形。IK の中身だけ差し替えれば使える。
+    /// </summary>
+    /// <remarks>
+    /// ドラッグ中は書き戻さない。ドラッグは掴んだ瞬間の基準から毎回引き直すので、
+    /// 途中で値を戻すと次のフレームの再計算と殴り合う。SetPose はドラッグ外専用で、
+    /// 戻した値がそのまま次の IK を呼ぶループを避けるためイベントを発火しない。
+    ///
+    /// 併進と回転で戻し方が違う。併進では位置とフレームを戻す。このとき工具の世界姿勢は
+    /// フレームと一緒に回るが、溶接角は継目基準であるべきなのでそれが正しい。
+    /// 回転では姿勢だけを戻す。
+    /// </remarks>
+    [AddComponentMenu("Tool Posture/IK Snap Back Demo")]
+    public class IkSnapBackDemo : MonoBehaviour
+    {
+        // 参照
+        [SerializeField] private ToolPoseHandle handle;
+
+        // 擬似 IK の設定
+        [Tooltip("この点から届く範囲を可動域とみなす。実アプリでは本物の IK に差し替える")]
+        public Transform reachCenter;
+        [Tooltip("可動域の半径 [m]")]
+        public float reachRadius = 0.35f;
+
+        /// <summary>Unity とロボットの座標系の対応。</summary>
+        public HandednessConversion Conversion = HandednessConversion.SwapYZ;
+
+        /// <summary>直近のドラッグで IK が成功した回数と失敗した回数。確認用。</summary>
+        public int SolvedCount { get; private set; }
+        public int FailedCount { get; private set; }
+
+        private bool _hasGood;
+        private Vector3 _goodPosition;
+        private Quaternion _goodRotation;
+
+        #region Lifecycle
+
+        private void Awake()
+        {
+            if (handle == null) handle = FindAnyObjectByType<ToolPoseHandle>();
+        }
+
+        private void OnEnable()
+        {
+            if (handle == null) return;
+            handle.DragBegan += OnDragBegan;
+            handle.PoseChanged += OnPoseChanged;
+            handle.DragEnded += OnDragEnded;
+        }
+
+        private void OnDisable()
+        {
+            if (handle == null) return;
+            handle.DragBegan -= OnDragBegan;
+            handle.PoseChanged -= OnPoseChanged;
+            handle.DragEnded -= OnDragEnded;
+        }
+
+        #endregion
+
+        #region ハンドルからの受け取り
+
+        private void OnDragBegan(ToolPoseEvent e)
+        {
+            // 掴んだ時点を「最後に成功した姿勢」の初期値にしておく。
+            // 一度も成功しないまま離された場合はここへ戻る。
+            _goodPosition = e.Pose.Position;
+            _goodRotation = handle.WorldRotation;
+            _hasGood = true;
+
+            SolvedCount = 0;
+            FailedCount = 0;
+        }
+
+        private void OnPoseChanged(ToolPoseEvent e)
+        {
+            // ハンドルの値が変わっただけで、ロボットはまだ動いていない
+            Vector3 tcp = Conversion.ToExternal(e.Pose.Position);
+            ZyxEulerAngles rpy = ZyxEulerAngles.FromRotation(Conversion.ToExternal(handle.WorldRotation));
+
+            if (!TrySolve(tcp, rpy))
+            {
+                FailedCount++;
+                return;                     // 失敗したらロボットを動かさない
+            }
+
+            SolvedCount++;
+            ApplyToRobot(tcp, rpy);
+
+            _goodPosition = e.Pose.Position;
+            _goodRotation = handle.WorldRotation;
+            _hasGood = true;
+        }
+
+        private void OnDragEnded(ToolPoseEvent e)
+        {
+            if (e.Cancelled || !_hasGood) return;
+
+            if (e.Kind == ToolHandleKind.Position)
+            {
+                // 位置を戻し、その位置でのフレームに更新する。
+                // フレームは位置の関数なので、先に位置を確定させてから求めること。
+                ToolPose snapped = e.Pose.WithPosition(_goodPosition);
+                if (TryGetFrameAt(_goodPosition, out PathFrame frame))
+                    snapped = snapped.WithFrame(frame);
+
+                // 位置と向きを 1 回で渡す。中間状態を作らない
+                handle.SetPose(snapped);
+            }
+            else
+            {
+                // 姿勢だけ戻す。垂直姿勢でも旋回角が失われない経路を通る
+                handle.SetWorldRotation(_goodRotation);
+            }
+        }
+
+        #endregion
+
+        #region 差し替える部分 (擬似 IK)
+
+        /// <summary>
+        /// 実アプリではここを本物の IK にする。届かない姿勢では false を返す。
+        /// </summary>
+        private bool TrySolve(Vector3 tcpExternal, ZyxEulerAngles rpy)
+        {
+            if (reachCenter == null) return true;
+
+            Vector3 center = Conversion.ToExternal(reachCenter.position);
+            return Vector3.Distance(tcpExternal, center) <= reachRadius;
+        }
+
+        /// <summary>実アプリでは解いた関節角をロボットへ送る。</summary>
+        private void ApplyToRobot(Vector3 tcpExternal, ZyxEulerAngles rpy) { }
+
+        /// <summary>
+        /// 実アプリでは母材の形状からその位置のフレームを求める。
+        /// ここでは経路が持っているものをそのまま使う。
+        /// </summary>
+        private bool TryGetFrameAt(Vector3 position, out PathFrame frame)
+        {
+            frame = default;
+            return false;
+        }
+
+        #endregion
+    }
+}
