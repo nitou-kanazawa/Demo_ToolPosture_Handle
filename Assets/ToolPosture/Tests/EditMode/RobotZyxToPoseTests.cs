@@ -31,7 +31,7 @@ namespace ToolRuntimeGizmos.Tests
         /// ロボット座標系の ZYX と、Unity 側のフレームからハンドルの姿勢を組む。
         /// アプリ側に書くことになるコード。
         /// </summary>
-        private static ToolPose BuildPose(ZyxEulerAngles rpyRobot, PathFrame frame)
+        private static ToolPose BuildPose(ZyxEulerAngles rpyRobot, WorkFrame frame)
         {
             // 1. ロボット座標のまま、ZYX を工具軸と基準方向の 2 本に開く
             Matrix4x4 r = RobotPostureConvert.FromZyx(rpyRobot);
@@ -58,11 +58,11 @@ namespace ToolRuntimeGizmos.Tests
         /// フレームがロボット座標にある場合の入口。L も含めて分かっているので TryFromBasis を使う。
         /// L の側は与えたベクトルから決まるので、左右手系の反転を自分で考えなくてよい。
         /// </summary>
-        private static bool TryUnityFrame(Vector3 originRobot, LmnFrame lmnRobot, out PathFrame frame)
-            => PathFrame.TryFromBasis(Conv.ToUnity(originRobot),
-                                      Conv.ToUnity(lmnRobot.L),
-                                      Conv.ToUnity(lmnRobot.M),
-                                      Conv.ToUnity(lmnRobot.N), out frame);
+        private static bool TryUnityFrame(Vector3 originRobot, WorkFrame lmnRobot, out WorkFrame frame)
+            => WorkFrame.TryFromBasis(Conv.ToUnity(originRobot),
+                                      Conv.ToUnity(lmnRobot.CrossFeed),
+                                      Conv.ToUnity(lmnRobot.Feed),
+                                      Conv.ToUnity(lmnRobot.Normal), out frame);
 
         /// <summary>組んだ姿勢をロボット座標の ZYX へ戻す。<see cref="BuildPose"/> の対。</summary>
         private static ZyxEulerAngles ReadBackRpy(ToolPose pose)
@@ -80,14 +80,27 @@ namespace ToolRuntimeGizmos.Tests
         private static readonly Vector3 P1 = new Vector3(1.6f, -0.1f, 0.9f);
         private static readonly Vector3 RawNormal = new Vector3(0.1f, 0.2f, 1f);
 
-        /// <summary>ロボット座標の LMN。右手系なので L = M x N。</summary>
-        private static LmnFrame RobotFrame => LmnFrame.FromPath(P0, P1, RawNormal);
-
-        private static PathFrame Frame
+        /// <summary>ロボット座標のフレーム。右手系なので L = M x N。</summary>
+        private static WorkFrame RobotFrame
         {
             get
             {
-                Assert.IsTrue(TryUnityFrame(Tcp, RobotFrame, out PathFrame f), "フレームが組めない");
+                Vector3 n = RawNormal.normalized;
+                Vector3 travel = P1 - P0;
+                Vector3 m = (travel - n * Vector3.Dot(travel, n)).normalized;
+
+                // L を渡すので、側は TryFromBasis が判断する
+                Assert.IsTrue(WorkFrame.TryFromBasis(P0, Vector3.Cross(m, n), m, n, out WorkFrame f),
+                              "ロボット側のフレームが組めない");
+                return f;
+            }
+        }
+
+        private static WorkFrame Frame
+        {
+            get
+            {
+                Assert.IsTrue(TryUnityFrame(Tcp, RobotFrame, out WorkFrame f), "フレームが組めない");
                 return f;
             }
         }
@@ -166,12 +179,12 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void ロボットのLMNは軸の入れ替えだけで移る()
         {
-            LmnFrame robot = RobotFrame;
-            PathFrame unity = Frame;
+            WorkFrame robot = RobotFrame;
+            WorkFrame unity = Frame;
 
-            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.M), unity.Feed), Tol, "M");
-            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.N), unity.Normal), Tol, "N");
-            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.L), unity.CrossFeed), Tol, "L");
+            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.Feed), unity.Feed), Tol, "M");
+            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.Normal), unity.Normal), Tol, "N");
+            Assert.AreEqual(0f, Vector3.Distance(Conv.ToUnity(robot.CrossFeed), unity.CrossFeed), Tol, "L");
         }
 
         [Test]
@@ -179,7 +192,7 @@ namespace ToolRuntimeGizmos.Tests
         {
             // 反射なので外積の向きは裏返るが、L そのものを渡しているので側は保たれる。
             // TryFromBasis は L から側を決めるため、ここを自分で考えなくてよい
-            PathFrame unity = Frame;
+            WorkFrame unity = Frame;
 
             Assert.Greater(Vector3.Dot(unity.CrossFeed, Vector3.Cross(unity.Normal, unity.Feed)), 0.9f,
                            "RightOfTravel になっていない");
@@ -189,10 +202,10 @@ namespace ToolRuntimeGizmos.Tests
         public void 側を取り違えると狙い角の符号が反転する()
         {
             var rpy = new ZyxEulerAngles(35f, -20f, 70f);
-            PathFrame right = Frame;
+            WorkFrame right = Frame;
 
-            Assert.IsTrue(PathFrame.TryCreate(right.Origin, right.Feed, right.Normal,
-                                              CrossFeedSide.LeftOfTravel, out PathFrame left));
+            Assert.IsTrue(WorkFrame.TryCreate(right.Origin, right.Feed, right.Normal,
+                                              CrossFeedSide.LeftOfTravel, out WorkFrame left));
 
             float w = BuildPose(rpy, right).Angles.WorkAngleDeg;
             float wFlipped = BuildPose(rpy, left).Angles.WorkAngleDeg;

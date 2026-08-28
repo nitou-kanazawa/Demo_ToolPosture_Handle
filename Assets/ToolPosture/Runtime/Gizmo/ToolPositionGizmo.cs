@@ -20,7 +20,7 @@ namespace ToolRuntimeGizmos.Gizmo
 
         /// <summary>
         /// コードから <see cref="ToolPositionGizmo.AxisRotation"/> に与えた向き。
-        /// 経路のフレーム (L, M, N) に沿って動かしたい場合などに使う。
+        /// 母材フレーム (L, M, N) に沿って動かしたい場合などに使う。
         /// </summary>
         Explicit = 2,
     }

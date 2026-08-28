@@ -19,8 +19,8 @@ namespace ToolRuntimeGizmos.Core
     }
 
     /// <summary>
-    /// 経路上の正規直交フレーム (L, M, N)。
-    ///   M = Feed      進行方向   p(i) -> p(i+1) を正規化したもの
+    /// 母材側の正規直交フレーム (L, M, N)。工具の角度はすべてこの上で測る。
+    ///   M = Feed      進行方向
     ///   N = Normal    面法線     M に対して直交化済み
     ///   L = CrossFeed 直交方向   M と N の両方に直交
     ///
@@ -29,10 +29,16 @@ namespace ToolRuntimeGizmos.Core
     ///   N ... surface normal / 面法線
     ///   L ... cross-feed / 従法線 B
     ///
+    /// このパッケージは経路を知らない。持つのは常に 1 つのフレームだけで、
+    /// それをどこから作るか (溶接線、面、治具) は利用側の仕事。
+    /// 工具側の軸割当は <see cref="ToolAxes"/> が持つ。
+    ///
     /// 注意: 右手系での定義は L = M x N だが Unity は左手系なので、
     /// 同じ幾何 (進行方向の右側) を得るには Vector3.Cross(N, M) を使う。
+    /// 別の座標系のフレームを持ち込む場合、side を指定する <see cref="TryCreate"/> では
+    /// 側が裏返る。L が分かっているなら <see cref="TryFromBasis"/> を使うこと。
     /// </summary>
-    public readonly struct PathFrame
+    public readonly struct WorkFrame
     {
         private const float Eps = 1e-6f;
 
@@ -46,7 +52,7 @@ namespace ToolRuntimeGizmos.Core
         /// 検証を行わない生成。正規直交であることが保証できる内部からのみ使う。
         /// 外部からは TryCreate / TryFromBasis / Fallback を通すこと。
         /// </summary>
-        private PathFrame(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal)
+        private WorkFrame(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal)
         {
             Origin = origin;
             CrossFeed = crossFeed;
@@ -58,15 +64,15 @@ namespace ToolRuntimeGizmos.Core
         /// <summary>
         /// 退化した区間に使う既定フレーム (M = +Z, N = +Y)。
         /// </summary>
-        public static PathFrame Fallback(Vector3 origin)
-            => new PathFrame(origin, Vector3.right, Vector3.forward, Vector3.up);
+        public static WorkFrame Fallback(Vector3 origin)
+            => new WorkFrame(origin, Vector3.right, Vector3.forward, Vector3.up);
 
         /// <summary>
         /// 区間ベクトルと生の法線からフレームを構築する。
         /// 生の法線は進行方向と直交しているとは限らないので Gram-Schmidt で直交化する。
         /// 区間長ゼロ、または法線が進行方向と平行な場合は false を返す。
         /// </summary>
-        public static bool TryCreate(Vector3 origin, Vector3 travel, Vector3 rawNormal, CrossFeedSide side, out PathFrame frame)
+        public static bool TryCreate(Vector3 origin, Vector3 travel, Vector3 rawNormal, CrossFeedSide side, out WorkFrame frame)
         {
             frame = default;
 
@@ -83,7 +89,7 @@ namespace ToolRuntimeGizmos.Core
                 ? Vector3.Cross(n, m)
                 : Vector3.Cross(m, n);
 
-            frame = new PathFrame(origin, l.normalized, m, n);
+            frame = new WorkFrame(origin, l.normalized, m, n);
             return true;
         }
 
@@ -95,7 +101,7 @@ namespace ToolRuntimeGizmos.Core
         /// 多少の数値誤差は吸収される。L は与えられたベクトルと同じ側になる。
         /// </summary>
         public static bool TryFromBasis(Vector3 origin, Vector3 crossFeed, Vector3 feed, Vector3 normal,
-                                        out PathFrame frame)
+                                        out WorkFrame frame)
         {
             CrossFeedSide side = Vector3.Dot(crossFeed, Vector3.Cross(normal, feed)) >= 0f
                 ? CrossFeedSide.RightOfTravel
@@ -105,22 +111,11 @@ namespace ToolRuntimeGizmos.Core
         }
 
         /// <summary>
-        /// 構築に失敗した場合に前のフレームを引き継ぐ版。
-        /// </summary>
-        public static PathFrame CreateOrInherit(Vector3 origin, Vector3 travel, Vector3 rawNormal, CrossFeedSide side, PathFrame previous)
-        {
-            if (TryCreate(origin, travel, rawNormal, side, out var f)) return f;
-            return previous.IsValid
-                ? new PathFrame(origin, previous.CrossFeed, previous.Feed, previous.Normal)
-                : Fallback(origin);
-        }
-
-        /// <summary>
         /// 向きはそのままに原点だけ差し替える。
-        /// 姿勢の基準は経路から、位置は工具側から、と供給元が分かれている場合に使う。
+        /// 姿勢の基準は母材側から、位置は工具側から、と供給元が分かれている場合に使う。
         /// </summary>
-        public PathFrame WithOrigin(Vector3 origin)
-            => IsValid ? new PathFrame(origin, CrossFeed, Feed, Normal) : Fallback(origin);
+        public WorkFrame WithOrigin(Vector3 origin)
+            => IsValid ? new WorkFrame(origin, CrossFeed, Feed, Normal) : Fallback(origin);
 
         /// <summary>
         /// LMN 成分 (x = L, y = M, z = N) をワールド方向に変換する。
@@ -135,8 +130,6 @@ namespace ToolRuntimeGizmos.Core
             Vector3.Dot(dir, CrossFeed),
             Vector3.Dot(dir, Feed),
             Vector3.Dot(dir, Normal));
-
-        public Vector3 LmnToWorldPoint(Vector3 lmn) => Origin + LmnToWorldDirection(lmn);
 
         /// <summary>
         /// フレームの姿勢 (ローカル +X = L, +Y = N, +Z = M)。

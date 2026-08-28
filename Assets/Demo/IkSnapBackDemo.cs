@@ -135,7 +135,7 @@ namespace ToolRuntimeGizmos.Demo
                 // 位置を戻し、その位置でのフレームに更新する。
                 // フレームは位置の関数なので、先に位置を確定させてから求めること。
                 ToolPose snapped = e.Pose.WithPosition(_goodPosition);
-                if (TryGetFrameAt(_goodPosition, out PathFrame frame))
+                if (TryGetFrameAt(_goodPosition, out WorkFrame frame))
                     snapped = snapped.WithFrame(frame);
 
                 // 位置と向きを 1 回で渡す。中間状態を作らない
@@ -181,7 +181,7 @@ namespace ToolRuntimeGizmos.Demo
         /// 実アプリでは母材の形状からその位置のフレームを求める。
         /// ここでは経路が持っているものをそのまま使う。
         /// </summary>
-        private bool TryGetFrameAt(Vector3 position, out PathFrame frame)
+        private bool TryGetFrameAt(Vector3 position, out WorkFrame frame)
         {
             frame = default;
             return false;

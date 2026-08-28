@@ -180,7 +180,7 @@ namespace ToolRuntimeGizmos.Tests
         private float MeasureHalfWidth(Vector3 point, Vector3 tangent, Vector3 viewDir,
                                        float step, out float hitDistanceFromArc)
         {
-            PathFrame f = _gizmo.Frame;
+            WorkFrame f = _gizmo.Frame;
             float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 perp = Vector3.Cross(viewDir, tangent).normalized;
 
@@ -206,7 +206,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 掴み幅は視線角度によらず一定()
         {
-            PathFrame f = _gizmo.Frame;
+            WorkFrame f = _gizmo.Frame;
             Vector3 L = f.CrossFeed, N = f.Normal;
 
             float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
@@ -239,7 +239,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 非表示のハンドルは掴めない()
         {
-            PathFrame f = _gizmo.Frame;
+            WorkFrame f = _gizmo.Frame;
             float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 point = f.Origin + f.CrossFeed * radius;
             var ray = new Ray(point + f.Normal * 20f, -f.Normal);
@@ -256,7 +256,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 掴んだ点はリング上に乗っている()
         {
-            PathFrame f = _gizmo.Frame;
+            WorkFrame f = _gizmo.Frame;
             float radius = _gizmo.Scale * _gizmo.Theme.azimuthRingRadiusRatio;
             Vector3 point = f.Origin + f.CrossFeed * radius;
             var ray = new Ray(point + f.Normal * 20f, -f.Normal);
@@ -467,7 +467,7 @@ namespace ToolRuntimeGizmos.Tests
             _profile.tiltConvention = AngleConvention.Elevation(-15f, 15f);
 
             // N から 60 度倒した向きを与える (範囲外)
-            PathFrame f = _gizmo.Frame;
+            WorkFrame f = _gizmo.Frame;
             float a = 60f * Mathf.Deg2Rad;
             _gizmo.SetToolAxisWorld(f.CrossFeed * Mathf.Sin(a) + f.Normal * Mathf.Cos(a));
 
@@ -592,8 +592,8 @@ namespace ToolRuntimeGizmos.Tests
         public void フレームは代入したものがそのまま使われる()
         {
             // ギズモは経路を知らない。与えられたフレームを使うだけ。
-            Assert.IsTrue(PathFrame.TryCreate(new Vector3(3f, 1f, -2f), Vector3.right, Vector3.forward,
-                                              CrossFeedSide.RightOfTravel, out PathFrame f));
+            Assert.IsTrue(WorkFrame.TryCreate(new Vector3(3f, 1f, -2f), Vector3.right, Vector3.forward,
+                                              CrossFeedSide.RightOfTravel, out WorkFrame f));
             _gizmo.Frame = f;
 
             Assert.AreEqual(0f, Vector3.Distance(f.Origin, _gizmo.Frame.Origin), 1e-5f);

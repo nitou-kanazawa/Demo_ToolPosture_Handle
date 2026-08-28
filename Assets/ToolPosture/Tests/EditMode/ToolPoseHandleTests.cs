@@ -80,10 +80,10 @@ namespace ToolRuntimeGizmos.Tests
                                 | System.Reflection.BindingFlags.Instance)
                .Invoke(_handle, args);
 
-        private static PathFrame MakeFrame(Vector3 origin, Vector3 travel)
+        private static WorkFrame MakeFrame(Vector3 origin, Vector3 travel)
         {
-            Assert.IsTrue(PathFrame.TryCreate(origin, travel, Vector3.up,
-                                              CrossFeedSide.RightOfTravel, out PathFrame f));
+            Assert.IsTrue(WorkFrame.TryCreate(origin, travel, Vector3.up,
+                                              CrossFeedSide.RightOfTravel, out WorkFrame f));
             return f;
         }
 

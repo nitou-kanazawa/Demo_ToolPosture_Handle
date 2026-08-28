@@ -26,7 +26,7 @@ namespace ToolRuntimeGizmos.Gizmo
         // 姿勢
         [SerializeField] private ToolPostureAngles angles = ToolPostureAngles.FromProjected(14f, -10f, 25f);
         [Tooltip("設定すると、フレームの向きはそのままに原点だけこの Transform に合わせる。" +
-                 "姿勢の基準は経路から、位置は工具側から、と供給元が分かれている場合に使う")]
+                 "姿勢の基準は母材側から、位置は工具側から、と供給元が分かれている場合に使う")]
         public Transform originSource;
 
         // ハンドル表示
@@ -40,7 +40,7 @@ namespace ToolRuntimeGizmos.Gizmo
         public bool showFrameAxes = true;
 
         // 状態
-        private PathFrame _frame;
+        private WorkFrame _frame;
         private ToolPostureAngles _anglesAtDragStart;
 
 
@@ -64,7 +64,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// から求める、固定値を使う、いずれの場合も求めた結果をここへ代入する。
         /// 代入が無い間は transform の位置に置いたフォールバックを使う。
         /// </remarks>
-        public PathFrame Frame
+        public WorkFrame Frame
         {
             get
             {
@@ -179,13 +179,13 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// フレームが未設定 (または無効) なら transform の位置に置いたフォールバックを使う。
         ///
-        /// PathFrame は readonly フィールドを持つ構造体でシリアライズされないので、
+        /// WorkFrame は readonly フィールドを持つ構造体でシリアライズされないので、
         /// ドメインリロードや再コンパイルの直後は既定値 = 無効に戻る。
         /// 有効性で判定しておけば、フラグを別に持つより取りこぼしが無い。
         /// </summary>
         protected override void EnsureState()
         {
-            if (!_frame.IsValid) _frame = PathFrame.Fallback(transform.position);
+            if (!_frame.IsValid) _frame = WorkFrame.Fallback(transform.position);
 
             // Preparing で供給元がフレームを代入したあとに呼ばれるので、
             // 原点の差し替えはここでやれば誰が先に書いても勝てる。

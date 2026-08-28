@@ -92,9 +92,9 @@ namespace ToolRuntimeGizmos.Tests
     {
         private const float Tol = 1e-2f;
 
-        private static PathFrame MakeFrame(Vector3 travel, Vector3 normal)
+        private static WorkFrame MakeFrame(Vector3 travel, Vector3 normal)
         {
-            PathFrame.TryCreate(Vector3.zero, travel, normal, CrossFeedSide.RightOfTravel, out var f);
+            WorkFrame.TryCreate(Vector3.zero, travel, normal, CrossFeedSide.RightOfTravel, out var f);
             return f;
         }
 
@@ -128,7 +128,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void ZYX_オイラーとの往復が一致する()
         {
-            PathFrame f = MakeFrame(new Vector3(0.7f, 0.1f, 0.4f), new Vector3(-0.2f, 0.9f, 0.3f));
+            WorkFrame f = MakeFrame(new Vector3(0.7f, 0.1f, 0.4f), new Vector3(-0.2f, 0.9f, 0.3f));
 
             foreach (float theta in new[] { -95f, -20f, 48f })
             foreach (float phi in new[] { 40f, 75f })
@@ -149,7 +149,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 工具モデルの軸割当が変わっても往復する()
         {
-            PathFrame f = MakeFrame(Vector3.right, Vector3.up);
+            WorkFrame f = MakeFrame(Vector3.right, Vector3.up);
             var src = ToolPostureAngles.FromSpherical(-33f, 58f, 44f);
 
             // シャフト = -Z、基準 = +X という別の割当
@@ -167,7 +167,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 極では回転から旋回角が決まらないので現在値が残る()
         {
-            PathFrame f = MakeFrame(Vector3.right, Vector3.up);
+            WorkFrame f = MakeFrame(Vector3.right, Vector3.up);
 
             var a = ToolPostureAngles.FromSpherical(-77f, 55f, 10f);
             Quaternion vertical = ToolPostureAngles.FromSpherical(0f, 90f, 10f)
@@ -191,7 +191,7 @@ namespace ToolRuntimeGizmos.Tests
         public void 基底から作ると正規直交化される()
         {
             // わざと直交していない / 長さも 1 でない三つ組
-            Assert.IsTrue(PathFrame.TryFromBasis(Vector3.one,
+            Assert.IsTrue(WorkFrame.TryFromBasis(Vector3.one,
                 new Vector3(0f, 0f, -2f), new Vector3(3f, 0.2f, 0f), new Vector3(0.1f, 5f, 0f), out var f));
 
             Assert.AreEqual(1f, f.CrossFeed.magnitude, Tol);
@@ -205,8 +205,8 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 基底から作ると_L_の側が保たれる()
         {
-            PathFrame.TryFromBasis(Vector3.zero, Vector3.back, Vector3.right, Vector3.up, out var right);
-            PathFrame.TryFromBasis(Vector3.zero, Vector3.forward, Vector3.right, Vector3.up, out var left);
+            WorkFrame.TryFromBasis(Vector3.zero, Vector3.back, Vector3.right, Vector3.up, out var right);
+            WorkFrame.TryFromBasis(Vector3.zero, Vector3.forward, Vector3.right, Vector3.up, out var left);
 
             Assert.AreEqual(0f, Vector3.Distance(right.CrossFeed, Vector3.back), Tol);
             Assert.AreEqual(0f, Vector3.Distance(left.CrossFeed, Vector3.forward), Tol);
@@ -215,8 +215,8 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 退化した基底は拒否される()
         {
-            Assert.IsFalse(PathFrame.TryFromBasis(Vector3.zero, Vector3.up, Vector3.right, Vector3.right, out _));
-            Assert.IsFalse(PathFrame.TryFromBasis(Vector3.zero, Vector3.up, Vector3.zero, Vector3.up, out _));
+            Assert.IsFalse(WorkFrame.TryFromBasis(Vector3.zero, Vector3.up, Vector3.right, Vector3.right, out _));
+            Assert.IsFalse(WorkFrame.TryFromBasis(Vector3.zero, Vector3.up, Vector3.zero, Vector3.up, out _));
         }
 
 
@@ -227,7 +227,7 @@ namespace ToolRuntimeGizmos.Tests
             try
             {
                 var gizmo = go.AddComponent<ToolPostureGizmo>();
-                PathFrame.TryCreate(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right,
+                WorkFrame.TryCreate(new Vector3(1f, 2f, 3f), Vector3.forward, Vector3.right,
                                     CrossFeedSide.RightOfTravel, out var f);
 
                 gizmo.Frame = f;

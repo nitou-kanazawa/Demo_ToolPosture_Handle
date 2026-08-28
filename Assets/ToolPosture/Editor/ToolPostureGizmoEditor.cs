@@ -369,7 +369,7 @@ namespace ToolRuntimeGizmos.EditorTools
         {
             var g = (ToolPostureGizmo)target;
 
-            PathFrame f = g.Frame;
+            WorkFrame f = g.Frame;
             if (!f.IsValid) return;
 
             float scale = HandleUtility.GetHandleSize(f.Origin) * 0.9f;
@@ -442,7 +442,7 @@ namespace ToolRuntimeGizmos.EditorTools
 
         #region 描画ヘルパ
 
-        private static void DrawFrameAxes(ToolPostureGizmo g, PathFrame f, float scale)
+        private static void DrawFrameAxes(ToolPostureGizmo g, WorkFrame f, float scale)
         {
             DrawAxis(f.Origin, f.CrossFeed, scale * 0.95f, g.Theme.frameColorL, "L");
             DrawAxis(f.Origin, f.Feed, scale * 1.25f, g.Theme.frameColorM, "M");
@@ -493,7 +493,7 @@ namespace ToolRuntimeGizmos.EditorTools
             return Event.current.control ? conv.SnapInternal(raw) : raw;
         }
 
-        private static void DrawLabel(ToolPostureGizmo g, PathFrame f, ToolPostureAngles a, float scale)
+        private static void DrawLabel(ToolPostureGizmo g, WorkFrame f, ToolPostureAngles a, float scale)
         {
             var style = new GUIStyle(EditorStyles.miniLabel)
             {

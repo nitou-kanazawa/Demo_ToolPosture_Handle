@@ -17,11 +17,26 @@ namespace ToolRuntimeGizmos.Tests
         private static readonly ToolAxes Tool = ToolAxes.Robot;
 
         /// <summary>面法線が Z、進行方向が X のごく普通のフレーム。</summary>
-        private static LmnFrame FlatFrame
-            => new LmnFrame(new Vector3(0f, -1f, 0f), new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 1f));
+        private static WorkFrame FlatFrame => Basis(new Vector3(0f, -1f, 0f),
+                                                    new Vector3(1f, 0f, 0f),
+                                                    new Vector3(0f, 0f, 1f));
 
-        private static LmnFrame TiltedFrame
-            => LmnFrame.FromPath(Vector3.zero, new Vector3(1f, 0.4f, 0.2f), new Vector3(0.1f, -0.3f, 1f));
+        private static WorkFrame TiltedFrame
+        {
+            get
+            {
+                Assert.IsTrue(WorkFrame.TryCreate(Vector3.zero, new Vector3(1f, 0.4f, 0.2f),
+                                                  new Vector3(0.1f, -0.3f, 1f),
+                                                  CrossFeedSide.RightOfTravel, out WorkFrame f));
+                return f;
+            }
+        }
+
+        private static WorkFrame Basis(Vector3 l, Vector3 m, Vector3 n)
+        {
+            Assert.IsTrue(WorkFrame.TryFromBasis(Vector3.zero, l, m, n, out WorkFrame f));
+            return f;
+        }
 
         private static float MaxDiff(Matrix4x4 a, Matrix4x4 b)
         {
@@ -145,14 +160,14 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 零基準に進行方向を渡すとトーチ姿勢の回転角と一致する()
         {
-            LmnFrame f = TiltedFrame;
+            WorkFrame f = TiltedFrame;
 
             for (int i = 0; i < 100; i++)
             {
                 var t = new TorchAngles(Random.Range(-70f, 70f), Random.Range(-70f, 70f),
                                         Random.Range(-180f, 180f));
 
-                Assert.IsTrue(RobotPostureConvert.TorchToToolAxisSpin(f, t, Tool, f.M,
+                Assert.IsTrue(RobotPostureConvert.TorchToToolAxisSpin(f, t, Tool, f.Feed,
                                                                      out ToolAxisSpin posture));
                 Assert.AreEqual(0f, Mathf.DeltaAngle(t.SpinDeg, posture.SpinDeg), 1e-2f);
             }
@@ -237,7 +252,7 @@ namespace ToolRuntimeGizmos.Tests
         [TestCase(80f, 5f, 90f)]
         public void トーチ姿勢は往復できる(float work, float travel, float spin)
         {
-            foreach (LmnFrame f in new[] { FlatFrame, TiltedFrame })
+            foreach (WorkFrame f in new[] { FlatFrame, TiltedFrame })
             {
                 var t = new TorchAngles(work, travel, spin);
                 Matrix4x4 m = RobotPostureConvert.FromTorch(f, t, Tool);
@@ -255,34 +270,34 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 角度零のとき工具軸は法線を向く()
         {
-            LmnFrame f = TiltedFrame;
+            WorkFrame f = TiltedFrame;
             Matrix4x4 m = RobotPostureConvert.FromTorch(f, new TorchAngles(0f, 0f, 0f), Tool);
 
-            Assert.AreEqual(0f, Vector3.Distance(f.N, m.MultiplyVector(Tool.Shaft).normalized), Tol);
+            Assert.AreEqual(0f, Vector3.Distance(f.Normal, m.MultiplyVector(Tool.Shaft).normalized), Tol);
         }
 
         [Test]
         public void 狙い角と前進後退角は工具軸の射影として定義どおり()
         {
-            LmnFrame f = FlatFrame;
+            WorkFrame f = FlatFrame;
             var t = new TorchAngles(20f, -35f, 0f);
             Vector3 axis = RobotPostureConvert.FromTorch(f, t, Tool).MultiplyVector(Tool.Shaft).normalized;
 
             Assert.AreEqual(Mathf.Tan(20f * Mathf.Deg2Rad),
-                            Vector3.Dot(axis, f.L) / Vector3.Dot(axis, f.N), 1e-3f, "狙い角");
+                            Vector3.Dot(axis, f.CrossFeed) / Vector3.Dot(axis, f.Normal), 1e-3f, "狙い角");
             Assert.AreEqual(Mathf.Tan(-35f * Mathf.Deg2Rad),
-                            Vector3.Dot(axis, f.M) / Vector3.Dot(axis, f.N), 1e-3f, "前進後退角");
+                            Vector3.Dot(axis, f.Feed) / Vector3.Dot(axis, f.Normal), 1e-3f, "前進後退角");
         }
 
         [Test]
         public void 工具軸が進行方向と平行だとスピンが決まらない()
         {
-            LmnFrame f = FlatFrame;
+            WorkFrame f = FlatFrame;
 
             // 工具軸を M に向ける
             Matrix4x4 m = RobotPostureConvert.FromTorch(f, new TorchAngles(0f, 90f, 0f), Tool);
             Vector3 axis = m.MultiplyVector(Tool.Shaft).normalized;
-            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(axis, f.M)), 1e-3f, "前提が崩れている");
+            Assert.AreEqual(1f, Mathf.Abs(Vector3.Dot(axis, f.Feed)), 1e-3f, "前提が崩れている");
 
             TorchAngleIssues issues = RobotPostureConvert.ToTorch(m, f, Tool, out _);
             Assert.IsTrue((issues & TorchAngleIssues.SpinUndefined) != 0);
@@ -291,8 +306,8 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 工具軸が面の裏を向くと射影角では表せない()
         {
-            LmnFrame f = FlatFrame;
-            Matrix4x4 m = RobotPostureConvert.FromAxisRotation(new AxisRotation(f.L, 150f));
+            WorkFrame f = FlatFrame;
+            Matrix4x4 m = RobotPostureConvert.FromAxisRotation(new AxisRotation(f.CrossFeed, 150f));
 
             TorchAngleIssues issues = RobotPostureConvert.ToTorch(m, f, Tool, out _);
             Assert.IsTrue((issues & TorchAngleIssues.AxisNotAboveSurface) != 0);
@@ -340,7 +355,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 三つの表し方は同じ姿勢を指す()
         {
-            LmnFrame f = TiltedFrame;
+            WorkFrame f = TiltedFrame;
 
             for (int i = 0; i < 200; i++)
             {
