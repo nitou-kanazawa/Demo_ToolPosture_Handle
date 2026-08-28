@@ -120,14 +120,10 @@ namespace ToolRuntimeGizmos.Core
         public static ZyxEulerAngles FromToolAxis(Vector3 axis, float spinDeg,
                                                   Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
                                                   Vector3 spinZeroReference)
-        {
-            Vector3 zero = RobotPostureConvert.Reject(spinZeroReference, axis);
-            float rad = spinDeg * Mathf.Deg2Rad;
-            Vector3 reference = zero * Mathf.Cos(rad)
-                              + Vector3.Cross(axis.normalized, zero) * Mathf.Sin(rad);
-
-            return FromToolAxes(axis, reference, toolShaftAxis, toolReferenceAxis);
-        }
+            => RobotPostureConvert.ToolAxisSpinToZyx(
+                   new ToolAxisSpin(axis, spinDeg),
+                   new ToolAxes(toolShaftAxis, toolReferenceAxis),
+                   spinZeroReference);
 
         /// <summary>
         /// 工具軸と、スピンを適用したあとの基準方向から組み立てる。
@@ -154,15 +150,11 @@ namespace ToolRuntimeGizmos.Core
         public void ToToolAxis(Vector3 toolShaftAxis, Vector3 toolReferenceAxis, Vector3 spinZeroReference,
                                out Vector3 axis, out float spinDeg)
         {
-            var tool = new ToolAxes(toolShaftAxis, toolReferenceAxis);
-            Matrix4x4 m = ToMatrix();
-
-            axis = m.MultiplyVector(tool.Shaft).normalized;
-            Vector3 u = m.MultiplyVector(tool.Reference).normalized;
-
-            Vector3 zero = RobotPostureConvert.Reject(spinZeroReference, axis);
-            spinDeg = Mathf.Atan2(Vector3.Dot(Vector3.Cross(zero, u), axis),
-                                  Vector3.Dot(zero, u)) * Mathf.Rad2Deg;
+            RobotPostureConvert.ToToolAxisSpin(ToMatrix(),
+                                               new ToolAxes(toolShaftAxis, toolReferenceAxis),
+                                               spinZeroReference, out ToolAxisSpin posture);
+            axis = posture.Axis;
+            spinDeg = posture.SpinDeg;
         }
 
         #endregion
