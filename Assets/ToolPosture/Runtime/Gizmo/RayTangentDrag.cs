@@ -14,7 +14,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// カメラにもビューポートにも依存しないので、アプリが独自の 2D -&gt; 3D 変換で
     /// 作ったレイをそのまま渡せる。
     /// </summary>
-    public struct RayTangentDrag
+    internal struct RayTangentDrag
     {
         /// <summary>
         /// レイと接線が平行に近いとみなす閾値。sin^2(なす角) がこれを下回ると

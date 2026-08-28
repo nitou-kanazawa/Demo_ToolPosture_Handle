@@ -64,7 +64,7 @@ namespace ToolRuntimeGizmos.Gizmo
         [Tooltip("targetCamera にだけ描く")]
         public bool restrictToTargetCamera = false;
         [Tooltip("コライダーの形を Gizmos で描く。Game View で見るには Gizmos の表示を有効にすること")]
-        public ColliderGizmoMode colliderGizmo = ColliderGizmoMode.Off;
+        [SerializeField] internal ColliderGizmoMode colliderGizmo = ColliderGizmoMode.Off;
         [Tooltip("ドラッグ中は操作していないハンドルを隠す")]
         public bool hideOthersWhileDragging = true;
 
@@ -84,7 +84,7 @@ namespace ToolRuntimeGizmos.Gizmo
         public bool yieldToUI = true;
 
         // 状態
-        protected readonly List<GizmoHandleBase> Handles = new List<GizmoHandleBase>();
+        internal readonly List<GizmoHandleBase> Handles = new List<GizmoHandleBase>();
         private readonly GizmoHandleColliders _colliders = new GizmoHandleColliders();
         private readonly GizmoMeshBuilder _builder = new GizmoMeshBuilder();
 
@@ -167,7 +167,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// ギズモのワールド上の大きさ。画面上で Theme.gizmoPixelSize [px] になるよう保つ。
         /// </summary>
-        public float Scale => Mathf.Max(1e-4f, Theme.gizmoPixelSize * PixelScale);
+        internal float Scale => Mathf.Max(1e-4f, Theme.gizmoPixelSize * PixelScale);
 
         /// <summary>
         /// ギズモ原点における 1 px 分のワールド長。<see cref="sizeScale"/> を掛けたもの。
@@ -176,7 +176,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// 一様に変わる。テーマ側の gizmoPixelSize を変えると全体の大きさだけが変わり、
         /// 線の太さは据え置かれるので比率が変わる点が違う。
         /// </summary>
-        public float PixelScale => Mathf.Max(1e-4f, sizeScale) * WorldPerPixel(Cam, Origin);
+        internal float PixelScale => Mathf.Max(1e-4f, sizeScale) * WorldPerPixel(Cam, Origin);
 
         /// <summary>
         /// ギズモ原点における px からワールド長への換算。
@@ -225,23 +225,23 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// 直近のポインタがタッチだったか。当たり判定の広さを切り替えるのに使う。
         /// </summary>
-        public bool PointerIsTouch => _pointerIsTouch;
+        internal bool PointerIsTouch => _pointerIsTouch;
 
         /// <summary>
         /// 現在のポインタ種別に応じたチューブの直径 [px]。
         /// </summary>
-        public float HitPixelWidth => _pointerIsTouch ? Theme.touchHitPixelWidth : Theme.hitPixelWidth;
+        internal float HitPixelWidth => _pointerIsTouch ? Theme.touchHitPixelWidth : Theme.hitPixelWidth;
 
         /// <summary>
         /// 現在のポインタ種別に応じた軸先端の当たり判定半径 [px]。
         /// </summary>
-        public float TipHitPixelRadius
+        internal float TipHitPixelRadius
             => Theme.tipHitPixelRadius * (_pointerIsTouch ? Theme.touchTipHitScale : 1f);
 
         /// <summary>
         /// 指定ワールド座標における 1 ピクセル分のワールド長。
         /// </summary>
-        public static float WorldPerPixel(Camera cam, Vector3 worldPoint)
+        internal static float WorldPerPixel(Camera cam, Vector3 worldPoint)
         {
             if (cam == null || cam.pixelHeight <= 0) return 0.01f;
 
@@ -278,12 +278,12 @@ namespace ToolRuntimeGizmos.Gizmo
         /// <summary>
         /// ドラッグ開始時。取り消し用に現在値を控えるのに使う。
         /// </summary>
-        protected virtual void OnDragBegan(GizmoHandleBase handle) { }
+        internal virtual void OnDragBegan(GizmoHandleBase handle) { }
 
         /// <summary>
         /// ドラッグ取り消し時。控えた値へ戻すのに使う。
         /// </summary>
-        protected virtual void OnDragCancelled(GizmoHandleBase handle) { }
+        internal virtual void OnDragCancelled(GizmoHandleBase handle) { }
 
         #endregion
 
@@ -336,7 +336,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// Collider.Raycast は物理クエリ前の自動同期に必ずしも乗らず、
         /// 動かした直後に撃つと古い姿勢のまま外れることがある (実測)。
         /// </summary>
-        public void SyncColliders()
+        internal void SyncColliders()
         {
             _colliders.Sync(this, Handles, _active);
             Physics.SyncTransforms();
@@ -534,7 +534,7 @@ namespace ToolRuntimeGizmos.Gizmo
         /// ギズモのコライダーは Ignore Raycast レイヤーに居るので、
         /// 拾うには明示的にそのレイヤーを含めたマスクで撃つこと。
         /// </summary>
-        public bool TryResolve(Collider collider, out GizmoHandleId id)
+        internal bool TryResolve(Collider collider, out GizmoHandleId id)
         {
             id = default;
             if (!_colliders.TryResolve(collider, out GizmoHandleBase h)) return false;
@@ -612,7 +612,7 @@ namespace ToolRuntimeGizmos.Gizmo
         public void UpdateHover(Ray ray)
             => _hovered = TryPick(ray, out GizmoHandleId id, out _, out _) ? FindHandle(id) : null;
 
-        protected GizmoHandleBase FindHandle(GizmoHandleId id)
+        internal GizmoHandleBase FindHandle(GizmoHandleId id)
         {
             foreach (var h in Handles)
                 if (h.Id == id) return h;

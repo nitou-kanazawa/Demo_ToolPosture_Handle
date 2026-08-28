@@ -26,7 +26,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// <summary>
     /// Mouse / Touchscreen / Pen を直接読む既定の供給元。
     /// </summary>
-    public class DevicePointerSource : IGizmoPointerSource
+    internal class DevicePointerSource : IGizmoPointerSource
     {
         public static readonly DevicePointerSource Default = new DevicePointerSource();
 
@@ -43,7 +43,7 @@ namespace ToolRuntimeGizmos.Gizmo
     ///     actions.FindAction("UI/Click"));
     /// </code>
     /// </summary>
-    public class InputActionPointerSource : IGizmoPointerSource
+    internal class InputActionPointerSource : IGizmoPointerSource
     {
         private readonly InputAction _point;
         private readonly InputAction _press;

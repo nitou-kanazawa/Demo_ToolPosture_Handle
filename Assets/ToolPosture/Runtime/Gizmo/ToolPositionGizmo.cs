@@ -160,9 +160,9 @@ namespace ToolRuntimeGizmos.Gizmo
             if (kb.digit3Key.wasPressedThisFrame) showAxisZ = !showAxisZ;
         }
 
-        protected override void OnDragBegan(GizmoHandleBase handle) => _positionAtDragStart = position;
+        internal override void OnDragBegan(GizmoHandleBase handle) => _positionAtDragStart = position;
 
-        protected override void OnDragCancelled(GizmoHandleBase handle) => Position = _positionAtDragStart;
+        internal override void OnDragCancelled(GizmoHandleBase handle) => Position = _positionAtDragStart;
 
         #endregion
 
@@ -183,7 +183,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// 当たり判定は軸に沿ったカプセルなので、視線が軸に寝ても掴み幅が潰れない。
     /// ドラッグはレイと軸直線の最近接点で決めるので、カメラに依存しない。
     /// </summary>
-    public class AxisTranslateHandle : GizmoHandleBase
+    internal class AxisTranslateHandle : GizmoHandleBase
     {
         private readonly ToolPositionGizmo _g;
         private readonly int _axis;

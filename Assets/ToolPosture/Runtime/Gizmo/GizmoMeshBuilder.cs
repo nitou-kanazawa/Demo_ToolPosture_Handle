@@ -17,16 +17,16 @@ namespace ToolRuntimeGizmos.Gizmo
         private readonly List<Color32> _colors = new List<Color32>(2048);
         private readonly List<int> _tris = new List<int>(4096);
 
-        public int VertexCount => _verts.Count;
+        internal int VertexCount => _verts.Count;
 
-        public void Clear()
+        internal void Clear()
         {
             _verts.Clear();
             _colors.Clear();
             _tris.Clear();
         }
 
-        public void Apply(Mesh mesh)
+        internal void Apply(Mesh mesh)
         {
             mesh.Clear();
             if (_verts.Count == 0) return;

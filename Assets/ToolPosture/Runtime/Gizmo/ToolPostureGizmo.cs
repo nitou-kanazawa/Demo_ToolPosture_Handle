@@ -204,9 +204,9 @@ namespace ToolRuntimeGizmos.Gizmo
             if (kb.digit0Key.wasPressedThisFrame) SetSpherical(angles.azimuthDeg, 90f);
         }
 
-        protected override void OnDragBegan(GizmoHandleBase handle) => _anglesAtDragStart = angles;
+        internal override void OnDragBegan(GizmoHandleBase handle) => _anglesAtDragStart = angles;
 
-        protected override void OnDragCancelled(GizmoHandleBase handle) => Angles = _anglesAtDragStart;
+        internal override void OnDragCancelled(GizmoHandleBase handle) => Angles = _anglesAtDragStart;
 
         #endregion
 
