@@ -75,7 +75,117 @@ namespace ToolRuntimeGizmos.Tests
 
         #endregion
 
-        #region 回転軸 + 回転量
+        #region 工具軸 + 軸まわりの回転角
+
+        /// <summary>回転角の零基準。工具軸がこれと平行になると角が決まらない。</summary>
+        private static readonly Vector3 SpinZero = new Vector3(0f, 0f, 1f);
+
+        private static Vector3 AxisAt(float aboutZeroDeg, float fromZeroDeg)
+        {
+            float t = fromZeroDeg * Mathf.Deg2Rad, p = aboutZeroDeg * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Sin(t) * Mathf.Cos(p), Mathf.Sin(t) * Mathf.Sin(p), Mathf.Cos(t));
+        }
+
+        [TestCase(0f, 40f, 0f)]
+        [TestCase(35f, 40f, 25f)]
+        [TestCase(120f, 75f, -80f)]
+        [TestCase(-70f, 120f, 170f)]
+        public void 工具軸と回転角は往復できる(float about, float from, float spin)
+        {
+            var posture = new ToolAxisSpin(AxisAt(about, from), spin);
+            Matrix4x4 m = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+            AssertRotationMatrix(m, "FromToolAxisSpin");
+
+            Assert.IsTrue(RobotPostureConvert.ToToolAxisSpin(m, Tool, SpinZero, out ToolAxisSpin back));
+
+            Assert.AreEqual(0f, Vector3.Distance(posture.Axis, back.Axis), Tol, "工具軸");
+            Assert.AreEqual(0f, Mathf.DeltaAngle(spin, back.SpinDeg), 1e-2f, "回転角");
+        }
+
+        [Test]
+        public void 組み上げた姿勢は本当にその工具軸を向く()
+        {
+            var posture = new ToolAxisSpin(AxisAt(35f, 40f), 25f);
+            Matrix4x4 m = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+
+            Assert.AreEqual(0f, Vector3.Distance(posture.Axis.normalized,
+                                                 m.MultiplyVector(Tool.Shaft).normalized), Tol);
+        }
+
+        [Test]
+        public void 工具軸が零基準と平行だと回転角が決まらない()
+        {
+            // 軸は零基準そのもの。姿勢は有効だが角の基準が消える
+            var posture = new ToolAxisSpin(SpinZero, 0f);
+            Matrix4x4 m = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+
+            Assert.IsFalse(RobotPostureConvert.ToToolAxisSpin(m, Tool, SpinZero, out ToolAxisSpin back),
+                           "決まらないのに true が返っている");
+
+            // 角が不定でも工具軸は取れること
+            Assert.AreEqual(0f, Vector3.Distance(SpinZero, back.Axis), Tol);
+        }
+
+        [Test]
+        public void ジンバルロックでも工具軸と回転角は取り出せる()
+        {
+            // ZYX が壊れる姿勢 (ピッチ +90)
+            var locked = new ZyxEulerAngles(0f, 90f, 30f);
+            Assert.IsTrue(locked.IsNearGimbalLock());
+
+            Assert.IsTrue(RobotPostureConvert.ZyxToToolAxisSpin(locked, Tool, SpinZero,
+                                                                out ToolAxisSpin posture));
+            Assert.AreEqual(1f, posture.Axis.magnitude, Tol);
+
+            // 特異点の位置が違うので、こちらの表現では普通に往復する
+            Matrix4x4 rebuilt = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+            Assert.AreEqual(0f, MaxDiff(RobotPostureConvert.FromZyx(locked), rebuilt), 1e-3f);
+        }
+
+        [Test]
+        public void 零基準に進行方向を渡すとトーチ姿勢の回転角と一致する()
+        {
+            LmnFrame f = TiltedFrame;
+
+            for (int i = 0; i < 100; i++)
+            {
+                var t = new TorchAngles(Random.Range(-70f, 70f), Random.Range(-70f, 70f),
+                                        Random.Range(-180f, 180f));
+
+                Assert.IsTrue(RobotPostureConvert.TorchToToolAxisSpin(f, t, Tool, f.M,
+                                                                     out ToolAxisSpin posture));
+                Assert.AreEqual(0f, Mathf.DeltaAngle(t.SpinDeg, posture.SpinDeg), 1e-2f);
+            }
+        }
+
+        [Test]
+        public void 零基準が違うと姿勢は同じでも回転角がずれる()
+        {
+            var posture = new ToolAxisSpin(AxisAt(35f, 40f), 25f);
+            Matrix4x4 m = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+
+            // 同じ姿勢を別の零基準で読み直す。規約の食い違いはこう出る
+            Assert.IsTrue(RobotPostureConvert.ToToolAxisSpin(m, Tool, Vector3.right, out ToolAxisSpin other));
+
+            Assert.AreEqual(0f, Vector3.Distance(posture.Axis, other.Axis), Tol, "工具軸は同じ");
+            Assert.Greater(Mathf.Abs(Mathf.DeltaAngle(posture.SpinDeg, other.SpinDeg)), 1f, "角はずれる");
+        }
+
+        #endregion
+
+        #region 姿勢を 1 回の回転として渡す (3 表現とは別)
+
+        [Test]
+        public void ロドリゲスの回転軸は工具軸とは別物()
+        {
+            var posture = new ToolAxisSpin(AxisAt(35f, 40f), 25f);
+            Matrix4x4 m = RobotPostureConvert.FromToolAxisSpin(posture, Tool, SpinZero);
+
+            AxisRotation whole = RobotPostureConvert.ToAxisRotation(m);
+
+            // 取り違えると静かにずれる。別物であることを固定しておく
+            Assert.Greater(Vector3.Angle(whole.Axis, posture.Axis), 5f);
+        }
 
         [TestCase(1f, 0f, 0f, 30f)]
         [TestCase(0f, 0f, 1f, -120f)]
@@ -109,8 +219,8 @@ namespace ToolRuntimeGizmos.Tests
                 var e = new ZyxEulerAngles(Random.Range(-180f, 180f), Random.Range(-89f, 89f),
                                      Random.Range(-180f, 180f));
 
-                AxisRotation a = RobotPostureConvert.ZyxToAxisRotation(e);
-                ZyxEulerAngles back = RobotPostureConvert.AxisRotationToZyx(a);
+                AxisRotation a = RobotPostureConvert.ToAxisRotation(RobotPostureConvert.FromZyx(e));
+                ZyxEulerAngles back = RobotPostureConvert.ToZyx(RobotPostureConvert.FromAxisRotation(a));
 
                 Assert.AreEqual(0f, MaxDiff(RobotPostureConvert.FromZyx(e),
                                             RobotPostureConvert.FromZyx(back)), 1e-3f);
@@ -242,18 +352,22 @@ namespace ToolRuntimeGizmos.Tests
                 ZyxEulerAngles e = RobotPostureConvert.TorchToZyx(f, t, Tool);
                 Assert.AreEqual(0f, MaxDiff(truth, RobotPostureConvert.FromZyx(e)), 1e-3f, "ZYX 経由");
 
-                // トーチ -> 軸回転 -> 行列
-                AxisRotation a = RobotPostureConvert.TorchToAxisRotation(f, t, Tool);
-                Assert.AreEqual(0f, MaxDiff(truth, RobotPostureConvert.FromAxisRotation(a)), 1e-3f, "軸回転経由");
+                // トーチ -> 工具軸 + 回転角 -> 行列
+                Assert.IsTrue(RobotPostureConvert.TorchToToolAxisSpin(f, t, Tool, SpinZero,
+                                                                      out ToolAxisSpin p));
+                Assert.AreEqual(0f, MaxDiff(truth, RobotPostureConvert.FromToolAxisSpin(p, Tool, SpinZero)),
+                                1e-3f, "工具軸経由");
 
-                // ZYX -> トーチ、軸回転 -> トーチ が元に戻る
+                // ZYX -> トーチ、工具軸 + 回転角 -> トーチ が元に戻る
                 Assert.AreEqual(TorchAngleIssues.None,
                                 RobotPostureConvert.ZyxToTorch(e, f, Tool, out TorchAngles viaZyx));
                 Assert.AreEqual(TorchAngleIssues.None,
-                                RobotPostureConvert.AxisRotationToTorch(a, f, Tool, out TorchAngles viaAxis));
+                                RobotPostureConvert.ToolAxisSpinToTorch(p, Tool, SpinZero, f,
+                                                                        out TorchAngles viaAxis));
 
                 Assert.AreEqual(0f, Mathf.DeltaAngle(t.SpinDeg, viaZyx.SpinDeg), 1e-2f, "ZYX 経由のスピン");
-                Assert.AreEqual(0f, Mathf.DeltaAngle(t.WorkDeg, viaAxis.WorkDeg), 1e-2f, "軸回転経由の狙い角");
+                Assert.AreEqual(0f, Mathf.DeltaAngle(t.WorkDeg, viaAxis.WorkDeg), 1e-2f, "工具軸経由の狙い角");
+                Assert.AreEqual(0f, Mathf.DeltaAngle(t.SpinDeg, viaAxis.SpinDeg), 1e-2f, "工具軸経由のスピン");
             }
         }
 
