@@ -10,7 +10,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// 弧長ではなくそのまま移動量として使う版。
     /// カメラにもスクリーン座標にも依存しない。
     /// </summary>
-    public struct RayAxisDrag
+    internal struct RayAxisDrag
     {
         /// <summary>
         /// レイと軸が平行に近いとみなす閾値。sin^2(なす角) がこれを下回ると

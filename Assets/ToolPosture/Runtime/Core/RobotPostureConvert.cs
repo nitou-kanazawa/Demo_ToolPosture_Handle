@@ -405,7 +405,7 @@ namespace ToolRuntimeGizmos.Core
         /// v から axis 成分を抜いて正規化する。平行で取り出せない場合は
         /// 軸に直交する適当な向きを返す (基準が決まらない縮退)。
         /// </summary>
-        public static Vector3 Reject(Vector3 v, Vector3 axis)
+        internal static Vector3 Reject(Vector3 v, Vector3 axis)
         {
             Vector3 a = axis.normalized;
             Vector3 r = v - a * Vector3.Dot(v, a);
@@ -416,7 +416,7 @@ namespace ToolRuntimeGizmos.Core
         }
 
         /// <summary>3 本の列ベクトルから行列を組む。</summary>
-        public static Matrix4x4 Basis(Vector3 c0, Vector3 c1, Vector3 c2)
+        internal static Matrix4x4 Basis(Vector3 c0, Vector3 c1, Vector3 c2)
         {
             Matrix4x4 m = Matrix4x4.identity;
             m.SetColumn(0, new Vector4(c0.x, c0.y, c0.z, 0f));

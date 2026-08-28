@@ -5,7 +5,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// <summary>
     /// ハンドルの形状の種別。
     /// </summary>
-    public enum GizmoShapeKind
+    internal enum GizmoShapeKind
     {
         /// <summary>
         /// 平面上の円弧。当たり判定は円弧に沿ったチューブ (トーラス) で取る。
@@ -31,7 +31,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// 描画もこの記述を読む側が行う。これによりハンドルは Physics にも Camera にも
     /// 依存しない。
     /// </summary>
-    public struct GizmoHandleShape
+    internal struct GizmoHandleShape
     {
         public GizmoShapeKind Kind;
 

@@ -6,7 +6,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// <summary>
     /// 当たり判定のコライダーを Gizmos で可視化する方法。
     /// </summary>
-    public enum ColliderGizmoMode
+    internal enum ColliderGizmoMode
     {
         /// <summary>
         /// 描かない。
@@ -38,7 +38,7 @@ namespace ToolRuntimeGizmos.Gizmo
     /// Collider.Raycast を直接使う。シーンクエリに一切参加しないので、アプリ側が
     /// 干渉チェック等で回している raycast を汚さない。
     /// </summary>
-    public class GizmoHandleColliders
+    internal class GizmoHandleColliders
     {
         #region 定数
 
