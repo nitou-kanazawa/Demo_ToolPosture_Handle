@@ -86,9 +86,9 @@ namespace ToolRuntimeGizmos.Tests
 
         // ------------------------------------------------------------------
 
-        private static PathFrame MakeFrame(Vector3 travel, Vector3 normal)
+        private static WorkFrame MakeFrame(Vector3 travel, Vector3 normal)
         {
-            PathFrame.TryCreate(Vector3.zero, travel, normal, CrossFeedSide.RightOfTravel, out var f);
+            WorkFrame.TryCreate(Vector3.zero, travel, normal, CrossFeedSide.RightOfTravel, out var f);
             return f;
         }
 
@@ -126,7 +126,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void ロボット側の_ZYX_オイラーから姿勢を復元できる()
         {
-            PathFrame f = MakeFrame(new Vector3(0.6f, 0.3f, 0.5f), new Vector3(-0.3f, 0.9f, -0.2f));
+            WorkFrame f = MakeFrame(new Vector3(0.6f, 0.3f, 0.5f), new Vector3(-0.3f, 0.9f, -0.2f));
 
             foreach (float theta in new[] { -120f, -15f, 70f })
             foreach (float phi in new[] { 35f, 70f })
@@ -184,7 +184,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 進行方向基準とワールド基準ではスピンの零点が異なる()
         {
-            PathFrame f = MakeFrame(new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 1f));
+            WorkFrame f = MakeFrame(new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 1f));
             var a = ToolPostureAngles.FromSpherical(-40f, 60f, 0f);
             Vector3 axis = a.GetAxisWorld(f);
 
@@ -201,7 +201,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void ワールド基準は工具軸が基準軸と平行なとき退化を回避する()
         {
-            PathFrame f = MakeFrame(new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 1f));
+            WorkFrame f = MakeFrame(new Vector3(1f, 0f, 0f), new Vector3(0f, 0f, 1f));
 
             // 工具軸 = ワールド基準軸 (0,0,1) と一致させる
             Vector3 axis = new Vector3(0f, 0f, 1f);

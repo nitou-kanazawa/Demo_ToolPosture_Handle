@@ -51,33 +51,6 @@ namespace ToolRuntimeGizmos.Core
         public override string ToString() => string.Format("axis={0} angle={1:F2}", Axis, AngleDeg);
     }
 
-    /// <summary>溶接線に沿った正規直交フレーム。</summary>
-    /// <remarks>
-    /// N は面法線、M は進行方向、L はその直交方向。与えられた値は直交化される。
-    /// <see cref="PathFrame"/> の Unity 側と同じ意味だが、こちらは座標系を問わない。
-    /// </remarks>
-    public readonly struct LmnFrame
-    {
-        public readonly Vector3 L, M, N;
-
-        public LmnFrame(Vector3 l, Vector3 m, Vector3 n)
-        {
-            N = n.normalized;
-            M = RobotPostureConvert.Reject(m, N);
-
-            Vector3 lp = l - N * Vector3.Dot(l, N) - M * Vector3.Dot(l, M);
-            // L が潰れている場合だけ第 3 軸で補う
-            L = lp.sqrMagnitude > 1e-10f ? lp.normalized : Vector3.Cross(M, N);
-        }
-
-        /// <summary>p(i) -> p(i+1) と面法線からフレームを組む。L は M x N 側に取る。</summary>
-        public static LmnFrame FromPath(Vector3 point, Vector3 nextPoint, Vector3 normal)
-        {
-            Vector3 n = normal.normalized;
-            Vector3 m = RobotPostureConvert.Reject(nextPoint - point, n);
-            return new LmnFrame(Vector3.Cross(m, n), m, n);
-        }
-    }
 
     /// <summary>LMN 上のトーチ姿勢。</summary>
     public readonly struct TorchAngles
@@ -142,7 +115,7 @@ namespace ToolRuntimeGizmos.Core
     ///
     ///   1. ZYX オイラー角              <see cref="ZyxEulerAngles"/>
     ///   2. 工具軸 + 軸まわりの回転角    <see cref="ToolAxisSpin"/>
-    ///   3. LMN フレーム + トーチ姿勢    <see cref="LmnFrame"/> + <see cref="TorchAngles"/>
+    ///   3. 母材フレーム + トーチ姿勢      <see cref="WorkFrame"/> + <see cref="TorchAngles"/>
     ///
     /// どれも回転行列を経由する。3 表現 x 3 表現を個別に書かず、行列との出入りだけを持つ。
     ///
@@ -318,32 +291,32 @@ namespace ToolRuntimeGizmos.Core
 
         #region 3. LMN フレーム + トーチ姿勢
 
-        /// <summary>LMN フレームとトーチ姿勢から回転行列を組む。</summary>
-        public static Matrix4x4 FromTorch(LmnFrame f, TorchAngles t, ToolAxes tool)
+        /// <summary>母材フレームとトーチ姿勢から回転行列を組む。</summary>
+        public static Matrix4x4 FromTorch(WorkFrame f, TorchAngles t, ToolAxes tool)
         {
             float cw = Mathf.Cos(t.WorkDeg * Mathf.Deg2Rad), sw = Mathf.Sin(t.WorkDeg * Mathf.Deg2Rad);
             float ct = Mathf.Cos(t.TravelDeg * Mathf.Deg2Rad), st = Mathf.Sin(t.TravelDeg * Mathf.Deg2Rad);
 
             // 工具軸。(tan w, tan t, 1) と同じ向きだが、cos w cos t を掛けてあるので
             // 角度が 90 度でも発散しない
-            Vector3 axis = (sw * ct * f.L + cw * st * f.M + cw * ct * f.N).normalized;
+            Vector3 axis = (sw * ct * f.CrossFeed + cw * st * f.Feed + cw * ct * f.Normal).normalized;
 
             // 回転角の零基準は進行方向。工具軸が決まればあとは軸まわりの回転
-            return FromToolAxisSpin(new ToolAxisSpin(axis, t.SpinDeg), tool, f.M);
+            return FromToolAxisSpin(new ToolAxisSpin(axis, t.SpinDeg), tool, f.Feed);
         }
 
-        /// <summary>回転行列を LMN 上のトーチ姿勢に分解する。</summary>
+        /// <summary>回転行列を母材フレーム上のトーチ姿勢に分解する。</summary>
         /// <returns>表しきれなかったこと。<see cref="TorchAngleIssues.None"/> なら往復できる。</returns>
-        public static TorchAngleIssues ToTorch(Matrix4x4 m, LmnFrame f, ToolAxes tool,
+        public static TorchAngleIssues ToTorch(Matrix4x4 m, WorkFrame f, ToolAxes tool,
                                                out TorchAngles angles)
         {
             // 回転角の零基準は進行方向。ここは工具軸 + 回転角の分解そのもの
-            bool spinDefined = ToToolAxisSpin(m, tool, f.M, out ToolAxisSpin posture);
+            bool spinDefined = ToToolAxisSpin(m, tool, f.Feed, out ToolAxisSpin posture);
             Vector3 axis = posture.Axis;
 
-            float dn = Vector3.Dot(axis, f.N);
-            angles = new TorchAngles(Mathf.Atan2(Vector3.Dot(axis, f.L), dn) * Mathf.Rad2Deg,
-                                     Mathf.Atan2(Vector3.Dot(axis, f.M), dn) * Mathf.Rad2Deg,
+            float dn = Vector3.Dot(axis, f.Normal);
+            angles = new TorchAngles(Mathf.Atan2(Vector3.Dot(axis, f.CrossFeed), dn) * Mathf.Rad2Deg,
+                                     Mathf.Atan2(Vector3.Dot(axis, f.Feed), dn) * Mathf.Rad2Deg,
                                      posture.SpinDeg);
 
             TorchAngleIssues issues = dn > 0f ? TorchAngleIssues.None
@@ -363,11 +336,11 @@ namespace ToolRuntimeGizmos.Core
                                                        Vector3 spinZeroReference)
             => ToZyx(FromToolAxisSpin(posture, tool, spinZeroReference));
 
-        public static TorchAngleIssues ZyxToTorch(ZyxEulerAngles e, LmnFrame f, ToolAxes tool,
+        public static TorchAngleIssues ZyxToTorch(ZyxEulerAngles e, WorkFrame f, ToolAxes tool,
                                                   out TorchAngles angles)
             => ToTorch(FromZyx(e), f, tool, out angles);
 
-        public static ZyxEulerAngles TorchToZyx(LmnFrame f, TorchAngles t, ToolAxes tool)
+        public static ZyxEulerAngles TorchToZyx(WorkFrame f, TorchAngles t, ToolAxes tool)
             => ToZyx(FromTorch(f, t, tool));
 
         /// <remarks>
@@ -375,13 +348,13 @@ namespace ToolRuntimeGizmos.Core
         /// <paramref name="spinZeroReference"/> に M を渡せば
         /// <see cref="ToolAxisSpin.SpinDeg"/> と <see cref="TorchAngles.SpinDeg"/> は一致する。
         /// </remarks>
-        public static bool TorchToToolAxisSpin(LmnFrame f, TorchAngles t, ToolAxes tool,
+        public static bool TorchToToolAxisSpin(WorkFrame f, TorchAngles t, ToolAxes tool,
                                                Vector3 spinZeroReference, out ToolAxisSpin posture)
             => ToToolAxisSpin(FromTorch(f, t, tool), tool, spinZeroReference, out posture);
 
         public static TorchAngleIssues ToolAxisSpinToTorch(ToolAxisSpin posture, ToolAxes tool,
                                                            Vector3 spinZeroReference,
-                                                           LmnFrame f, out TorchAngles angles)
+                                                           WorkFrame f, out TorchAngles angles)
             => ToTorch(FromToolAxisSpin(posture, tool, spinZeroReference), f, tool, out angles);
 
         #endregion

@@ -61,7 +61,7 @@ namespace ToolRuntimeGizmos.Demo
                 int segment = Mathf.Min(k / perSegment, path.SegmentCount - 1);
                 float u = (k - segment * perSegment) / (float)perSegment;
 
-                PathFrame f = path.GetFrame(segment, u);
+                WorkFrame f = path.GetFrame(segment, u);
                 Vector3 center = f.Origin - f.Normal * sinkDepth;
 
                 _verts.Add(toLocal.MultiplyPoint3x4(center - f.CrossFeed * halfWidth));

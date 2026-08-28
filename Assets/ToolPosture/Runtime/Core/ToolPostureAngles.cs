@@ -101,7 +101,7 @@ namespace ToolRuntimeGizmos.Core
         /// <summary>
         /// 工具軸 X のワールド方向。
         /// </summary>
-        public Vector3 GetAxisWorld(in PathFrame frame)
+        public Vector3 GetAxisWorld(in WorkFrame frame)
             => frame.LmnToWorldDirection(GetAxisLmn()).normalized;
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace ToolRuntimeGizmos.Core
                 azimuthDeg = Mathf.Atan2(lmn.y, lmn.x) * Mathf.Rad2Deg;
         }
 
-        public void SetAxisWorld(in PathFrame frame, Vector3 worldDir)
+        public void SetAxisWorld(in WorkFrame frame, Vector3 worldDir)
             => SetAxisLmn(frame.WorldDirectionToLmn(worldDir.normalized));
 
         #endregion
@@ -231,7 +231,7 @@ namespace ToolRuntimeGizmos.Core
         /// スピン 0 度の基準ベクトル (工具軸に直交)。既定は進行方向 M を工具軸直交面へ投影したもの。
         /// 工具軸が M と平行になる退化時は L、さらに退化する場合は N へフォールバックする。
         /// </summary>
-        public static Vector3 SpinZeroReference(in PathFrame frame, Vector3 axisWorld)
+        public static Vector3 SpinZeroReference(in WorkFrame frame, Vector3 axisWorld)
         {
             Vector3 r = frame.Feed - Vector3.Dot(frame.Feed, axisWorld) * axisWorld;
             if (r.sqrMagnitude < 1e-8f)
@@ -241,13 +241,13 @@ namespace ToolRuntimeGizmos.Core
             return r.normalized;
         }
 
-        public Vector3 GetSpinZeroReferenceWorld(in PathFrame frame, SpinReference spinReference = default)
+        public Vector3 GetSpinZeroReferenceWorld(in WorkFrame frame, SpinReference spinReference = default)
             => spinReference.Resolve(frame, GetAxisWorld(frame));
 
         /// <summary>
         /// スピン適用後の工具基準ベクトル (工具軸に直交)。
         /// </summary>
-        public Vector3 GetToolReferenceWorld(in PathFrame frame, SpinReference spinReference = default)
+        public Vector3 GetToolReferenceWorld(in WorkFrame frame, SpinReference spinReference = default)
         {
             Vector3 x = GetAxisWorld(frame);
             return Quaternion.AngleAxis(spinAngleDeg, x) * spinReference.Resolve(frame, x);
@@ -262,7 +262,7 @@ namespace ToolRuntimeGizmos.Core
         /// toolReferenceAxis がスピン基準ベクトルに一致する回転を返す。
         /// toolShaftAxis と toolReferenceAxis は互いに直交していること。
         /// </summary>
-        public Quaternion GetToolRotation(in PathFrame frame, Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
+        public Quaternion GetToolRotation(in WorkFrame frame, Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
                                           SpinReference spinReference = default)
         {
             Vector3 x = GetAxisWorld(frame);
@@ -279,7 +279,7 @@ namespace ToolRuntimeGizmos.Core
         /// 工具軸が N に一致する (極) 場合は旋回角が回転から決まらないので、
         /// SetAxisLmn と同じく現在の値をそのまま残す。
         /// </summary>
-        public void SetToolRotation(in PathFrame frame, Quaternion toolRotation,
+        public void SetToolRotation(in WorkFrame frame, Quaternion toolRotation,
                                     Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
                                     SpinReference spinReference = default)
         {
@@ -293,7 +293,7 @@ namespace ToolRuntimeGizmos.Core
         /// <summary>
         /// 工具の姿勢 (回転) から新しい ToolPostureAngles を作る。
         /// </summary>
-        public static ToolPostureAngles FromToolRotation(in PathFrame frame, Quaternion toolRotation,
+        public static ToolPostureAngles FromToolRotation(in WorkFrame frame, Quaternion toolRotation,
                                                          Vector3 toolShaftAxis, Vector3 toolReferenceAxis,
                                     SpinReference spinReference = default)
         {

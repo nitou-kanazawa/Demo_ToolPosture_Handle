@@ -4,7 +4,7 @@ using ToolRuntimeGizmos.Core;
 
 namespace ToolRuntimeGizmos.Tests
 {
-    public class PathFrameTests
+    public class WorkFrameTests
     {
         private const float Tol = 1e-4f;
 
@@ -12,7 +12,7 @@ namespace ToolRuntimeGizmos.Tests
         public void 生の法線が進行方向と直交していなくても正規直交フレームになる()
         {
             // 進行方向 +X、法線は進行方向成分を含む
-            bool ok = PathFrame.TryCreate(Vector3.zero, new Vector3(2f, 0f, 0f), new Vector3(0.3f, 1f, 0f),
+            bool ok = WorkFrame.TryCreate(Vector3.zero, new Vector3(2f, 0f, 0f), new Vector3(0.3f, 1f, 0f),
                                           CrossFeedSide.RightOfTravel, out var f);
 
             Assert.IsTrue(ok);
@@ -30,7 +30,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void L_は進行方向の右側を向く()
         {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var f);
 
             // +X 方向を向き +Y が上のとき、右側は -Z (Unity は左手系)
@@ -40,8 +40,8 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void L_の向きは反転できる()
         {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up, CrossFeedSide.RightOfTravel, out var r);
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up, CrossFeedSide.LeftOfTravel, out var l);
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up, CrossFeedSide.RightOfTravel, out var r);
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up, CrossFeedSide.LeftOfTravel, out var l);
 
             Assert.AreEqual(0f, Vector3.Distance(r.CrossFeed, -l.CrossFeed), Tol);
         }
@@ -49,37 +49,27 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 区間長ゼロでは構築に失敗する()
         {
-            Assert.IsFalse(PathFrame.TryCreate(Vector3.zero, Vector3.zero, Vector3.up,
+            Assert.IsFalse(WorkFrame.TryCreate(Vector3.zero, Vector3.zero, Vector3.up,
                                                CrossFeedSide.RightOfTravel, out _));
         }
 
         [Test]
         public void 法線が進行方向と平行なら構築に失敗する()
         {
-            Assert.IsFalse(PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.right,
+            Assert.IsFalse(WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.right,
                                                CrossFeedSide.RightOfTravel, out _));
         }
 
-        [Test]
-        public void 構築失敗時は前のフレームを引き継ぐ()
-        {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up, CrossFeedSide.RightOfTravel, out var prev);
-            var next = PathFrame.CreateOrInherit(Vector3.one, Vector3.zero, Vector3.up,
-                                                 CrossFeedSide.RightOfTravel, prev);
-
-            Assert.AreEqual(0f, Vector3.Distance(next.Feed, prev.Feed), Tol);
-            Assert.AreEqual(0f, Vector3.Distance(next.Origin, Vector3.one), Tol);
-        }
     }
 
     public class ProjectedAngleTests
     {
         private const float Tol = 1e-3f;
 
-        private static PathFrame UnitFrame()
+        private static WorkFrame UnitFrame()
         {
             // L = +X, M = +Y, N = +Z となる人工フレーム (LMN 成分とワールド成分が一致する)
-            PathFrame.TryFromBasis(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward, out var f);
+            WorkFrame.TryFromBasis(Vector3.zero, Vector3.right, Vector3.up, Vector3.forward, out var f);
             return f;
         }
 
@@ -296,7 +286,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void ワールド方向から姿勢を設定できる()
         {
-            PathFrame.TryCreate(Vector3.zero, new Vector3(1f, 0f, 1f), Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, new Vector3(1f, 0f, 1f), Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var frame);
 
             var src = ToolPostureAngles.FromProjected(23f, -17f, 0f);
@@ -317,7 +307,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 工具姿勢はシャフト軸を工具軸に一致させる()
         {
-            PathFrame.TryCreate(Vector3.zero, new Vector3(1f, 0.2f, 0.6f), Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, new Vector3(1f, 0.2f, 0.6f), Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var frame);
             var a = ToolPostureAngles.FromProjected(18f, -25f, 40f);
 
@@ -330,7 +320,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void スピン基準は工具軸に直交する()
         {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var frame);
             var a = ToolPostureAngles.FromProjected(30f, 20f, 77f);
 
@@ -342,7 +332,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void 工具軸が進行方向と平行ならスピン基準はLへフォールバックする()
         {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var frame);
 
             Vector3 reference = ToolPostureAngles.SpinZeroReference(frame, frame.Feed);
@@ -353,7 +343,7 @@ namespace ToolRuntimeGizmos.Tests
         [Test]
         public void スピンは工具軸まわりの回転になる()
         {
-            PathFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
+            WorkFrame.TryCreate(Vector3.zero, Vector3.right, Vector3.up,
                                 CrossFeedSide.RightOfTravel, out var frame);
             var a = ToolPostureAngles.FromProjected(12f, 8f, 90f);
 

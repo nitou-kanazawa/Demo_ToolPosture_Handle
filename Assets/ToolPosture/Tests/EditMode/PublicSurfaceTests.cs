@@ -22,14 +22,13 @@ namespace ToolRuntimeGizmos.Tests
             "ToolRuntimeGizmos.Core.ZyxEulerAngles",
             "ToolRuntimeGizmos.Core.ToolAxisSpin",
             "ToolRuntimeGizmos.Core.TorchAngles",
-            "ToolRuntimeGizmos.Core.LmnFrame",
             "ToolRuntimeGizmos.Core.ToolAxes",
             "ToolRuntimeGizmos.Core.TorchAngleIssues",
             "ToolRuntimeGizmos.Core.AxisRotation",
             "ToolRuntimeGizmos.Core.RobotPostureConvert",
 
             // ハンドルが持つ姿勢
-            "ToolRuntimeGizmos.Core.PathFrame",
+            "ToolRuntimeGizmos.Core.WorkFrame",
             "ToolRuntimeGizmos.Core.CrossFeedSide",
             "ToolRuntimeGizmos.Core.ToolPostureAngles",
 
@@ -84,7 +83,7 @@ namespace ToolRuntimeGizmos.Tests
 
         [Test]
         public void Coreが公開している型は一覧どおり()
-            => CollectionAssert.AreEqual(Sorted(CorePublicTypes), ExportedTypesOf(typeof(PathFrame)),
+            => CollectionAssert.AreEqual(Sorted(CorePublicTypes), ExportedTypesOf(typeof(WorkFrame)),
                                          "公開範囲が変わっている。意図した変更なら一覧を更新すること");
 
         [Test]

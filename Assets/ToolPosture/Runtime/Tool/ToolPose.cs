@@ -20,10 +20,10 @@ namespace ToolRuntimeGizmos.Tool
     /// </summary>
     public readonly struct ToolPose
     {
-        public readonly PathFrame Frame;
+        public readonly WorkFrame Frame;
         public readonly ToolPostureAngles Angles;
 
-        public ToolPose(PathFrame frame, ToolPostureAngles angles)
+        public ToolPose(WorkFrame frame, ToolPostureAngles angles)
         {
             Frame = frame;
             Angles = angles;
@@ -43,7 +43,7 @@ namespace ToolRuntimeGizmos.Tool
         /// フレームだけ差し替える。姿勢はフレーム相対なので、向きが変われば
         /// 工具の世界姿勢も一緒に回る (溶接角を継目基準に保つということ)。
         /// </summary>
-        public ToolPose WithFrame(PathFrame frame) => new ToolPose(frame, Angles);
+        public ToolPose WithFrame(WorkFrame frame) => new ToolPose(frame, Angles);
 
         /// <summary>
         /// 姿勢だけ差し替える。位置と向きはそのまま。

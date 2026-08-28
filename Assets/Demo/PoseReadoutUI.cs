@@ -75,7 +75,7 @@ namespace ToolRuntimeGizmos.Demo
                 : "";
 
             // --- ローカル (LMN + トーチ姿勢) ---
-            PathFrame f = pose.Frame;
+            WorkFrame f = pose.Frame;
             ToolPostureAngles a = pose.Angles;
 
             return

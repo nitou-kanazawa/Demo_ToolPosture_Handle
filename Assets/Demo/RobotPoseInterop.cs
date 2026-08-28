@@ -55,7 +55,7 @@ namespace ToolRuntimeGizmos.Demo
             Vector3 travel = Conversion.ToUnity(nextPointRobot - pointRobot);
             Vector3 normal = Conversion.ToUnity(normalRobot);
 
-            if (!PathFrame.TryCreate(origin, travel, normal, crossFeedSide, out PathFrame frame))
+            if (!WorkFrame.TryCreate(origin, travel, normal, crossFeedSide, out WorkFrame frame))
                 return false;                       // 区間長ゼロ、または法線が進行方向と平行
 
             // 回転は成分の入れ替えだけでは合わない。ToUnity に任せる
@@ -110,7 +110,7 @@ namespace ToolRuntimeGizmos.Demo
         /// <param name="workDeg">狙い角。LN 平面上で N から L 方向へ測る。</param>
         /// <param name="travelDeg">前進後退角。MN 平面上で N から M 方向へ測る。</param>
         /// <param name="spinDeg">工具軸まわりの回転。</param>
-        public void GetLocal(out PathFrame frame,
+        public void GetLocal(out WorkFrame frame,
                              out float workDeg, out float travelDeg, out float spinDeg)
         {
             ToolPose pose = handle.Pose;
@@ -129,7 +129,7 @@ namespace ToolRuntimeGizmos.Demo
         /// LMN フレームとトーチ姿勢を与える。フレームと角度を 1 回で渡すので、
         /// 原点だけ新しく向きが古い、といった中間状態を作らない。
         /// </summary>
-        public void SetLocal(PathFrame frame, float workDeg, float travelDeg, float spinDeg)
+        public void SetLocal(WorkFrame frame, float workDeg, float travelDeg, float spinDeg)
         {
             ToolPostureAngles angles = handle.Pose.Angles;
 
@@ -147,7 +147,7 @@ namespace ToolRuntimeGizmos.Demo
         public bool SetLocal(Vector3 origin, Vector3 point, Vector3 nextPoint, Vector3 normal,
                              float workDeg, float travelDeg, float spinDeg)
         {
-            if (!PathFrame.TryCreate(origin, nextPoint - point, normal, crossFeedSide, out PathFrame frame))
+            if (!WorkFrame.TryCreate(origin, nextPoint - point, normal, crossFeedSide, out WorkFrame frame))
                 return false;
 
             SetLocal(frame, workDeg, travelDeg, spinDeg);

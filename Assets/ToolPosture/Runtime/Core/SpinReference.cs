@@ -65,7 +65,7 @@ namespace ToolRuntimeGizmos.Core
         /// <summary>
         /// この設定でのスピン 0 度の基準ベクトル (工具軸に直交する単位ベクトル)。
         /// </summary>
-        public Vector3 Resolve(in PathFrame frame, Vector3 toolAxisWorld)
+        public Vector3 Resolve(in WorkFrame frame, Vector3 toolAxisWorld)
         {
             if (mode != SpinReferenceMode.WorldAxisCross)
                 return ToolPostureAngles.SpinZeroReference(frame, toolAxisWorld);

@@ -166,10 +166,10 @@ namespace ToolRuntimeGizmos.Demo
         /// 区間 segment (0 起点) の位置 u (0..1) におけるフレームを返す。
         /// 区間内では M は一定 (直線区間)、N は端点の法線を球面補間する。
         /// </summary>
-        public PathFrame GetFrame(int segment, float u)
+        public WorkFrame GetFrame(int segment, float u)
         {
             if (SegmentCount == 0 || normals.Count < points.Count)
-                return PathFrame.Fallback(transform.position);
+                return WorkFrame.Fallback(transform.position);
 
             segment = Mathf.Clamp(segment, 0, SegmentCount - 1);
             u = Mathf.Clamp01(u);
@@ -182,9 +182,9 @@ namespace ToolRuntimeGizmos.Demo
             Vector3 origin = Vector3.Lerp(p0, p1, u);
             Vector3 rawNormal = Vector3.Slerp(n0, n1, u);
 
-            if (PathFrame.TryCreate(origin, p1 - p0, rawNormal, crossFeedSide, out var frame))
+            if (WorkFrame.TryCreate(origin, p1 - p0, rawNormal, crossFeedSide, out var frame))
                 return frame;
-            return PathFrame.Fallback(origin);
+            return WorkFrame.Fallback(origin);
         }
 
         #endregion
