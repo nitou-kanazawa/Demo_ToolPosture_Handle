@@ -460,6 +460,52 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &272402475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 272402477}
+  - component: {fileID: 272402476}
+  m_Layer: 0
+  m_Name: RobotPoseInterop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &272402476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 272402475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d22140740e0781498667527dfc7a07e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ToolRuntimeGizmos.Demo::ToolRuntimeGizmos.Demo.RobotPoseInterop
+  handle: {fileID: 1911305943}
+  crossFeedSide: 0
+--- !u!4 &272402477
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 272402475}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &272777675
 GameObject:
   m_ObjectHideFlags: 0
@@ -757,6 +803,8 @@ MonoBehaviour:
   handle: {fileID: 1911305943}
   reachCenter: {fileID: 1360235893}
   reachRadius: 0.08
+  maxAxisTiltDeg: 30
+  axisReference: {fileID: 0}
 --- !u!4 &349129772
 Transform:
   m_ObjectHideFlags: 0
@@ -1366,3 +1414,4 @@ SceneRoots:
   - {fileID: 331591216}
   - {fileID: 349129772}
   - {fileID: 1360235893}
+  - {fileID: 272402477}

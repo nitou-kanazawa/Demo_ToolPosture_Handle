@@ -24,6 +24,8 @@ namespace ToolRuntimeGizmos.Demo
     {
         // 参照
         [SerializeField] private ToolPoseHandle handle;
+        [Tooltip("ロボット座標への変換。未設定ならシーンから探す")]
+        [SerializeField] private RobotPoseInterop interop;
 
         // 擬似 IK の設定 (実アプリでは本物の IK に差し替える)
         [Tooltip("この点から届く範囲を可動域とみなす")]
@@ -55,6 +57,7 @@ namespace ToolRuntimeGizmos.Demo
         private void Awake()
         {
             if (handle == null) handle = FindAnyObjectByType<ToolPoseHandle>();
+            if (interop == null) interop = FindAnyObjectByType<RobotPoseInterop>();
         }
 
         /// <summary>
@@ -105,9 +108,9 @@ namespace ToolRuntimeGizmos.Demo
 
         private void OnPoseChanged(ToolPoseEvent e)
         {
-            // ハンドルの値が変わっただけで、ロボットはまだ動いていない
-            Vector3 tcp = Conversion.ToExternal(e.Pose.Position);
-            ZyxEulerAngles rpy = ToRobotZyx();
+            // ハンドルの値が変わっただけで、ロボットはまだ動いていない。
+            // ロボット座標への変換は Interop に任せる
+            interop.GetRobotPose(out Vector3 tcp, out ZyxEulerAngles rpy);
 
             if (!TrySolve(tcp, rpy))
             {
@@ -146,28 +149,6 @@ namespace ToolRuntimeGizmos.Demo
         }
 
         #endregion
-
-        /// <summary>
-        /// 今の姿勢をロボット系の ZYX オイラーで返す。
-        ///
-        /// クォータニオンを座標変換せず、工具軸と基準方向の 2 本のベクトルで渡す。
-        /// ベクトルは軸の対応で入れ替えるだけで移るので、符号の取り違えが起きない。
-        /// (クォータニオンは成分を入れ替えるだけだと全く別の回転になる)
-        ///
-        /// 工具のローカル軸割当も同じ座標系の規約に揃えること。忘れると 180 度ずれる。
-        /// </summary>
-        private ZyxEulerAngles ToRobotZyx()
-        {
-            ToolPostureFollower f = handle.Follower;
-            Vector3 shaft = f != null ? f.shaftAxis : Vector3.up;
-            Vector3 reference = f != null ? f.referenceAxis : Vector3.forward;
-
-            return ZyxEulerAngles.FromToolAxes(
-                Conversion.ToExternal(handle.ToolAxisWorld),
-                Conversion.ToExternal(handle.ToolReferenceWorld),
-                Conversion.ToExternal(shaft),
-                Conversion.ToExternal(reference));
-        }
 
         #region 差し替える部分 (擬似 IK)
 
