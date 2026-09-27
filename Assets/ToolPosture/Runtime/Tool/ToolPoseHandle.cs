@@ -70,9 +70,9 @@ namespace ToolRuntimeGizmos.Tool
         [Tooltip("ハンドル全体の倍率。2D ビューの拡大率に合わせるなど、見せ方に応じて動かす")]
         [SerializeField] private float sizeScale = 1f;
 
-        [Tooltip("2D のとき使う「画面座標 → ワールドのレイ」。IGizmoRayProvider を実装したコンポーネント。" +
-                 "コードから差す場合は ScreenToRay を使う (そちらが優先)")]
-        [SerializeField] private MonoBehaviour rayProvider;
+        [Tooltip("2D のとき使う「画面座標 → ワールドのレイ」。IGizmoRayProvider を実装した" +
+                 "コンポーネントを持つ GameObject。コードから差す場合は ScreenToRay を使う (そちらが優先)")]
+        [SerializeField] private GameObject rayProvider;
 
         /// <summary>
         /// 2D ビューの画面座標 → ワールドのレイ。触れない位置なら null を返す。
@@ -88,6 +88,7 @@ namespace ToolRuntimeGizmos.Tool
         private bool _appliedActive;
         private ViewMode _appliedView;
         private float _appliedSizeScale;
+        private GameObject _appliedRayProvider;
         private bool _warnedNoRay;
 
 
@@ -309,19 +310,39 @@ namespace ToolRuntimeGizmos.Tool
 
         private void OnEnable()
         {
-            _provider = rayProvider as IGizmoRayProvider;
-            if (rayProvider != null && _provider == null)
-                Debug.LogWarning("ToolPoseHandle: rayProvider が IGizmoRayProvider を実装していない", this);
-
+            ResolveRayProvider();
             Subscribe(true);
             Apply();
         }
 
         private void OnDisable() => Subscribe(false);
 
+        /// <summary>
+        /// レイの供給元を GameObject から引く。
+        /// </summary>
+        /// <remarks>
+        /// フィールドを MonoBehaviour 型にすると、インスペクタで GameObject を落としたときに
+        /// Unity がその中のコンポーネントを 1 つ勝手に選んでしまう。実装していないものが
+        /// 入っても型としては通るので、黙って null になって 2D の操作が効かなくなる (実測)。
+        /// GameObject を持って GetComponent で引けば、取り違えが起きない。
+        /// </remarks>
+        private void ResolveRayProvider()
+        {
+            _appliedRayProvider = rayProvider;
+            _provider = rayProvider != null ? rayProvider.GetComponent<IGizmoRayProvider>() : null;
+
+            if (rayProvider != null && _provider == null)
+                Debug.LogWarning($"ToolPoseHandle: {rayProvider.name} に IGizmoRayProvider を"
+                               + "実装したコンポーネントが無い", this);
+
+            // 供給元が変わったので、未設定の警告は出し直してよい
+            if (_provider != null) _warnedNoRay = false;
+        }
+
         private void Update()
         {
             // インスペクタでの直接編集に追従する。プロパティ経由なら空振りする。
+            if (rayProvider != _appliedRayProvider) ResolveRayProvider();
             if (mode != _appliedMode || active != _appliedActive || view != _appliedView
                 || !Mathf.Approximately(sizeScale, _appliedSizeScale)) Apply();
 
