@@ -11,6 +11,10 @@
 - Unity 6000.4 / Input System 1.19（Input System 専用設定）
 - **Built-in RP / URP のどちらでも動作**（パッケージ側に URP 依存はありません）
 
+アプリへ組み込む側の視点でまとめた資料は
+[ToolPoseHandle 利用側向け設計まとめ](Docs/ToolPoseHandle-design.md) にあります
+（`ToolPoseHandle` / 位置ハンドル / 姿勢ハンドルの API、組み込み手順、制約）。
+
 ---
 
 ## 姿勢の定義
