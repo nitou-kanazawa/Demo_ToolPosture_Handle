@@ -19,11 +19,12 @@
 
 ## 姿勢の定義
 
-経路上の各点に正規直交フレーム **(L, M, N)** を張り、そこに対して工具軸 **X** を定めます。
+母材側の正規直交フレーム **(L, M, N)** を 1 つ与え、そこに対して工具軸 **X** を定めます（`WorkFrame`）。
+パッケージは経路を知りません。フレームをどこから作るか（溶接線、面、治具）は利用側の仕事です。
 
 | 記号 | 意味 | 一般名称 |
 |---|---|---|
-| **M** | 進行方向 `p(i) → p(i+1)` | feed direction / travel direction / 接線 T |
+| **M** | 進行方向（経路なら `p(i) → p(i+1)`） | feed direction / travel direction / 接線 T |
 | **N** | 面法線（M に直交化済み） | surface normal |
 | **L** | M と N に直交（進行方向の右側） | cross-feed / 従法線 B |
 
@@ -226,7 +227,7 @@ gizmo.Profile = narrowGroove;
 
 ```csharp
 positionGizmo.Position = new Vector3(1f, 0.5f, 0f);
-positionGizmo.AxisRotation = frameRotation;      // 経路のフレームに沿わせる場合
+positionGizmo.AxisRotation = frame.Rotation;     // 母材フレーム (WorkFrame) に沿わせる場合
 positionGizmo.PositionChanged += g => ...;
 ```
 
@@ -252,12 +253,13 @@ protected abstract void BuildHandles();
 protected abstract void BuildBaseGeometry(GizmoMeshBuilder b);
 protected virtual void EnsureState() { }
 protected virtual void HandleKeyboard() { }
-protected virtual void OnDragBegan(GizmoHandleBase h) { }
-protected virtual void OnDragCancelled(GizmoHandleBase h) { }
 ```
 
-`TryPick` / `BeginDrag` / `UpdateDrag` / `EndDrag` / `CancelDrag` / `SyncColliders` や
-`Theme` / `Cam` / `Scale` / `PixelToWorld` は基底側にあるので、どちらのギズモでも同じです。
+ドラッグ開始 / 取り消し時のフック（`OnDragBegan` / `OnDragCancelled`）とハンドルの実体
+（`GizmoHandleBase`）は `internal` で、派生はパッケージ内に閉じています。
+
+`TryPick` / `BeginDrag` / `UpdateDrag` / `EndDrag` / `CancelDrag` / `DrivePointer` や
+`Theme` / `Cam` / `PixelToWorld` は基底側にあるので、どちらのギズモでも同じです。
 
 ---
 
@@ -271,15 +273,16 @@ protected virtual void OnDragCancelled(GizmoHandleBase h) { }
 gizmo.Frame = myPath.GetFrame(segment, u);   // 誰が計算してもよい
 ```
 
-描画の直前に呼ばれる `PreparingFrame` フックからも渡せます。編集中はエディタが
+描画の直前に呼ばれる `Preparing` フックからも渡せます。編集中はエディタが
 `Update` を回さないことがあり、そこだけに頼るとギズモがフォールバック位置に出てしまうので、
 供給元はこちらにも繋いでおくのが確実です。
 
 ```csharp
-gizmo.PreparingFrame += g => g.Frame = myPath.GetFrame(segment, u);
+gizmo.Preparing += _ => gizmo.Frame = myPath.GetFrame(segment, u);
 ```
 
-デモでは `WeldPath` が両方を担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
+デモでは `Assets/Demo/WeldPath` が両方を担当します（`[DefaultExecutionOrder(-100)]` でギズモより先に走る）。
+`WeldPath` はデモ用で、パッケージ本体には含まれません。
 
 ### Quaternion はギズモから出さない
 
@@ -332,13 +335,16 @@ gizmo.Angles;          // theta / phi / spin
 gizmo.PostureChanged;  // 姿勢が変わったときのイベント
 ```
 
-アプリ側で既に raycast を撃っている場合は、その `Collider` から引けます
-（ギズモのコライダーは Ignore Raycast レイヤーなので、拾うにはマスクに含めること）。
+アプリ側で既に raycast を撃って掴む対象を決めている場合は、その前にハンドルまでの距離を見ます
+（ギズモのコライダーは Ignore Raycast レイヤーなので、`Physics.Raycast` には出てきません）。
 
 ```csharp
-if (gizmo.TryResolve(hit.collider, out GizmoHandleId id))
-    gizmo.BeginDrag(id, ray, hit.point);
+if (gizmo.TryPick(ray, out GizmoHandleId id, out Vector3 point, out float distance)
+    && (!Physics.Raycast(ray, out RaycastHit hit) || distance < hit.distance))
+    gizmo.BeginDrag(id, ray, point);         // ハンドルの方が手前
 ```
+
+`ToolPoseHandle` を使っている場合は `handle.Raycast(ray, out distance)` が同じ判定を返します。
 
 ### ZYX オイラー（ロボット姿勢）との相互変換
 
@@ -371,17 +377,23 @@ angles.SetToolRotation(frame, euler.ToRotation(), shaftAxis, referenceAxis, spin
 
 ## デモシーン
 
-`Assets/Scenes/ToolPostureDemo.unity` を開いて再生します。
+`Assets/Scenes/` のシーンを開いて再生します。
+
+| シーン | 内容 |
+|---|---|
+| `ToolPostureDemo` | 位置ギズモと姿勢ギズモを直接置いた構成。2D 重畳ビューあり |
+| `ToolPostureEntry` | `ToolPoseHandle` で 2 つのギズモを束ねた構成。2D 重畳ビューあり |
+| `ToolPostureReadout` | `ToolPoseHandle` に数値表示（`PoseReadoutUI`）、ロボット値の受け渡し（`RobotPoseInterop`）、IK スナップバック（`IkSnapBackDemo`）を足した構成 |
 
 | 操作 | 割り当て |
 |---|---|
 | ハンドル操作 | 左ドラッグ / タッチ |
 | スナップ | Ctrl |
 | 視点 | 右ドラッグ（回転）・中ドラッグ（パン）・ホイール（ズーム）／ タッチは 1 本指と 2 本指 |
-| ハンドル表示切替 | `1`〜`4` または画面のボタン |
+| ハンドル表示切替 | `1`〜`4` |
 | 区間 / 区間内位置 | `←→` / `↑↓` |
-| 3D / 2D 操作の切替 | `T` |
-| ロボット姿勢 (ZYX) の編集 | 右上パネルの Roll / Pitch / Yaw ボタン |
+| 3D / 2D 操作の切替 | `T`（`ToolPostureDemo` / `ToolPostureEntry`） |
+| 併進 / 回転ハンドルの切替 | 画面のボタン（`ToolPostureReadout`） |
 
 `T` で切り替わる 2D 重畳ビューは、外部パラから配置した想定の重畳カメラを RenderTexture に描き、
 レンズ歪み（Brown-Conrady の k1）を掛けて UI 上に表示します。
@@ -392,12 +404,14 @@ angles.SetToolRotation(frame, euler.ToRotation(), shaftAxis, referenceAxis, spin
 ## 構成
 
 ```
-Assets/ToolPosture/
-  Runtime/Core/     PathFrame / ToolPostureAngles / AngleConvention / IPathFrameSource
-                    ZyxEulerAngles / SpinReference      ← 依存ゼロの別アセンブリ
+Assets/ToolPosture/                             パッケージ本体
+  Runtime/Core/     WorkFrame / ToolPostureAngles / AngleConvention
+                    ZyxEulerAngles / SpinReference
+                    RobotPostureConvert / HandednessConversion   ← 依存ゼロの別アセンブリ
                     ToolPostureProfile          角度規約と可動範囲 (SO)
-  Runtime/Path/     WeldPath                    経路。フレームを計算してギズモへ渡す
-  Runtime/Tool/     ToolPostureFollower         工具モデルを姿勢に追従させる
+  Runtime/Tool/     ToolPoseHandle / IToolPoseHandle   アプリへ組み込むときの入口
+                    ToolPose                    位置・フレーム・角度をまとめた値
+                    ToolPostureFollower         工具モデルを姿勢に追従させる
   Runtime/Gizmo/    RuntimeGizmo                描画・当たり判定・入力の共通部分
                     ToolPostureGizmo            工具姿勢 (theta / phi / spin)
                     ToolPositionGizmo           軸方向の平行移動
@@ -406,14 +420,23 @@ Assets/ToolPosture/
                     GizmoHandleShape            円弧 / 球の形状記述
                     GizmoHandleColliders        チューブコライダーの生成と追従
                     RayTangentDrag / RayAxisDrag  回転 / 平行移動のドラッグ
-                    GizmoMeshBuilder / GizmoPointer / IGizmoPointerSource
-  Runtime/UI/       PostureReadoutUI            数値表示・表示切替
-  Runtime/Demo/     OverlayViewDemo / DistortedOverlayViewport / RobotPostureBridge
-                    OrbitCamera / WeldPathSurface
+                    GizmoMeshBuilder / GizmoPointer
+                    IGizmoPointerSource / IGizmoRayProvider
+  Runtime/Shaders/  GizmoVertexColor / OverlayDistort
   Presets/          GizmoTheme_Touch / GizmoTheme_HighContrast
                     ToolPostureProfile_NarrowGroove
   Editor/           ToolPostureGizmoEditor      シーンビュー版 + 折りたたみインスペクタ
-  Tests/EditMode/   93 件
+                    GizmoThemeEditor / AngleConventionDrawer
+  Tests/EditMode/   178 件
+
+Assets/Demo/                                    デモ（パッケージ外の別アセンブリ）
+  WeldPath / WeldPathSurface                    経路。フレームを計算してギズモへ渡す
+  OverlayViewDemo / DistortedOverlayViewport    2D 重畳ビュー
+  PoseReadoutUI                                 数値表示・ハンドル切替
+  RobotPoseInterop                              ロボットの値と LMN 姿勢の受け渡し例
+  IkSnapBackDemo                                IK 成功位置へ戻す組み込み例
+  OrbitCamera
+  Tests/            6 件
 ```
 
 EditMode テストは Test Runner、または `unity test --mode EditMode --output result.xml --timeout 300` で実行できます。
